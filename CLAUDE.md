@@ -32,7 +32,7 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - `npm run build`: build de producción.
 - `npm run lint`: ESLint.
 - `npm run typecheck`: genera los tipos de rutas de Next y corre `tsc --noEmit`.
-- `npm test`: pendiente, se define con la estrategia de pruebas (DT-005).
+- `npm test`: Vitest (`vitest run`), tests en `src/**/*.test.ts` (DT-005, DT-012).
 
 `AGENTS.md` (generado por Next) indica leer `node_modules/next/dist/docs/` antes de escribir código de Next: esta versión (16) difiere de lo que se conoce de versiones anteriores.
 
