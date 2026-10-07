@@ -11,8 +11,8 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - Next.js con TypeScript en modo estricto.
 - UI: Tailwind y shadcn/ui.
 - Validación: Zod.
-- Base de datos: PostgreSQL. Proveedor por definir (Neon o Supabase).
-- Ingreso con Google (RN-003). Librería por definir.
+- Base de datos: PostgreSQL en Supabase (DT-010).
+- Ingreso con Google (RN-003) mediante Supabase Auth (DT-010).
 - Hosting: Vercel. Ojo: su plan gratuito no permite uso comercial.
 
 ## Arquitectura

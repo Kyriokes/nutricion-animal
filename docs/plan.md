@@ -7,7 +7,7 @@
 - Todavía no hay funcionalidad.
 
 ## Próximo paso
-- Elegir proveedor de base de datos (Neon o Supabase) y librería de ingreso con Google (RN-003).
+- Crear el proyecto en Supabase (lo hace el desarrollador), configurar variables de entorno (`.env.local`, con `.env.example` versionado) y habilitar Google como proveedor (RN-003).
 
 ## Pendiente (en orden)
 - Agregar Zod y la estructura de módulos por dominio (`catalogo`, `dietas`, `pedidos`, `busquedas`, `usuarios`).
