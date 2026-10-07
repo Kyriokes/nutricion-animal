@@ -167,17 +167,58 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 
 ---
 
-## 7. Preguntas abiertas
+## 7. Definiciones técnicas (resueltas)
 
-1. **[A DEFINIR]** Roles múltiples: en el registro se elige en calidad de qué se entra (RN-024). ¿Se puede pedir más de un rol? ¿Cómo se combinan los permisos? ¿Se elige con cuál operar en cada ingreso o los permisos se suman? ¿El Nutricionista tiene además el rol Cliente, o lo hereda (RN-020)?
-2. **[A DEFINIR]** ¿Se valida la matrícula del nutricionista al darlo de alta?
-3. **[A DEFINIR]** Perfil del nutricionista (VN-05, VU-09): ¿qué datos carga y cuáles son visibles para los clientes?
-4. **[A DEFINIR]** ¿Quién ve las dietas genéricas? ¿Solo quien las creó, o todos los nutricionistas?
-5. **[A DEFINIR]** Asignar dieta (VN-04): ¿una dieta genérica se copia a la mascota o se vincula? ¿Puede asignar solo a mascotas de sus pacientes? ¿Cómo se vuelve paciente un cliente?
-6. **[A DEFINIR]** ¿Cómo se contacta un Cliente con un Nutricionista? (mensaje interno, WhatsApp, formulario, turno)
-7. **[A DEFINIR]** ¿La consulta con el Nutricionista se cobra dentro del sistema o queda por fuera?
-8. **[A DEFINIR]** Aceptación de nutricionistas (RN-024): mientras está pendiente, ¿qué puede hacer? ¿Actúa como Cliente? ¿El auditor también puede aceptar? ¿Qué pasa si se rechaza? ¿Qué otros roles se pueden elegir al registrarse y cuáles requieren aprobación (por ejemplo Proveedor)? ¿El registro y el ingreso con Google son la misma pantalla?
-9. **[A DEFINIR]** Estados del pedido (RN-062): además de pedido, preparado, en camino y entregado, ¿existen cancelado, pago pendiente, devuelto?
+**Roles (pregunta 1):**
+- Cada rol es único. Un usuario tiene un rol, que le da un conjunto de permisos. Si en el futuro es necesario tener múltiples roles simultáneamente, se revisará esta decisión.
+
+**Nutricionista: registro y aprobación (preguntas 2 y 8):**
+- Un usuario se registra con Google (login modal).
+- Para ser nutricionista o proveedor: botón en perfil > formulario de postulación.
+- Admin y Auditor revisan la postulación y aprueban o rechazan (notificación por email, detalles de email a resolver).
+- Mientras está pendiente, el usuario actúa como Cliente (puede comprar, buscar, ver sus mascotas).
+- Auditor es un usuario que el Administrador elige desde el dashboard.
+- Proveedor también requiere aprobación.
+
+**Perfil del nutricionista (pregunta 3):**
+- Públicamente visible: nombre, foto, dirección, número de contacto.
+- Privado (solo para él): número de matrícula/certificación.
+- No se valida la matrícula al dar de alta: es responsabilidad del Administrador/Auditor revisar en el formulario.
+
+**Dietas (pregunta 4):**
+- Cada nutricionista tiene su propio servicio de dietas. Las dietas genéricas que crea son vistas por todos los nutricionistas en el sistema (RN-021).
+- Las dietas específicas (RN-022) las ve solo quien las creó.
+
+**Asignar dieta (pregunta 5):**
+- El nutricionista busca al usuario por nombre/email, elige una de sus mascotas de una lista, y asigna una dieta.
+- Una misma mascota puede tener múltiples dietas de múltiples nutricionistas simultáneamente.
+- **[A DEFINIR]** Cómo se vuelve paciente un cliente (condiciones, registro, etc.).
+
+**Contacto cliente-nutricionista (pregunta 6):**
+- **[A DEFINIR]** Método específico (mensaje interno, WhatsApp, formulario, turno).
+
+**Negocio (pregunta 7):**
+- El negocio está en la venta de comida, no en los servicios de nutrición.
+- Las dietas no tienen costo en el sistema.
+
+**Campos de una dieta (pregunta 14):**
+- Nombre, descripción (texto).
+- Duración: número de días (1-999) O indefinida (bool).
+- Frecuencia: lista de alimentos con patrón de consumo.
+  - Patrón semanal: "X veces por semana".
+  - Patrón corto: "cada N días" donde N < 10, que se repite desde el día 1.
+- Notas: texto libre, no afecta la lógica del sistema. Solo para aclaraciones.
+
+**Campos de un producto (pregunta 15):**
+- Nombre, descripción, precio, imagen, stock (asumido).
+- Peso (número, unidad) y volumen (número, unidad).
+- Marca (texto).
+- Lista de tipos de mascota (perro, gato, etc.).
+- Lista de tipos de dieta (genérica o referencias a dietas específicas).
+- Tabla nutricional (opcional): proteína %, grasa %, fibra %, etc.
+
+## 7.1 Preguntas abiertas (pendientes)
+
 10. **[A DEFINIR]** Búsquedas: ¿se guardan también las de usuarios sin sesión? ¿Por cuánto tiempo se conservan?
 11. **[A DEFINIR]** Datos personales: revisar qué exige la normativa argentina de protección de datos personales antes de guardar búsquedas asociadas a usuarios.
 12. **[A DEFINIR]** Primera versión: ¿qué entra de pagos y envíos (costo de envío, quién reparte)?
