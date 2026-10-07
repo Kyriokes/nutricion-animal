@@ -11,7 +11,7 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - Next.js con TypeScript en modo estricto.
 - UI: Tailwind y shadcn/ui.
 - Validación: Zod.
-- Base de datos: PostgreSQL en Supabase (DT-010).
+- Base de datos: PostgreSQL en Supabase (DT-010). Acceso con Drizzle ORM + SQL directo según convenga (DT-018).
 - Ingreso con Google (RN-003) mediante Supabase Auth (DT-010).
 - Hosting: Vercel. Ojo: su plan gratuito no permite uso comercial.
 
@@ -32,6 +32,7 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - `npm run build`: build de producción.
 - `npm run lint`: ESLint.
 - `npm run typecheck`: genera los tipos de rutas de Next y corre `tsc --noEmit`.
+- `npm run db:generate` y `npm run db:migrate`: migraciones con drizzle-kit (requieren `DATABASE_URL`).
 - `npm test`: Vitest (`vitest run`), tests en `src/**/*.test.ts` (DT-005, DT-012).
 
 `AGENTS.md` (generado por Next) indica leer `node_modules/next/dist/docs/` antes de escribir código de Next: esta versión (16) difiere de lo que se conoce de versiones anteriores.

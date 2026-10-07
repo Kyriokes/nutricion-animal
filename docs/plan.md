@@ -6,6 +6,7 @@
 - Proyecto base: Next.js 16, TypeScript, Tailwind, ESLint y shadcn/ui.
 - Supabase instalado como librería; proyecto en supabase.com: a definir por Sergio.
 - Zod y Vitest instalados. `npm test` funciona con 12 tests (humo, dietas, catalogo).
+- Drizzle ORM instalado y configurado (DT-018); sin tablas ni conexión todavía.
 - Esquemas iniciales para dieta y producto con tests de validación.
 - Todavía no hay funcionalidad de backend/API.
 
@@ -34,6 +35,7 @@
 - API routes con lógica de negocio en módulos (no en controladores).
 - Tests de integración contra Postgres de prueba (DT-005).
 - Playwright con 3-5 tests de humo cuando exista flujo de compra completo (DT-006).
+- Primera tabla y conexión con Drizzle (`src/modules/<dominio>/tables.ts`), cuando exista la base de Supabase.
 - Actualizar Node a >= 20.18.1.
 
 ## Hecho
