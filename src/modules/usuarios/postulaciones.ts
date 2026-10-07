@@ -43,6 +43,7 @@ export type ApplicationError =
   | "already_has_role"
   | "already_pending"
   | "not_allowed"
+  | "self_decision"
   | "already_decided";
 
 type Result<T> = ({ ok: true } & T) | { ok: false; error: ApplicationError };
@@ -95,6 +96,13 @@ function decide(
 ): Result<{ application: Application }> {
   if (!hasPermission(input.decider.roles, "application.decide")) {
     return { ok: false, error: "not_allowed" };
+  }
+  // Nadie decide su propia postulación, salvo el administrador.
+  if (
+    input.application.userId === input.decider.id &&
+    !input.decider.roles.includes("admin")
+  ) {
+    return { ok: false, error: "self_decision" };
   }
   if (input.application.status !== "pending") {
     return { ok: false, error: "already_decided" };

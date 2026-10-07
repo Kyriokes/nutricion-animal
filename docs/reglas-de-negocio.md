@@ -179,6 +179,7 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - Mientras está pendiente, el usuario conserva sus roles (Cliente): puede comprar, buscar, ver sus mascotas. Al aprobarse se agrega el rol; al rechazarse no cambia nada y puede volver a postularse.
 - Auditor es un usuario que el Administrador elige desde el dashboard.
 - Proveedor también requiere aprobación.
+- Nadie decide su propia postulación, salvo el Administrador.
 
 **Perfil del nutricionista (pregunta 3):**
 - Públicamente visible: nombre, foto, dirección, número de contacto.
@@ -202,7 +203,7 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - Las dietas no tienen costo en el sistema.
 
 **Campos de una mascota (RN-010):**
-- Nombre y especie (obligatorios). Raza, fecha de nacimiento y peso en kg (opcionales).
+- Nombre y especie (obligatorios). La especie es texto libre; la interfaz sugiere las especies que ya existen en la base de datos. Raza, fecha de nacimiento y peso en kg (opcionales).
 - Condiciones de salud, alergias, alimentos no permitidos y alimentos de necesidad (listas, pueden estar vacías).
 - Un alimento no puede ser a la vez de necesidad y alergénico o no permitido.
 
@@ -228,8 +229,6 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 11. **[A DEFINIR]** Datos personales: revisar qué exige la normativa argentina de protección de datos personales antes de guardar búsquedas asociadas a usuarios.
 12. **[A DEFINIR]** Primera versión: ¿qué entra de pagos y envíos (costo de envío, quién reparte)?
 13. **[A DEFINIR]** Cuando exista el Proveedor real, ¿un producto puede publicarse sin aprobación mientras el rol Auditor no exista?
-14. **[A DEFINIR]** (a considerar) ¿Se impide que alguien decida su propia postulación? Hoy un auditor podría aprobar su propia postulación a proveedor.
-15. **[A DEFINIR]** Especies: ¿lista cerrada de animales? Hace falta que coincida entre mascotas y productos para filtrar alimentos por mascota (RN-013).
 
 ---
 

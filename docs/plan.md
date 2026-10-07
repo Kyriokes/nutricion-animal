@@ -23,8 +23,6 @@
 - Pregunta 10 y 11: búsquedas de usuarios sin sesión, retención, normativa argentina.
 - Pregunta 12: pagos y envíos v1 (costo de envío, método de pago, quién reparte).
 - Pregunta 13: ¿producto puede publicarse sin Auditor?
-- Pregunta 14 (a considerar): impedir que alguien decida su propia postulación.
-- Pregunta 15: lista cerrada de especies (mascotas y productos).
 
 ## En pausa (requiere Sergio con sus cuentas)
 - Crear proyecto en Supabase (supabase.com), elegir región.

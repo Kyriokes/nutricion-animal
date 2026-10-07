@@ -176,6 +176,31 @@ describe("usuarios/postulaciones: decidir", () => {
     }
   });
 
+  it("un auditor no puede decidir su propia postulación; el admin sí", () => {
+    const own = { id: USER_ID, roles: ["auditor" as const] };
+    expect(
+      approveApplication({
+        application: pending,
+        applicantRoles: ["customer", "auditor"],
+        decider: own,
+        now: NOW,
+      }),
+    ).toEqual({ ok: false, error: "self_decision" });
+    expect(
+      rejectApplication({ application: pending, decider: own, now: NOW }),
+    ).toEqual({ ok: false, error: "self_decision" });
+
+    const ownAdmin = { id: USER_ID, roles: ["admin" as const] };
+    expect(
+      approveApplication({
+        application: pending,
+        applicantRoles: ["admin"],
+        decider: ownAdmin,
+        now: NOW,
+      }).ok,
+    ).toBe(true);
+  });
+
   it("no se decide dos veces una postulación", () => {
     for (const status of ["approved", "rejected"] as const) {
       const decided: Application = { ...pending, status };
