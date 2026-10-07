@@ -5,16 +5,15 @@
 - Reglas de negocio v0.6: roles, nutricionista, dietas y productos definidos (DT-014 a DT-017).
 - Proyecto base: Next.js 16, TypeScript, Tailwind, ESLint y shadcn/ui.
 - Supabase instalado como librería; proyecto en supabase.com: a definir por Sergio.
-- Zod y Vitest instalados. `npm test` funciona con 12 tests (humo, dietas, catalogo).
+- Zod y Vitest instalados. `npm test` funciona (32 tests).
 - Drizzle ORM instalado y configurado (DT-018); sin tablas ni conexión todavía.
 - Esquemas iniciales para dieta y producto con tests de validación.
+- Módulo `usuarios`: roles[] con permisos y flujo de postulación (DT-019, DT-020), con tests.
 - Todavía no hay funcionalidad de backend/API.
 
-## Próximo paso (sesión 3)
-- Módulo `usuarios`: esquema y validaciones para registro, roles, perfil de nutricionista.
-- Módulo `pedidos`: esquema de pedido con estados definidos (pregunta 9).
-- Crear API routes iniciales (`/api/*`) para pruebas.
-- (Punto de pausa: crear proyecto Supabase y completar `.env.local`.)
+## Próximo paso
+- Módulo `mascotas` (RN-010): hace falta saber qué datos tiene una mascota. Es la base de asignar dietas (RN-023) y de VU-04.
+- Módulo `pedidos`: bloqueado hasta definir los estados (pregunta 9).
 
 ## Bloqueado por definiciones (responde Sergio)
 - Pregunta 5.1: cómo se vuelve paciente un cliente.
@@ -31,7 +30,7 @@
 - Advertencia: Supabase pausa proyectos gratuitos tras una semana sin actividad.
 
 ## Pendiente (en orden)
-- Módulos de dominio restantes: `usuarios`, `pedidos`, `busquedas`.
+- Módulos de dominio restantes: `mascotas`, `pedidos`, `busquedas`.
 - API routes con lógica de negocio en módulos (no en controladores).
 - Tests de integración contra Postgres de prueba (DT-005).
 - Playwright con 3-5 tests de humo cuando exista flujo de compra completo (DT-006).
@@ -42,3 +41,4 @@
 - Proyecto Next.js, Tailwind, shadcn/ui, Zod, Vitest.
 - Esquemas de dieta y producto con tests.
 - Reglas de negocio v0.6 completada.
+- Módulo `usuarios` (roles, permisos, postulaciones).

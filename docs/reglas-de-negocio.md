@@ -170,13 +170,13 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 ## 7. Definiciones técnicas (resueltas)
 
 **Roles (pregunta 1):**
-- Cada rol es único. Un usuario tiene un rol, que le da un conjunto de permisos. Si en el futuro es necesario tener múltiples roles simultáneamente, se revisará esta decisión.
+- Un usuario tiene una lista de roles (RN-002). Cada rol es único y lleva su propio conjunto de permisos, sin herencia entre roles; los permisos de varios roles se suman. Un usuario sin roles no tiene ningún permiso, lo que permite bloquearlo sin borrarlo.
 
 **Nutricionista: registro y aprobación (preguntas 2 y 8):**
 - Un usuario se registra con Google (login modal).
 - Para ser nutricionista o proveedor: botón en perfil > formulario de postulación.
 - Admin y Auditor revisan la postulación y aprueban o rechazan (notificación por email, detalles de email a resolver).
-- Mientras está pendiente, el usuario actúa como Cliente (puede comprar, buscar, ver sus mascotas).
+- Mientras está pendiente, el usuario conserva sus roles (Cliente): puede comprar, buscar, ver sus mascotas. Al aprobarse se agrega el rol; al rechazarse no cambia nada y puede volver a postularse.
 - Auditor es un usuario que el Administrador elige desde el dashboard.
 - Proveedor también requiere aprobación.
 
