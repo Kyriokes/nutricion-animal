@@ -5,15 +5,17 @@
 - Reglas de negocio v0.6: roles, nutricionista, dietas y productos definidos (DT-014 a DT-017).
 - Proyecto base: Next.js 16, TypeScript, Tailwind, ESLint y shadcn/ui.
 - Supabase instalado como librería; proyecto en supabase.com: a definir por Sergio.
-- Zod y Vitest instalados. `npm test` funciona (42 tests).
+- Zod y Vitest instalados. `npm test` funciona (73 tests).
 - Drizzle ORM instalado y configurado (DT-018); sin tablas ni conexión todavía.
 - Esquemas iniciales para dieta y producto con tests de validación.
 - Módulo `usuarios`: roles[] con permisos, postulaciones y nota del admin (DT-019 a DT-021), con tests.
 - Módulo `mascotas`: esquema con alergias, alimentos no permitidos y de necesidad (DT-022).
+- Módulo `dietas`: dietas propias con versiones, clonado y asignación a mascotas (DT-025 a DT-027), con tests.
 - Todavía no hay funcionalidad de backend/API.
 
 ## Próximo paso
-- Asignar dietas a mascotas (RN-023, RN-015): ya existen `dietas`, `mascotas` y `usuarios`; falta definir la relación mascota-dieta (una mascota puede tener N dietas de N nutricionistas).
+- Avisar al cliente cuando cambia la dieta de su mascota (RN-028): falta definir cómo (se ve junto con los emails).
+- Qué ve el cliente de la dieta de su mascota (RN-015, VU-04).
 - Módulo `pedidos`: bloqueado hasta definir los estados (pregunta 9).
 
 ## Bloqueado por definiciones (responde Sergio)

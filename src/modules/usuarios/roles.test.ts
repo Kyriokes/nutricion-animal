@@ -22,12 +22,8 @@ describe("usuarios/roles", () => {
     }
   });
 
-  it("RN-021 a RN-023: solo el nutricionista crea y asigna dietas", () => {
-    for (const permission of [
-      "diet.create_generic",
-      "diet.create_specific",
-      "diet.assign",
-    ] as const) {
+  it("RN-021 y RN-023: solo el nutricionista maneja y asigna dietas", () => {
+    for (const permission of ["diet.manage", "diet.assign"] as const) {
       expect(hasPermission(["nutritionist"], permission)).toBe(true);
       expect(hasPermission(["customer"], permission)).toBe(false);
     }

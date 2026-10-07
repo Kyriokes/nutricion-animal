@@ -39,10 +39,14 @@ Convenciones:
 
 ### 2.3 Nutricionista
 - **RN-020** Puede hacer todo lo que hace el Cliente (RN-010 a RN-015).
-- **RN-021** Puede crear dietas genéricas (plantillas no atadas a una mascota).
-- **RN-022** Puede crear dietas específicas para una mascota particular.
-- **RN-023** Puede asignar una dieta a una mascota para que el Cliente la vea.
+- **RN-021** Puede crear, editar, renombrar y borrar sus propias dietas. Cada nutricionista ve solo las suyas: no se comparten entre nutricionistas, y dos pueden tener dietas iguales sin saberlo.
+- **RN-022** (absorbida por RN-021 y RN-023) Ya no hay distinción entre dieta genérica y específica: una misma dieta puede asignarse a varias mascotas.
 - **RN-024** En el registro o primer ingreso el usuario indica en calidad de qué entra al sistema. Quien se registra como Nutricionista queda pendiente hasta que un administrador lo acepte.
+- **RN-023** Puede asignar una dieta a una mascota para que el Cliente la vea. Una mascota puede tener varias dietas, de varios nutricionistas.
+- **RN-025** Una dieta tiene versiones numeradas. Una versión que nunca se asignó se edita y se borra libremente (salvo la única que le queda a la dieta). Desde que se asigna por primera vez queda fija, y los cambios generan una versión nueva.
+- **RN-026** Al hacer una versión nueva de una dieta con mascotas asignadas, el nutricionista ve una alerta con las mascotas afectadas y elige cuáles pasan a la versión nueva; el resto conserva la anterior.
+- **RN-027** Puede clonar una de sus dietas para crear otra independiente, que de base es igual y se edita aparte.
+- **RN-028** El Cliente ve solo la versión de la dieta que tiene asignada su mascota y se le avisa cuando cambia. **[A DEFINIR]** Cómo se avisa.
 
 ### 2.4 Proveedor
 - **RN-030** Puede publicar sus productos a la venta.
@@ -52,7 +56,7 @@ Convenciones:
 - **RN-040** Es un administrador con menos permisos.
 - **RN-041** Su función es evaluar y aceptar los productos de los proveedores.
 - **RN-042** Se incorpora en una versión posterior.
-- **RN-043** Puede aceptar nutricionistas (**[A DEFINIR]** si corresponde, ver RN-024 y pregunta 8).
+- **RN-043** Puede aceptar o rechazar las postulaciones de nutricionistas y de proveedores, igual que el Administrador (RN-024). No puede decidir su propia postulación.
 
 Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricionistas.
 
@@ -161,8 +165,8 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 ## 6. Glosario
 
 - **Dieta:** plan de alimentación recetado por un nutricionista. Es el único término del sistema: no se usa "receta".
-- **Dieta genérica:** dieta creada por un nutricionista, no asociada a una mascota puntual.
-- **Dieta específica:** dieta creada para una mascota particular.
+- **Versión:** estado numerado del contenido de una dieta. Cada mascota tiene asignada una versión concreta.
+- **Clonar:** crear una dieta nueva, independiente, a partir de otra propia.
 - **Asignar:** vincular una dieta a una mascota para que su Cliente pueda verla.
 
 ---
@@ -187,12 +191,16 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - No se valida la matrícula al dar de alta: es responsabilidad del Administrador/Auditor revisar en el formulario.
 
 **Dietas (pregunta 4):**
-- Cada nutricionista tiene su propio servicio de dietas. Las dietas genéricas que crea son vistas por todos los nutricionistas en el sistema (RN-021).
-- Las dietas específicas (RN-022) las ve solo quien las creó.
+- Cada nutricionista tiene sus propias dietas y solo él las ve y las maneja (RN-021). No existe la distinción entre dieta genérica y específica.
+- El nombre pertenece a la dieta, no a la versión: renombrar no crea una versión.
 
 **Asignar dieta (pregunta 5):**
 - El nutricionista busca al usuario por nombre/email, elige una de sus mascotas de una lista, y asigna una dieta.
 - Una misma mascota puede tener múltiples dietas de múltiples nutricionistas simultáneamente.
+- Una misma dieta puede asignarse a varias mascotas. Al asignar queda vinculada a una versión concreta, por defecto la última.
+- Terminar una asignación no la borra: queda como historial y la versión sigue fija (RN-025).
+- Al editar una dieta con mascotas asignadas se crea una versión nueva y el nutricionista decide a cuáles mascotas se la pasa (RN-026).
+- **No** se aplica el vínculo a otras dietas: dos dietas clonadas son independientes (RN-027).
 - **[A DEFINIR]** Cómo se vuelve paciente un cliente (condiciones, registro, etc.).
 
 **Contacto cliente-nutricionista (pregunta 6):**

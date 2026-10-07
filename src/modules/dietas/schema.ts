@@ -32,20 +32,46 @@ export const DietDurationSchema = z.union([
   }),
 ]);
 
-// Dieta genérica o específica (lo que carga un nutricionista).
-export const DietSchema = z.object({
-  id: z.string().uuid().optional(), // Generado por la BD
-  nutritionistId: z.string().uuid(), // El nutricionista que la creó
-  name: z.string().min(1, "El nombre de la dieta es requerido"),
+// Lo que cambia entre versiones de una dieta.
+export const DietContentSchema = z.object({
   description: z.string().min(1, "La descripción es requerida"),
   foods: z.array(FoodItemSchema).min(1, "Al menos un alimento es requerido"),
   duration: DietDurationSchema,
   notes: z.string().optional(), // Aclaraciones, no afecta lógica
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+});
+
+// RN-021: cada nutricionista tiene sus propias dietas; no se comparten.
+// El nombre vive en la dieta, no en la versión: renombrar no crea versión.
+export const DietSchema = z.object({
+  id: z.uuid(),
+  nutritionistId: z.uuid(),
+  name: z.string().trim().min(1, "El nombre de la dieta es requerido"),
+  createdAt: z.date(),
+});
+
+// RN-025: una dieta tiene versiones numeradas.
+export const DietVersionSchema = z.object({
+  id: z.uuid(),
+  dietId: z.uuid(),
+  number: z.number().int().min(1),
+  content: DietContentSchema,
+  createdAt: z.date(),
+});
+
+// RN-023: una mascota tiene asignada una versión concreta de una dieta.
+// Al terminar una asignación se conserva con `endedAt` (historial).
+export const DietAssignmentSchema = z.object({
+  id: z.uuid(),
+  petId: z.uuid(),
+  dietVersionId: z.uuid(),
+  assignedAt: z.date(),
+  endedAt: z.date().optional(),
 });
 
 export type Diet = z.infer<typeof DietSchema>;
+export type DietContent = z.infer<typeof DietContentSchema>;
+export type DietVersion = z.infer<typeof DietVersionSchema>;
+export type DietAssignment = z.infer<typeof DietAssignmentSchema>;
 export type FoodItem = z.infer<typeof FoodItemSchema>;
 export type FoodConsumptionPattern = z.infer<
   typeof FoodConsumptionPatternSchema

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { hasPermission, type Role } from "./roles";
+import type { Result as BaseResult } from "@/lib/result";
+import { hasPermission, type Actor, type Role } from "./roles";
 
 // RN-024: quien quiere ser nutricionista o proveedor se postula desde su perfil.
 export const NutritionistApplicationDataSchema = z.object({
@@ -46,7 +47,7 @@ export type ApplicationError =
   | "self_decision"
   | "already_decided";
 
-type Result<T> = ({ ok: true } & T) | { ok: false; error: ApplicationError };
+type Result<T> = BaseResult<T, ApplicationError>;
 
 const ROLE_BY_KIND: Record<ApplicationData["kind"], Role> = {
   nutritionist: "nutritionist",
@@ -90,7 +91,7 @@ function decide(
   status: "approved" | "rejected",
   input: {
     application: Application;
-    decider: { id: string; roles: readonly Role[] };
+    decider: Actor;
     now: Date;
   },
 ): Result<{ application: Application }> {
@@ -122,7 +123,7 @@ function decide(
 export function approveApplication(input: {
   application: Application;
   applicantRoles: readonly Role[];
-  decider: { id: string; roles: readonly Role[] };
+  decider: Actor;
   now: Date;
 }): Result<{ application: Application; roles: Role[] }> {
   const result = decide("approved", input);
@@ -138,7 +139,7 @@ export function approveApplication(input: {
 // Rechazar no cambia los roles. El usuario puede volver a postularse.
 export function rejectApplication(input: {
   application: Application;
-  decider: { id: string; roles: readonly Role[] };
+  decider: Actor;
   now: Date;
 }): Result<{ application: Application }> {
   return decide("rejected", input);

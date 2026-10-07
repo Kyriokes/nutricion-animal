@@ -1,84 +1,64 @@
 import { describe, expect, it } from "vitest";
-import { DietSchema, FoodItemSchema } from "./schema";
+import { DietContentSchema, DietSchema, FoodItemSchema } from "./schema";
+
+const food = {
+  name: "Pollo",
+  quantity: 100,
+  unit: "g" as const,
+  pattern: { type: "weekly" as const, timesPerWeek: 3 },
+};
 
 describe("dietas/schema", () => {
-  it("valida una dieta válida con duración en días", () => {
-    const dieta = {
-      nutritionistId: "550e8400-e29b-41d4-a716-446655440000",
-      name: "Dieta Proteica",
-      description: "Dieta alta en proteína para perros activos",
-      foods: [
-        {
-          name: "Pollo",
-          quantity: 100,
-          unit: "g" as const,
-          pattern: { type: "weekly" as const, timesPerWeek: 3 },
-        },
-      ],
-      duration: { type: "days" as const, days: 30 },
-    };
-    const result = DietSchema.safeParse(dieta);
+  it("valida un contenido con duración en días", () => {
+    const result = DietContentSchema.safeParse({
+      description: "Alta en proteína para perros activos",
+      foods: [food],
+      duration: { type: "days", days: 30 },
+    });
     expect(result.success).toBe(true);
   });
 
-  it("valida una dieta con duración indefinida", () => {
-    const dieta = {
-      nutritionistId: "550e8400-e29b-41d4-a716-446655440000",
-      name: "Dieta Base",
+  it("valida un contenido con duración indefinida y ciclo de días", () => {
+    const result = DietContentSchema.safeParse({
       description: "Mantenimiento",
-      foods: [
-        {
-          name: "Croquetas",
-          quantity: 200,
-          unit: "g" as const,
-          pattern: { type: "daily_cycle" as const, cycleDays: 3 },
-        },
-      ],
-      duration: { type: "indefinite" as const },
-    };
-    const result = DietSchema.safeParse(dieta);
+      foods: [{ ...food, pattern: { type: "daily_cycle", cycleDays: 3 } }],
+      duration: { type: "indefinite" },
+      notes: "Dividir en dos tomas",
+    });
     expect(result.success).toBe(true);
   });
 
-  it("rechaza una dieta sin alimentos", () => {
-    const dieta = {
-      nutritionistId: "550e8400-e29b-41d4-a716-446655440000",
-      name: "Inválida",
+  it("rechaza un contenido sin alimentos", () => {
+    const result = DietContentSchema.safeParse({
       description: "Sin comida",
       foods: [],
-      duration: { type: "days" as const, days: 10 },
-    };
-    const result = DietSchema.safeParse(dieta);
+      duration: { type: "days", days: 10 },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rechaza duración en días mayor a 999", () => {
+    const result = DietContentSchema.safeParse({
+      description: "Demasiado larga",
+      foods: [food],
+      duration: { type: "days", days: 1000 },
+    });
     expect(result.success).toBe(false);
   });
 
   it("rechaza un alimento con cantidad negativa", () => {
-    const food = {
-      name: "Inválido",
-      quantity: -50,
-      unit: "g" as const,
-      pattern: { type: "weekly" as const, timesPerWeek: 1 },
-    };
-    const result = FoodItemSchema.safeParse(food);
-    expect(result.success).toBe(false);
+    expect(FoodItemSchema.safeParse({ ...food, quantity: -50 }).success).toBe(
+      false,
+    );
   });
 
-  it("rechaza duración en días > 999", () => {
-    const dieta = {
-      nutritionistId: "550e8400-e29b-41d4-a716-446655440000",
-      name: "Demasiado larga",
-      description: "Más de 999 días",
-      foods: [
-        {
-          name: "Algo",
-          quantity: 100,
-          unit: "g" as const,
-          pattern: { type: "weekly" as const, timesPerWeek: 1 },
-        },
-      ],
-      duration: { type: "days" as const, days: 1000 },
-    };
-    const result = DietSchema.safeParse(dieta);
+  it("rechaza una dieta con nombre vacío", () => {
+    const result = DietSchema.safeParse({
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      nutritionistId: "6ba7b810-9dad-41d1-80b4-00c04fd430c8",
+      name: "   ",
+      createdAt: new Date(),
+    });
     expect(result.success).toBe(false);
   });
 });

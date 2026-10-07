@@ -12,6 +12,9 @@ export const ROLES = [
 export const RoleSchema = z.enum(ROLES);
 export type Role = z.infer<typeof RoleSchema>;
 
+// Quien ejecuta una acción: su id y los roles que tiene.
+export type Actor = { id: string; roles: readonly Role[] };
+
 // Solo permisos que las reglas de negocio ya definen.
 export const PERMISSIONS = [
   "pet.register", // RN-010
@@ -21,8 +24,7 @@ export const PERMISSIONS = [
   "product.search_by_diet", // RN-014
   "diet.view_assigned", // RN-015
   "order.view_own", // RN-060
-  "diet.create_generic", // RN-021
-  "diet.create_specific", // RN-022
+  "diet.manage", // RN-021, RN-025 a RN-027: crear, editar, clonar y versionar sus dietas
   "diet.assign", // RN-023
   "product.publish", // RN-030
   "product.review", // RN-041
@@ -52,8 +54,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // RN-020: puede hacer todo lo que hace el Cliente.
   nutritionist: [
     ...CUSTOMER_PERMISSIONS,
-    "diet.create_generic",
-    "diet.create_specific",
+    "diet.manage",
     "diet.assign",
   ],
   supplier: ["product.publish"],
