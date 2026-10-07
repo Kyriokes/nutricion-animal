@@ -28,7 +28,13 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - Commits chicos, mensaje en español, citando la regla (RN) cuando aplique.
 
 ## Comandos
-Completar cuando exista `package.json`: dev, build, lint, typecheck, test.
+- `npm run dev`: servidor de desarrollo.
+- `npm run build`: build de producción.
+- `npm run lint`: ESLint.
+- `npm run typecheck`: genera los tipos de rutas de Next y corre `tsc --noEmit`.
+- `npm test`: pendiente, se define con la estrategia de pruebas (DT-005).
+
+`AGENTS.md` (generado por Next) indica leer `node_modules/next/dist/docs/` antes de escribir código de Next: esta versión (16) difiere de lo que se conoce de versiones anteriores.
 
 ## Forma de trabajar
 - Es el primer proyecto del desarrollador con Claude Code. Explicá en pocas líneas el porqué de las decisiones de diseño y registralas en `docs/decisiones.md`.
