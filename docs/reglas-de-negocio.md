@@ -41,8 +41,8 @@ Convenciones:
 - **RN-020** Puede hacer todo lo que hace el Cliente (RN-010 a RN-015).
 - **RN-021** Puede crear, editar, renombrar y borrar sus propias dietas. Cada nutricionista ve solo las suyas: no se comparten entre nutricionistas, y dos pueden tener dietas iguales sin saberlo.
 - **RN-022** (absorbida por RN-021 y RN-023) Ya no hay distinción entre dieta genérica y específica: una misma dieta puede asignarse a varias mascotas.
-- **RN-024** En el registro o primer ingreso el usuario indica en calidad de qué entra al sistema. Quien se registra como Nutricionista queda pendiente hasta que un administrador lo acepte.
 - **RN-023** Puede asignar una dieta a una mascota para que el Cliente la vea. Una mascota puede tener varias dietas, de varios nutricionistas.
+- **RN-024** En el registro o primer ingreso el usuario indica en calidad de qué entra al sistema. Quien se registra como Nutricionista queda pendiente hasta que un administrador lo acepte.
 - **RN-025** Una dieta tiene versiones numeradas. Una versión que nunca se asignó se edita y se borra libremente (salvo la única que le queda a la dieta). Desde que se asigna por primera vez queda fija, y los cambios generan una versión nueva.
 - **RN-026** Al hacer una versión nueva de una dieta con mascotas asignadas, el nutricionista ve una alerta con las mascotas afectadas y elige cuáles pasan a la versión nueva; el resto conserva la anterior.
 - **RN-027** Puede clonar una de sus dietas para crear otra independiente, que de base es igual y se edita aparte.
