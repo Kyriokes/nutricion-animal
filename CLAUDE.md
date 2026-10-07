@@ -16,7 +16,7 @@ Web que conecta clientes (con mascotas), nutricionistas animales y proveedores d
 - Hosting: Vercel. Ojo: su plan gratuito no permite uso comercial.
 
 ## Arquitectura
-- La lógica de negocio vive en el backend, en módulos por dominio: `catalogo`, `dietas`, `pedidos`, `busquedas`, `usuarios`. Nunca dentro de componentes de UI.
+- La lógica de negocio vive en el backend, en módulos por dominio: `catalogo`, `dietas`, `mascotas`, `pedidos`, `busquedas`, `usuarios`. Nunca dentro de componentes de UI.
 - Toda entrada se valida con Zod en el borde (formularios y API).
 - No depender por completo del ORM: usar SQL directo cuando convenga delegar procesamiento a la base (agregaciones, estadísticas). Siempre parametrizado, nunca armado concatenando texto.
 - Los datos de tarjeta nunca se guardan en el sistema: los guarda la pasarela de pago, acá solo una referencia.

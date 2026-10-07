@@ -170,7 +170,7 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 ## 7. Definiciones técnicas (resueltas)
 
 **Roles (pregunta 1):**
-- Un usuario tiene una lista de roles (RN-002). Cada rol es único y lleva su propio conjunto de permisos, sin herencia entre roles; los permisos de varios roles se suman. Un usuario sin roles no tiene ningún permiso, lo que permite bloquearlo sin borrarlo.
+- Un usuario tiene una lista de roles (RN-002). Cada rol es único y lleva su propio conjunto de permisos, sin herencia entre roles; los permisos de varios roles se suman. Un usuario sin roles no tiene ningún permiso, lo que permite bloquearlo sin borrarlo. Cada usuario tiene un campo de nota del administrador donde se anota, por ejemplo, el motivo por el que se lo dejó sin roles.
 
 **Nutricionista: registro y aprobación (preguntas 2 y 8):**
 - Un usuario se registra con Google (login modal).
@@ -201,6 +201,11 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - El negocio está en la venta de comida, no en los servicios de nutrición.
 - Las dietas no tienen costo en el sistema.
 
+**Campos de una mascota (RN-010):**
+- Nombre y especie (obligatorios). Raza, fecha de nacimiento y peso en kg (opcionales).
+- Condiciones de salud, alergias, alimentos no permitidos y alimentos de necesidad (listas, pueden estar vacías).
+- Un alimento no puede ser a la vez de necesidad y alergénico o no permitido.
+
 **Campos de una dieta (pregunta 14):**
 - Nombre, descripción (texto).
 - Duración: número de días (1-999) O indefinida (bool).
@@ -223,6 +228,8 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 11. **[A DEFINIR]** Datos personales: revisar qué exige la normativa argentina de protección de datos personales antes de guardar búsquedas asociadas a usuarios.
 12. **[A DEFINIR]** Primera versión: ¿qué entra de pagos y envíos (costo de envío, quién reparte)?
 13. **[A DEFINIR]** Cuando exista el Proveedor real, ¿un producto puede publicarse sin aprobación mientras el rol Auditor no exista?
+14. **[A DEFINIR]** (a considerar) ¿Se impide que alguien decida su propia postulación? Hoy un auditor podría aprobar su propia postulación a proveedor.
+15. **[A DEFINIR]** Especies: ¿lista cerrada de animales? Hace falta que coincida entre mascotas y productos para filtrar alimentos por mascota (RN-013).
 
 ---
 
