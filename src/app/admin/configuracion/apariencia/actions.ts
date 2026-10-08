@@ -39,23 +39,28 @@ export async function savePalettes(input: unknown): Promise<SavePalettesResult> 
     };
   }
 
-  await db
-    .insert(themePalettes)
-    .values(
-      (["light", "dark"] as const).map((mode) => ({
-        mode,
-        colors: result.palettes[mode],
-        updatedBy: actor.id,
-      })),
-    )
-    .onConflictDoUpdate({
-      target: themePalettes.mode,
-      set: {
-        colors: sql`excluded.colors`,
-        updatedBy: sql`excluded.updated_by`,
-        updatedAt: sql`now()`,
-      },
-    });
+  try {
+    await db
+      .insert(themePalettes)
+      .values(
+        (["light", "dark"] as const).map((mode) => ({
+          mode,
+          colors: result.palettes[mode],
+          updatedBy: actor.id,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: themePalettes.mode,
+        set: {
+          colors: sql`excluded.colors`,
+          updatedBy: sql`excluded.updated_by`,
+          updatedAt: sql`now()`,
+        },
+      });
+  } catch {
+    // Si la base falla, el admin conserva lo que editó en el formulario.
+    return { ok: false, message: "No se pudo guardar. Probá de nuevo en un momento." };
+  }
 
   // El admin y los visitantes ven la paleta nueva en el próximo pedido.
   updateTag(PALETTES_TAG);

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { getPalettes } from "@/modules/apariencia/repositorio";
+import { readPalettesForEditing } from "@/modules/apariencia/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { PaletteForm } from "./palette-form";
@@ -22,7 +22,16 @@ async function Content() {
       </div>
     );
   }
-  return <PaletteForm initial={await getPalettes()} />;
+  const { palettes, source } = await readPalettesForEditing();
+  if (source === "fallback") {
+    return (
+      <p role="alert" className="text-destructive">
+        No se pudo leer la paleta guardada. Para no pisarla, la edición queda
+        deshabilitada. Recargá la página en un momento.
+      </p>
+    );
+  }
+  return <PaletteForm initial={palettes} />;
 }
 
 export default function AppearancePage() {

@@ -14,6 +14,13 @@ async function queryStoredPalettes(): Promise<Record<string, unknown>> {
   return Object.fromEntries(rows.map((r) => [r.mode, r.colors]));
 }
 
+// VA-08: para editar se lee sin caché y con más margen. Si igual falla
+// (source "fallback"), la pantalla no debe ofrecer guardar: el admin vería la
+// paleta base como si fuera la actual y al guardar pisaría la personalizada.
+export function readPalettesForEditing() {
+  return loadPalettes(queryStoredPalettes, 5000);
+}
+
 // RN-070 y RN-074: paletas para el <style> del layout. Con Cache Components
 // se calculan al hacer el build y quedan en el HTML estático:
 // - si la base respondió, no vencen solas: se renuevan al guardar

@@ -65,5 +65,9 @@ export function safeRedirectPath(next: string | null | undefined): string {
     return "/";
   }
   if (url.origin !== BASE) return "/";
-  return url.pathname + url.search + url.hash;
+  // Al normalizar puntos, "/.//evil.com" queda "//evil.com": un navegador lo
+  // lee como otro dominio. Se rechaza aunque el origen haya coincidido.
+  const path = url.pathname + url.search + url.hash;
+  if (path.startsWith("//") || path.startsWith("/\\")) return "/";
+  return path;
 }
