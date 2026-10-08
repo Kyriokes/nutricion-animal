@@ -91,12 +91,12 @@ export function sanitizePalette(stored: unknown, mode: ThemeMode): Palette {
 // RN-072: WCAG AA para texto normal, confirmado por el desarrollador.
 export const MIN_TEXT_CONTRAST = 4.5;
 
-type ColorCategory = Exclude<PaletteCategory, "background" | "foreground">;
+export type ColorCategory = Exclude<PaletteCategory, "background" | "foreground">;
 const COLOR_CATEGORIES = PALETTE_CATEGORIES.filter(
   (c): c is ColorCategory => c !== "background" && c !== "foreground",
 );
 // Se usan también como color de texto sobre el fondo.
-const TEXT_ON_BACKGROUND: readonly ColorCategory[] = [
+export const TEXT_ON_BACKGROUND: readonly ColorCategory[] = [
   "destructive",
   "success",
   "warning",

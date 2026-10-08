@@ -71,6 +71,7 @@ Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricioni
 - **RN-071** El Administrador puede abrir la paleta actual en coolors.co para editarla allí, y pegar un enlace de coolors.co para tomar sus colores; después asigna cada color a una categoría. También puede escribir un color a mano.
 - **RN-072** No se puede guardar una paleta si algún texto no contrasta lo suficiente con su fondo (incluidos error, éxito y advertencia). Umbral: WCAG AA, 4,5:1 (confirmado por el desarrollador).
 - **RN-073** Por defecto el sitio sigue el modo claro u oscuro del sistema del usuario. Un botón permite elegir claro, oscuro o sistema, y la elección se recuerda en su navegador.
+- **RN-075** En cada categoría, el Administrador puede restaurar el color a su valor base y, si el color no contrasta lo suficiente (RN-072), pedir que el sistema lo aclare u oscurezca lo mínimo necesario para cumplir el mínimo, conservando su tono.
 - **RN-074** Existe una paleta base en el código. Se usa si la base de datos no responde o tarda, cuando una paleta guardada no tiene alguna categoría, y para "restaurar valores por defecto".
 
 ---

@@ -1,7 +1,9 @@
 "use client";
 
+import { Contrast, RotateCcw } from "lucide-react";
 import { useState, useTransition, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
+import { categoryMeetsContrast, fixContrast } from "@/modules/apariencia/ajuste";
 import { normalizeHex, type Hex } from "@/modules/apariencia/color";
 import { parseCoolorsUrl, toCoolorsUrl } from "@/modules/apariencia/coolors";
 import { describeContrastIssues } from "@/modules/apariencia/guardar";
@@ -125,8 +127,19 @@ export function PaletteForm({ initial }: { initial: Record<ThemeMode, Palette> }
               key={`${mode}-${c}-${palette[c]}`}
               label={CATEGORY_LABELS[c]}
               value={palette[c]}
+              defaultValue={DEFAULT_PALETTES[mode][c]}
+              meetsContrast={categoryMeetsContrast(palette, c)}
               swatches={swatches}
               onChange={(hex) => setColor(c, hex)}
+              onFix={() => {
+                const fixed = fixContrast(palette, c);
+                if (fixed) setColor(c, fixed);
+                else
+                  setResult({
+                    ok: false,
+                    message: `No encontré un color de ${CATEGORY_LABELS[c]} que cumpla el contraste.`,
+                  });
+              }}
             />
           ))}
         </section>
@@ -184,13 +197,19 @@ export function PaletteForm({ initial }: { initial: Record<ThemeMode, Palette> }
 function CategoryRow({
   label,
   value,
+  defaultValue,
+  meetsContrast,
   swatches,
   onChange,
+  onFix,
 }: {
   label: string;
   value: Hex;
+  defaultValue: Hex;
+  meetsContrast: boolean;
   swatches: Hex[];
   onChange: (hex: Hex) => void;
+  onFix: () => void;
 }) {
   // Borrador del texto: se aplica solo cuando es un hex válido.
   const [draft, setDraft] = useState(value);
@@ -216,6 +235,27 @@ function CategoryRow({
           if (hex) onChange(hex);
         }}
       />
+      <Button
+        variant="ghost"
+        size="icon"
+        title={`Restaurar ${label} al valor por defecto`}
+        aria-label={`Restaurar ${label} al valor por defecto`}
+        disabled={value === defaultValue}
+        onClick={() => onChange(defaultValue)}
+      >
+        <RotateCcw />
+      </Button>
+      {!meetsContrast && (
+        <Button
+          variant="outline"
+          size="sm"
+          title={`Aclarar u oscurecer ${label} lo mínimo para que se lea (RN-075)`}
+          onClick={onFix}
+        >
+          <Contrast />
+          Ajustar contraste
+        </Button>
+      )}
       {swatches.map((s) => (
         <button
           key={s}
