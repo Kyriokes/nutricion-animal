@@ -1,4 +1,3 @@
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 // Página provisoria hasta la landing (VP-01): muestra la paleta aplicada
@@ -12,9 +11,6 @@ const STATUS = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex justify-end p-4">
-        <ThemeToggle />
-      </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-12">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold">Nutrición animal</h1>

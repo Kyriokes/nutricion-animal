@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scripts locales de verificación y registros de planes (superpowers)
+.superpowers/
