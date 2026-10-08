@@ -4,7 +4,7 @@
 - Repositorio creado y conectado a GitHub.
 - Reglas de negocio v0.6: roles, nutricionista, dietas y productos definidos (DT-014 a DT-017).
 - Proyecto base: Next.js 16, TypeScript, Tailwind, ESLint y shadcn/ui.
-- Supabase instalado como librería; proyecto en supabase.com: a definir por Sergio.
+- Supabase: proyecto creado (`xilzwjudufoplgqpzxkx`); `.env.local` tiene URL y clave publishable, conexión verificada (DT-028).
 - Zod y Vitest instalados. `npm test` funciona (73 tests).
 - Drizzle ORM instalado y configurado (DT-018); sin tablas ni conexión todavía.
 - Esquemas iniciales para dieta y producto con tests de validación.
@@ -27,9 +27,12 @@
 - Pregunta 13: ¿producto puede publicarse sin Auditor?
 
 ## En pausa (requiere Sergio con sus cuentas)
-- Crear proyecto en Supabase (supabase.com), elegir región.
-- Completar `.env.local` (URL, clave pública anon, clave service_role).
-- Habilitar Google OAuth (RN-003).
+- Completar en `.env.local`: `SUPABASE_SECRET_KEY` y `DATABASE_URL` (session pooler, puerto 5432). Nunca pegarlas en el chat.
+- Google Cloud: pantalla de consentimiento (openid, email, profile), usuario de prueba, cliente OAuth web con origen `http://localhost:3000` y redirección `https://xilzwjudufoplgqpzxkx.supabase.co/auth/v1/callback` (RN-003).
+- Supabase: activar Google en Authentication > Providers; en URL Configuration, Site URL `http://localhost:3000` y redirect `http://localhost:3000/**`.
+- Después del primer ingreso: dar el rol `admin` al usuario de Sergio a mano en la base.
+- Opcional: cuenta de Vercel con GitHub (el plan Hobby no permite uso comercial).
+- Más adelante: dominio propio y servicio de email (notificaciones, RN-024 y RN-028); Mercado Pago (pregunta 12); inscripción de bases de datos ante la AAIP, Ley 25.326 (pregunta 11).
 - Advertencia: Supabase pausa proyectos gratuitos tras una semana sin actividad.
 
 ## Pendiente (en orden)
@@ -38,9 +41,9 @@
 - Tests de integración contra Postgres de prueba (DT-005).
 - Playwright con 3-5 tests de humo cuando exista flujo de compra completo (DT-006).
 - Primera tabla y conexión con Drizzle (`src/modules/<dominio>/tables.ts`), cuando exista la base de Supabase.
-- Actualizar Node a >= 20.18.1.
 
 ## Hecho
+- Node actualizado a 24 LTS; `npm ci`, tests, typecheck, lint y build pasan.
 - Proyecto Next.js, Tailwind, shadcn/ui, Zod, Vitest.
 - Esquemas de dieta y producto con tests.
 - Reglas de negocio v0.6 completada.
