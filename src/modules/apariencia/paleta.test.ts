@@ -68,7 +68,8 @@ describe("apariencia/paleta", () => {
       PaletteSchema.safeParse({ ...DEFAULT_PALETTES.light, primary: "#123" })
         .success,
     ).toBe(false);
-    const { warning: _warning, ...missing } = DEFAULT_PALETTES.light;
+    const missing: Partial<Record<string, string>> = { ...DEFAULT_PALETTES.light };
+    delete missing.warning;
     expect(PaletteSchema.safeParse(missing).success).toBe(false);
   });
 });
