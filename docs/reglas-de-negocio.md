@@ -42,7 +42,7 @@ Convenciones:
 - **RN-021** Puede crear, editar, renombrar y borrar sus propias dietas. Cada nutricionista ve solo las suyas: no se comparten entre nutricionistas, y dos pueden tener dietas iguales sin saberlo.
 - **RN-022** (absorbida por RN-021 y RN-023) Ya no hay distinción entre dieta genérica y específica: una misma dieta puede asignarse a varias mascotas.
 - **RN-023** Puede asignar una dieta a una mascota para que el Cliente la vea. Una mascota puede tener varias dietas, de varios nutricionistas.
-- **RN-024** En el registro o primer ingreso el usuario indica en calidad de qué entra al sistema. Quien se registra como Nutricionista queda pendiente hasta que un administrador lo acepte.
+- **RN-024** En el primer ingreso con Google el usuario queda como Cliente; su nombre y su foto se toman de Google solo en ese primer ingreso. Para ser Nutricionista o Proveedor se postula desde su perfil, y queda pendiente hasta que un Administrador o un Auditor lo acepte. Volver a ingresar nunca cambia los roles de un usuario existente (un usuario bloqueado sigue bloqueado).
 - **RN-025** Una dieta tiene versiones numeradas. Una versión que nunca se asignó se edita y se borra libremente (salvo la única que le queda a la dieta). Desde que se asigna por primera vez queda fija, y los cambios generan una versión nueva.
 - **RN-026** Al hacer una versión nueva de una dieta con mascotas asignadas, el nutricionista ve una alerta con las mascotas afectadas y elige cuáles pasan a la versión nueva; el resto conserva la anterior.
 - **RN-027** Puede clonar una de sus dietas para crear otra independiente, que de base es igual y se edita aparte.
@@ -107,8 +107,8 @@ Lista aportada por Sergio. Los nombres de las vistas son los suyos. Las responsa
 - **VP-05** Detalle del producto
 - **VP-06** Resultado de búsqueda
 - **VP-07** Carrito de compras
-- **VP-08** Pre-checkout, que envía a registro
-- **VP-09** Registrar cuenta (con Google, RN-003): el usuario indica en calidad de qué entra (RN-024)
+- **VP-08** Pre-checkout, que pide ingresar (VP-09) y después vuelve al checkout
+- **VP-09** Ingresar con Google (RN-003): modal con "Continuar con Google". No hay registro aparte: el primer ingreso crea la cuenta como Cliente (RN-024)
 - **VP-10** FAQ
 - **VP-11** About us
 - **VP-12** Página no encontrada (404)
