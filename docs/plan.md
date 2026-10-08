@@ -27,11 +27,15 @@
 - Pregunta 12: pagos y envíos v1 (costo de envío, método de pago, quién reparte).
 - Pregunta 13: ¿producto puede publicarse sin Auditor?
 
+## Configuración externa hecha (2026-10-08)
+- `.env.local` completo: URL, clave publishable, clave secreta y `DATABASE_URL` (session pooler, puerto 5432). Conexión verificada (Postgres 17) y clave secreta válida.
+- Google Cloud: proyecto `nutricion-animal`, pantalla de consentimiento (openid, email, profile), usuario de prueba, cliente OAuth web con origen `http://localhost:3000` y redirección `https://xilzwjudufoplgqpzxkx.supabase.co/auth/v1/callback` (RN-003).
+- Supabase: Google activado; ingreso por email desactivado (RN-003: solo Google; con la clave pública cualquiera podía crear cuentas con email llamando a la API); Site URL y redirect `http://localhost:3000/**`.
+- Supabase en región São Paulo.
+
 ## En pausa (requiere Sergio con sus cuentas)
-- Completar en `.env.local`: `SUPABASE_SECRET_KEY` y `DATABASE_URL` (session pooler, puerto 5432). Nunca pegarlas en el chat.
-- Google Cloud: pantalla de consentimiento (openid, email, profile), usuario de prueba, cliente OAuth web con origen `http://localhost:3000` y redirección `https://xilzwjudufoplgqpzxkx.supabase.co/auth/v1/callback` (RN-003).
-- Supabase: activar Google en Authentication > Providers; en URL Configuration, Site URL `http://localhost:3000` y redirect `http://localhost:3000/**`.
-- Después del primer ingreso: dar el rol `admin` al usuario de Sergio a mano en la base.
+- Después del primer ingreso con Google: dar el rol `admin` al usuario de Sergio a mano en la base (cuando exista el login).
+- Al desplegar: agregar el dominio de producción en Google (orígenes y redirección) y en Supabase (Site URL y Redirect URLs), y publicar la app de Google (sale del modo prueba).
 - Opcional: cuenta de Vercel con GitHub (el plan Hobby no permite uso comercial).
 - Más adelante: dominio propio y servicio de email (notificaciones, RN-024 y RN-028); Mercado Pago (pregunta 12); inscripción de bases de datos ante la AAIP, Ley 25.326 (pregunta 11).
 - Advertencia: Supabase pausa proyectos gratuitos tras una semana sin actividad.
