@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "./color";
-import { DEFAULT_PALETTES, MIN_TEXT_CONTRAST, onColorOf } from "./paleta";
+import {
+  DEFAULT_PALETTES,
+  MIN_TEXT_CONTRAST,
+  onColorOf,
+  type Palette,
+} from "./paleta";
 import { paletteCss, toCssVariables } from "./variables";
 
 describe("apariencia/variables", () => {
@@ -38,6 +43,13 @@ describe("apariencia/variables", () => {
     const css = paletteCss(DEFAULT_PALETTES);
     expect(css.startsWith("html:root{")).toBe(true);
     expect(css).toContain("html.dark{--accent:#262626;");
+  });
+
+  it("no deja inyectar CSS con un valor inválido", () => {
+    const evil = { ...DEFAULT_PALETTES.light, primary: "red}body{display:none" };
+    const css = paletteCss({ light: evil as Palette, dark: DEFAULT_PALETTES.dark });
+    expect(css).not.toContain("body{");
+    expect(css).toContain(`--primary:${DEFAULT_PALETTES.light.primary};`);
   });
 
   it("RN-074: globals.css coincide con la paleta base", () => {

@@ -6,6 +6,7 @@ import {
   PALETTE_CATEGORIES,
   PaletteSchema,
   onColorOf,
+  sanitizePalette,
   validatePalette,
 } from "./paleta";
 
@@ -56,6 +57,17 @@ describe("apariencia/paleta", () => {
     expect(
       contrastRatio(onColorOf(p, "primary"), p.primary),
     ).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+  });
+
+  it("RN-074: completa categorías faltantes o inválidas con la base", () => {
+    const p = sanitizePalette({ primary: "#264653", warning: "rojo" }, "light");
+    expect(p.primary).toBe("#264653");
+    expect(p.warning).toBe(DEFAULT_PALETTES.light.warning);
+    expect(p.success).toBe(DEFAULT_PALETTES.light.success);
+    expect(sanitizePalette(null, "dark")).toEqual(DEFAULT_PALETTES.dark);
+    expect(sanitizePalette({ primary: "264653" }, "dark").primary).toBe(
+      "#264653",
+    );
   });
 
   it("el esquema normaliza y rechaza colores inválidos o faltantes", () => {

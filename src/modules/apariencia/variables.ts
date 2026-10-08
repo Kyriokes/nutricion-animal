@@ -2,6 +2,7 @@ import { contrastRatio, mix, type Hex } from "./color";
 import {
   MIN_TEXT_CONTRAST,
   onColorOf,
+  sanitizePalette,
   type Palette,
   type ThemeMode,
 } from "./paleta";
@@ -63,6 +64,11 @@ function block(selector: string, p: Palette): string {
 // CSS con las variables de ambos modos; el oscuro usa la clase .dark.
 // html:root y html.dark son más específicos que :root y .dark de
 // globals.css, así la paleta gana sin depender del orden de carga.
+// Cada paleta pasa por sanitizePalette: aunque alguien olvide validar antes,
+// ningún valor que no sea un hex llega al <style> (no se puede inyectar CSS).
 export function paletteCss(palettes: Record<ThemeMode, Palette>): string {
-  return block("html:root", palettes.light) + block("html.dark", palettes.dark);
+  return (
+    block("html:root", sanitizePalette(palettes.light, "light")) +
+    block("html.dark", sanitizePalette(palettes.dark, "dark"))
+  );
 }

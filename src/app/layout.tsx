@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { PaletteStyle } from "@/components/palette-style";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
-import { DEFAULT_PALETTES } from "@/modules/apariencia/paleta";
+import { getPalettes } from "@/modules/apariencia/repositorio";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +21,8 @@ export const metadata: Metadata = {
   description: "Comida natural para mascotas, con dietas de nutricionistas.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const palettes = await getPalettes();
   return (
     // next-themes agrega la clase .dark en el cliente: sin
     // suppressHydrationWarning React avisaría que la clase no coincide.
@@ -31,8 +32,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* RN-074: paleta base hasta que exista la tabla (plan, Task 7). */}
-        <PaletteStyle palettes={DEFAULT_PALETTES} />
+        {/* RN-070: paleta guardada; si la base falla, la base (RN-074). */}
+        <PaletteStyle palettes={palettes} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>

@@ -70,6 +70,24 @@ export const DEFAULT_PALETTES: Record<ThemeMode, Palette> = {
   },
 };
 
+// RN-074: arma una paleta segura a partir de datos de cualquier forma (por
+// ejemplo, lo guardado en la base). Cada categoría usa el valor si es un color
+// válido y, si no, el de la paleta base. Así una categoría nueva o un valor
+// roto no rompen el sitio, y nada que no sea un hex llega al CSS.
+export function sanitizePalette(stored: unknown, mode: ThemeMode): Palette {
+  const source =
+    stored && typeof stored === "object"
+      ? (stored as Record<string, unknown>)
+      : {};
+  const base = DEFAULT_PALETTES[mode];
+  return Object.fromEntries(
+    PALETTE_CATEGORIES.map((c) => {
+      const value = source[c];
+      return [c, (typeof value === "string" && normalizeHex(value)) || base[c]];
+    }),
+  ) as Palette;
+}
+
 // RN-072: WCAG AA para texto normal, confirmado por el desarrollador.
 export const MIN_TEXT_CONTRAST = 4.5;
 
