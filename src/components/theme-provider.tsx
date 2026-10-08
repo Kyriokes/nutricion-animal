@@ -11,6 +11,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      // React 19 avisa en desarrollo si un componente renderiza <script> en el
+      // cliente. En el cliente el script queda como text/plain y no se ejecuta;
+      // ya corrió desde el HTML del servidor (guía de Next:
+      // preventing-flash-before-hydration).
+      scriptProps={{
+        type: typeof window === "undefined" ? "text/javascript" : "text/plain",
+      }}
     >
       {children}
     </NextThemesProvider>

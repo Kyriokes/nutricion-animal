@@ -5,7 +5,8 @@
 - Reglas de negocio v0.6: roles, nutricionista, dietas y productos definidos (DT-014 a DT-017).
 - Proyecto base: Next.js 16, TypeScript, Tailwind, ESLint y shadcn/ui.
 - Supabase: proyecto creado (`xilzwjudufoplgqpzxkx`); `.env.local` tiene URL y clave publishable, conexión verificada (DT-028).
-- Zod y Vitest instalados. `npm test` funciona (73 tests).
+- Zod y Vitest instalados. `npm test` funciona (100 tests).
+- Paleta de colores, Fase 1 (RN-070 a RN-074, DT-030 a DT-033): lógica de contraste, coolors y variables CSS; modo claro/oscuro con botón; validación de guardado. Falta la Fase 2 (guardar en la base, con la Task 7 a rediseñar por Cache Components) y la Fase 3 (pantalla VA-08). Plan: `docs/superpowers/plans/2026-10-08-paleta-de-colores.md`.
 - Drizzle ORM instalado y configurado (DT-018); sin tablas ni conexión todavía.
 - Esquemas iniciales para dieta y producto con tests de validación.
 - Módulo `usuarios`: roles[] con permisos, postulaciones y nota del admin (DT-019 a DT-021), con tests.

@@ -4,7 +4,7 @@
 
 **Goal:** El administrador define desde VA-08 una paleta clara y una oscura (8 categorías), importándolas desde coolors.co; el sitio las aplica sin parpadeo, sigue el modo del sistema con botón para cambiarlo, y cae a una paleta base si la base de datos falla.
 
-**Architecture:** Módulo de dominio nuevo `src/modules/apariencia/` con lógica pura (contraste, categorías, coolors, variables CSS) testeada con Vitest. Un Server Component inyecta en `<head>` un `<style>` con las variables CSS de shadcn calculadas desde la paleta (guardada o base). El modo claro/oscuro lo maneja `next-themes` con la clase `.dark` que ya usa shadcn. La paleta se lee con `unstable_cache` + tag y se invalida al guardar.
+**Architecture:** Módulo de dominio nuevo `src/modules/apariencia/` con lógica pura (contraste, categorías, coolors, variables CSS) testeada con Vitest. Un Server Component inyecta en `<head>` un `<style>` con las variables CSS de shadcn calculadas desde la paleta (guardada o base). El modo claro/oscuro lo maneja `next-themes` con la clase `.dark` que ya usa shadcn. La paleta se lee con cache por tag y se invalida al guardar (ver DT-031: el proyecto usa Cache Components).
 
 **Tech Stack:** Next.js 16 (App Router, sin Cache Components), TypeScript estricto, Zod 4, Vitest, Drizzle + Postgres (Supabase), Tailwind 4 + shadcn/ui, `next-themes`.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Antes de escribir código de Next, leer la guía relevante en `node_modules/next/dist/docs/` (AGENTS.md). Sin Cache Components: cache con `unstable_cache(fn, keys, { tags, revalidate })`; invalidar con `revalidateTag(tag, { expire: 0 })` (la forma de un argumento está deprecada).
+- Antes de escribir código de Next, leer la guía relevante en `node_modules/next/dist/docs/` (AGENTS.md). **Cache Components está activo** (`cacheComponents: true`, DT-031): cache con `"use cache"` + `cacheTag` + `cacheLife`; invalidar con `updateTag` en Server Actions o `revalidateTag(tag, perfil)`. No usar `unstable_cache`.
 - Nombres en el código en inglés; textos de interfaz y documentación en español. Commits en español citando RN-070 a RN-074, terminando con `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Toda entrada se valida con Zod en el borde. La lógica vive en `src/modules/apariencia/`, nunca en componentes.
 - Funciones de dominio puras, con resultado `Result<T, E>` de `src/lib/result.ts` y `Actor` de `src/modules/usuarios/roles.ts` (DT-027).
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-1. **Base de datos caída o lenta:** la página debe renderizar con la paleta base, y el fallo **no** debe quedar cacheado una hora (`unstable_cache` cachea lo que devuelve, incluido `null`). → Task 7: la función cacheada lanza en error; `loadPalettes` atrapa afuera; test con loader que rechaza y con loader que excede el timeout.
+1. **Base de datos caída o lenta:** la página debe renderizar con la paleta base, y el fallo **no** debe quedar cacheado. Con Cache Components hay dos lugares donde podría quedar: la función con `"use cache"` y el HTML estático del layout que se genera en el build. → Task 7 (a rediseñar): la función cacheada lanza en error; `loadPalettes` atrapa afuera; test con loader que rechaza y con loader que excede el timeout; y decidir cómo se regenera un HTML construido con la paleta de respaldo.
 2. **Paleta guardada antes de agregar una categoría nueva:** la categoría faltante toma el valor de la paleta base, no rompe el render. → Task 7: test de mezcla con categoría ausente y con hex inválido guardado.
 3. **Variantes de enlace de coolors:** `/palette/`, mayúsculas, query o `#` al final, `www.`; rechazar dominios ajenos y hex de 3 dígitos. → Task 3.
 4. **Paleta con contraste insuficiente:** se bloquea el guardado y el mensaje nombra el par que falla, también para error, éxito y advertencia. → Tasks 2 y 6.
@@ -313,6 +313,14 @@ it("RN-072: bloquea si algún modo no contrasta, indicando el modo y el par", ()
 - [ ] **Step 5:** Commit `Validar el guardado de paletas: permiso y contraste (RN-070, RN-072)`.
 
 ## Fase 2 — necesita `DATABASE_URL`
+
+> **Rediseñar la Task 7 antes de ejecutarla.** Se escribió suponiendo que Cache Components estaba apagado, y está activo (DT-031). Antes de implementarla:
+> 1. Leer `node_modules/next/dist/docs/01-app/02-guides/migrating-to-cache-components.md` y la guía de revalidación con Cache Components.
+> 2. Reemplazar `unstable_cache` por `"use cache"` + `cacheTag(PALETTES_TAG)` + `cacheLife`, y en la Task 8 usar `updateTag(PALETTES_TAG)` en la Server Action.
+> 3. Resolver qué pasa si la base falla durante `next build`: el layout se pre-renderiza y la paleta base quedaría en el HTML estático.
+> 4. Defensa adicional: que `paletteCss`/`block()` en `variables.ts` acepte solo valores que cumplan `/^#[0-9a-f]{6}$/` (si no, usar el de la paleta base), con test, para que un valor de la base sin pasar por `mergeWithDefaults` no pueda inyectar CSS.
+>
+> Las firmas de `mergeWithDefaults` y `loadPalettes`, y sus tests, siguen valiendo.
 
 ### Task 7: Tabla, lectura cacheada y caída a la base
 
