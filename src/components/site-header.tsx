@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
 import { LoginDialog } from "@/components/login-dialog";
@@ -10,6 +11,11 @@ import { getCurrentUser } from "@/modules/usuarios/sesion";
 // Lee la sesión: con Cache Components va dentro de <Suspense> y se resuelve en
 // cada pedido, mientras el resto del encabezado queda estático.
 async function UserMenu() {
+  // Supabase compara Date.now() con el vencimiento del token. Con Partial
+  // Prefetching, Next intentaría preparar esto de antemano con las cookies y
+  // rechaza valores que cambian en cada render; connection() lo deja siempre
+  // para el momento del pedido, así un bloqueo se nota enseguida.
+  await connection();
   const user = await getCurrentUser();
   if (!user) return <LoginDialog />;
 
