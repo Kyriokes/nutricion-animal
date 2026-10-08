@@ -12,6 +12,15 @@ export const ROLES = [
 export const RoleSchema = z.enum(ROLES);
 export type Role = z.infer<typeof RoleSchema>;
 
+// Nombres para la interfaz.
+export const ROLE_LABELS: Record<Role, string> = {
+  admin: "Administrador",
+  customer: "Cliente",
+  nutritionist: "Nutricionista",
+  supplier: "Proveedor",
+  auditor: "Auditor",
+};
+
 // Quien ejecuta una acción: su id y los roles que tiene.
 export type Actor = { id: string; roles: readonly Role[] };
 

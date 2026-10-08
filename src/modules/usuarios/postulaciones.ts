@@ -41,6 +41,7 @@ export type Application = z.infer<typeof ApplicationSchema>;
 export type ApplicationStatus = Application["status"];
 
 export type ApplicationError =
+  | "blocked"
   | "already_has_role"
   | "already_pending"
   | "not_allowed"
@@ -54,6 +55,38 @@ const ROLE_BY_KIND: Record<ApplicationData["kind"], Role> = {
   supplier: "supplier",
 };
 
+export type ApplicationKind = ApplicationData["kind"];
+export const APPLICATION_KINDS = ["nutritionist", "supplier"] as const;
+
+// "blocked": un usuario sin roles no tiene permisos (DT-019), tampoco para
+// postularse. "pending": ya hay una del mismo tipo esperando decisión.
+export type ApplicationOption = "available" | "pending" | "has_role" | "blocked";
+
+function optionFor(
+  kind: ApplicationKind,
+  roles: readonly Role[],
+  ownApplications: readonly Application[],
+): ApplicationOption {
+  if (roles.length === 0) return "blocked";
+  if (roles.includes(ROLE_BY_KIND[kind])) return "has_role";
+  const pending = ownApplications.some(
+    (a) => a.status === "pending" && a.data.kind === kind,
+  );
+  return pending ? "pending" : "available";
+}
+
+// VU-01: qué puede hacer el usuario con cada tipo de postulación.
+// `applications` son las del propio usuario.
+export function applicationOptions(
+  roles: readonly Role[],
+  applications: readonly Application[],
+): Record<ApplicationKind, ApplicationOption> {
+  return {
+    nutritionist: optionFor("nutritionist", roles, applications),
+    supplier: optionFor("supplier", roles, applications),
+  };
+}
+
 // Mientras está pendiente el usuario sigue con sus roles actuales (RN-024):
 // la postulación no cambia sus roles.
 export function submitApplication(input: {
@@ -64,16 +97,14 @@ export function submitApplication(input: {
   data: ApplicationData;
   now: Date;
 }): Result<{ application: Application }> {
-  if (input.userRoles.includes(ROLE_BY_KIND[input.data.kind])) {
-    return { ok: false, error: "already_has_role" };
-  }
-  const hasPending = input.existing.some(
-    (a) =>
-      a.userId === input.userId &&
-      a.status === "pending" &&
-      a.data.kind === input.data.kind,
+  const option = optionFor(
+    input.data.kind,
+    input.userRoles,
+    input.existing.filter((a) => a.userId === input.userId),
   );
-  if (hasPending) return { ok: false, error: "already_pending" };
+  if (option === "blocked") return { ok: false, error: "blocked" };
+  if (option === "has_role") return { ok: false, error: "already_has_role" };
+  if (option === "pending") return { ok: false, error: "already_pending" };
 
   return {
     ok: true,

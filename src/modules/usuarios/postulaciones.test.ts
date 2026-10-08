@@ -71,6 +71,13 @@ describe("usuarios/postulaciones: enviar", () => {
     expect(result).not.toHaveProperty("roles");
   });
 
+  it("un usuario bloqueado (sin roles) no puede postularse", () => {
+    expect(submitApplication({ ...base, userRoles: [] })).toEqual({
+      ok: false,
+      error: "blocked",
+    });
+  });
+
   it("rechaza si el usuario ya tiene ese rol", () => {
     const result = submitApplication({
       ...base,

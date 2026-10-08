@@ -13,3 +13,13 @@ export const UserSchema = z.object({
 });
 
 export type User = z.infer<typeof UserSchema>;
+
+// VU-01: lo que el usuario puede editar de su perfil. La foto viene de Google
+// en el primer ingreso (RN-024); cambiarla requiere guardar archivos.
+export const ProfileUpdateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre es requerido")
+    .max(80, "El nombre puede tener hasta 80 caracteres"),
+});
