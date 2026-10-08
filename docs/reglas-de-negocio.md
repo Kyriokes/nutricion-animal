@@ -66,6 +66,13 @@ Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricioni
 - **RN-062** Cada pedido tiene un estado que ambos pueden consultar: pedido, preparado, en camino, entregado, etcétera (la lista completa se define aparte).
 - **RN-063** Más adelante: integración con Google Maps y con servicios de envío tipo PedidosYa o Rappi. Queda fuera de la primera versión.
 
+### 2.7 Apariencia (Administrador, VA-08)
+- **RN-070** El Administrador define dos paletas de colores, una para el modo claro y otra para el oscuro. Cada paleta asigna un color a cada categoría: fondo, texto, primario, secundario, acento, error, éxito y advertencia. La lista de categorías puede crecer según lo que necesite el diseño.
+- **RN-071** El Administrador puede abrir la paleta actual en coolors.co para editarla allí, y pegar un enlace de coolors.co para tomar sus colores; después asigna cada color a una categoría. También puede escribir un color a mano.
+- **RN-072** No se puede guardar una paleta si algún texto no contrasta lo suficiente con su fondo (incluidos error, éxito y advertencia). Umbral: WCAG AA, 4,5:1 (confirmado por el desarrollador).
+- **RN-073** Por defecto el sitio sigue el modo claro u oscuro del sistema del usuario. Un botón permite elegir claro, oscuro o sistema, y la elección se recuerda en su navegador.
+- **RN-074** Existe una paleta base en el código. Se usa si la base de datos no responde o tarda, cuando una paleta guardada no tiene alguna categoría, y para "restaurar valores por defecto".
+
 ---
 
 ## 3. Búsquedas y estadísticas

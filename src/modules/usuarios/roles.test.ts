@@ -36,6 +36,13 @@ describe("usuarios/roles", () => {
     expect(hasPermission(["auditor"], "order.view_all")).toBe(false);
   });
 
+  it("VA-08, RN-070: solo el admin cambia la configuración del sistema", () => {
+    expect(hasPermission(["admin"], "settings.manage")).toBe(true);
+    for (const role of ["auditor", "customer", "nutritionist", "supplier"] as const) {
+      expect(hasPermission([role], "settings.manage")).toBe(false);
+    }
+  });
+
   it("RN-061: solo el admin ve todos los pedidos", () => {
     expect(hasPermission(["admin"], "order.view_all")).toBe(true);
     expect(hasPermission(["customer", "nutritionist"], "order.view_all")).toBe(
