@@ -6,6 +6,7 @@ import { signOut } from "@/app/auth/actions";
 import { LoginDialog } from "@/components/login-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
 // Lee la sesión: con Cache Components va dentro de <Suspense> y se resuelve en
@@ -21,6 +22,14 @@ async function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
+      {hasPermission(user.roles, "settings.manage") && (
+        <Link
+          href="/admin/configuracion/apariencia"
+          className="text-sm underline-offset-4 hover:underline"
+        >
+          Apariencia
+        </Link>
+      )}
       {user.photoUrl && (
         <Image
           src={user.photoUrl}

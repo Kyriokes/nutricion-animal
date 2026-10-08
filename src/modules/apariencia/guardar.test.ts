@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Actor } from "@/modules/usuarios/roles";
-import { preparePaletteUpdate } from "./guardar";
+import { describeContrastIssues, preparePaletteUpdate } from "./guardar";
 import { DEFAULT_PALETTES } from "./paleta";
 
 const admin: Actor = { id: "admin-1", roles: ["admin"] };
@@ -54,6 +54,23 @@ describe("apariencia/guardar", () => {
       });
       expect(r.issues.every((i) => i.mode === "dark")).toBe(true);
     }
+  });
+
+  it("RN-072: explica en español qué falla, en qué modo y por cuánto", () => {
+    expect(
+      describeContrastIssues([
+        { mode: "dark", issue: { pair: ["texto", "fondo"], ratio: 3.21 } },
+        {
+          mode: "light",
+          issue: { pair: ["texto sobre primario", "primario"], ratio: 1.5 },
+        },
+        { mode: "light", issue: { pair: ["advertencia", "fondo"], ratio: 2 } },
+      ]),
+    ).toEqual([
+      "Modo oscuro: texto sobre fondo (3,2:1; mínimo 4,5:1)",
+      "Modo claro: texto sobre primario (1,5:1; mínimo 4,5:1)",
+      "Modo claro: advertencia sobre fondo (2,0:1; mínimo 4,5:1)",
+    ]);
   });
 
   it("RN-072: también revisa el modo claro", () => {
