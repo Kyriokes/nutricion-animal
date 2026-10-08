@@ -119,7 +119,7 @@ export function PaletteForm({ initial }: { initial: Record<ThemeMode, Palette> }
         )}
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section className="flex flex-col gap-3">
           <h2 className="font-medium">Categorías</h2>
           {PALETTE_CATEGORIES.map((c) => (
@@ -216,8 +216,10 @@ function CategoryRow({
   const name = label.charAt(0).toUpperCase() + label.slice(1);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="w-24 text-sm">{name}</span>
+    // Columnas fijas (nombre, color, código, restaurar) y una última flexible:
+    // solo las muestras y el botón de ajuste se acomodan si no entran.
+    <div className="grid grid-cols-[5.5rem_2rem_5.5rem_2rem_minmax(0,1fr)] items-center gap-2">
+      <span className="truncate text-sm">{name}</span>
       <input
         type="color"
         aria-label={`${name}: elegir color`}
@@ -227,7 +229,7 @@ function CategoryRow({
       />
       <input
         aria-label={`${name}: código hex`}
-        className={`${inputClass} w-24 font-mono`}
+        className={`${inputClass} w-full font-mono`}
         value={draft}
         onChange={(e) => {
           setDraft(e.target.value);
@@ -245,28 +247,30 @@ function CategoryRow({
       >
         <RotateCcw />
       </Button>
-      {!meetsContrast && (
-        <Button
-          variant="outline"
-          size="sm"
-          title={`Aclarar u oscurecer ${label} lo mínimo para que se lea (RN-075)`}
-          onClick={onFix}
-        >
-          <Contrast />
-          Ajustar contraste
-        </Button>
-      )}
-      {swatches.map((s) => (
-        <button
-          key={s}
-          type="button"
-          title={`Usar ${s} para ${label}`}
-          aria-label={`Usar ${s} para ${label}`}
-          className="size-6 rounded border"
-          style={{ backgroundColor: s }}
-          onClick={() => onChange(s)}
-        />
-      ))}
+      <div className="flex flex-wrap items-center gap-1">
+        {!meetsContrast && (
+          <Button
+            variant="outline"
+            size="sm"
+            title={`Aclarar u oscurecer ${label} lo mínimo para que se lea (RN-075)`}
+            onClick={onFix}
+          >
+            <Contrast />
+            Ajustar
+          </Button>
+        )}
+        {swatches.map((s) => (
+          <button
+            key={s}
+            type="button"
+            title={`Usar ${s} para ${label}`}
+            aria-label={`Usar ${s} para ${label}`}
+            className="size-6 rounded border"
+            style={{ backgroundColor: s }}
+            onClick={() => onChange(s)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
