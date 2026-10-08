@@ -314,70 +314,81 @@ it("RN-072: bloquea si algún modo no contrasta, indicando el modo y el par", ()
 
 ## Fase 2 — necesita `DATABASE_URL`
 
-> **Rediseñar la Task 7 antes de ejecutarla.** Se escribió suponiendo que Cache Components estaba apagado, y está activo (DT-031). Antes de implementarla:
-> 1. Leer `node_modules/next/dist/docs/01-app/02-guides/migrating-to-cache-components.md` y la guía de revalidación con Cache Components.
-> 2. Reemplazar `unstable_cache` por `"use cache"` + `cacheTag(PALETTES_TAG)` + `cacheLife`, y en la Task 8 usar `updateTag(PALETTES_TAG)` en la Server Action.
-> 3. Resolver qué pasa si la base falla durante `next build`: el layout se pre-renderiza y la paleta base quedaría en el HTML estático.
-> 4. Defensa adicional: que `paletteCss`/`block()` en `variables.ts` acepte solo valores que cumplan `/^#[0-9a-f]{6}$/` (si no, usar el de la paleta base), con test, para que un valor de la base sin pasar por `mergeWithDefaults` no pueda inyectar CSS.
->
-> Las firmas de `mergeWithDefaults` y `loadPalettes`, y sus tests, siguen valiendo.
+> **Rediseñada (2026-10-08) para Cache Components (DT-031).** Ya existen `src/lib/db.ts` y `getCurrentActor()` (login, DT-034). Cómo se resuelven los problemas de la versión anterior:
+> - **Cache:** `"use cache"` + `cacheTag(PALETTES_TAG)` + `cacheLife` condicional (docs: `cacheLife.md`, "Conditional cache lifetimes"). Si la base respondió: `cacheLife("max")` y solo se renueva al guardar (`updateTag` en la Task 8). Si falló o tardó: paleta base con `cacheLife("minutes")` (revalida al minuto).
+> - **Base caída durante `next build`:** la paleta base queda en el HTML estático, pero con vida de minutos: el sitio se corrige solo al minuto de que la base vuelva. No queda horneada.
+> - **Defensa contra inyección de CSS:** `paletteCss` normaliza cada valor con `sanitizePalette` antes de escribirlo.
 
 ### Task 7: Tabla, lectura cacheada y caída a la base
 
 **Files:**
-- Create: `src/modules/apariencia/tables.ts`, `src/modules/apariencia/lectura.ts`, `src/lib/db.ts` (conexión Drizzle única: `drizzle(postgres(process.env.DATABASE_URL!, { prepare: false }))`), migración en `drizzle/`
-- Test: `src/modules/apariencia/lectura.test.ts`
-- Modify: `src/app/layout.tsx` (usar `await getPalettes()`)
+- Create: `src/modules/apariencia/tables.ts`, `src/modules/apariencia/lectura.ts`, migración en `drizzle/`
+- Test: `src/modules/apariencia/lectura.test.ts`, `src/modules/apariencia/paleta.test.ts`, `src/modules/apariencia/variables.test.ts`
+- Modify: `src/modules/apariencia/paleta.ts`, `src/modules/apariencia/variables.ts`, `src/app/layout.tsx` (usar `await getPalettes()`)
 
 **Interfaces:**
-- Consumes: Tasks 2 y 4.
+- Consumes: Tasks 2 y 4; `db` de `@/lib/db`; tabla `users` (para `updated_by`).
 - Produces:
-  - Tabla `theme_palettes`: `mode text primary key check (mode in ('light','dark'))`, `colors jsonb not null`, `updated_at timestamptz not null default now()`, `updated_by uuid`. Migración con `alter table theme_palettes enable row level security;` y sin políticas.
-  - `mergeWithDefaults(stored: unknown, mode: ThemeMode): Palette`: por categoría usa el valor guardado si `normalizeHex` lo acepta; si no, el de `DEFAULT_PALETTES[mode]`.
-  - `loadPalettes(loader: () => Promise<unknown>, timeoutMs: number): Promise<Record<ThemeMode, Palette>>`: si el loader rechaza o tarda más que `timeoutMs`, devuelve `DEFAULT_PALETTES`; nunca lanza.
-  - `getPalettes()`: `loadPalettes(cachedQuery, 1500)` con `cachedQuery = unstable_cache(query, ["theme-palettes"], { tags: ["theme-palettes"], revalidate: 3600 })`. `query` **lanza** si la base falla (así el fallo no se cachea).
+  - Tabla `theme_palettes`: `mode text primary key check (mode in ('light','dark'))`, `colors jsonb not null`, `updated_at timestamptz not null default now()`, `updated_by uuid references users(id) on delete set null`. Con `.enableRLS()` (DT-029).
+  - En `paleta.ts`: `sanitizePalette(stored: unknown, mode: ThemeMode): Palette`: por categoría usa el valor si `normalizeHex` lo acepta; si no, el de `DEFAULT_PALETTES[mode]`. (Reemplaza a `mergeWithDefaults` de la versión anterior.)
+  - En `lectura.ts`: `loadPalettes(loader: () => Promise<unknown>, timeoutMs: number): Promise<{ palettes: Record<ThemeMode, Palette>; source: "database" | "fallback" }>`: el loader devuelve `{ light?, dark? }`; si rechaza o tarda más que `timeoutMs`, `source: "fallback"` y `DEFAULT_PALETTES`; nunca lanza.
+  - `getPalettes(): Promise<Record<ThemeMode, Palette>>` con `"use cache"`, `cacheTag(PALETTES_TAG)` y `cacheLife(source === "database" ? "max" : "minutes")`; timeout 1500 ms.
   - `PALETTES_TAG = "theme-palettes"`.
 
-- [ ] **Step 1: Tests que fallan** (solo `mergeWithDefaults` y `loadPalettes`; el loader se inyecta, no se toca la base)
+- [ ] **Step 1: Tests que fallan**
 
 ```ts
-it("RN-074: si la base falla, usa la paleta base", async () => {
-  await expect(loadPalettes(() => Promise.reject(new Error("down")), 50)).resolves.toEqual(DEFAULT_PALETTES);
+// lectura.test.ts
+it("RN-074: si la base falla, usa la paleta base y lo indica", async () => {
+  await expect(loadPalettes(() => Promise.reject(new Error("down")), 50))
+    .resolves.toEqual({ palettes: DEFAULT_PALETTES, source: "fallback" });
 });
 it("RN-074: si la base tarda, usa la paleta base", async () => {
   const slow = () => new Promise((r) => setTimeout(() => r({}), 200));
-  await expect(loadPalettes(slow, 50)).resolves.toEqual(DEFAULT_PALETTES);
-});
-it("RN-074: completa categorías faltantes o inválidas con la base", () => {
-  const p = mergeWithDefaults({ primary: "#264653", warning: "rojo" }, "light");
-  expect(p.primary).toBe("#264653");
-  expect(p.warning).toBe(DEFAULT_PALETTES.light.warning);
-  expect(p.success).toBe(DEFAULT_PALETTES.light.success);
+  await expect(loadPalettes(slow, 50)).resolves.toMatchObject({ source: "fallback" });
 });
 it("usa lo guardado para cada modo", async () => {
   const stored = { light: { primary: "#264653" }, dark: { primary: "#e9c46a" } };
   const r = await loadPalettes(async () => stored, 50);
-  expect([r.light.primary, r.dark.primary]).toEqual(["#264653", "#e9c46a"]);
+  expect(r.source).toBe("database");
+  expect([r.palettes.light.primary, r.palettes.dark.primary]).toEqual(["#264653", "#e9c46a"]);
+});
+it("sin paletas guardadas usa la base, pero la base de datos respondió", async () => {
+  await expect(loadPalettes(async () => ({}), 50)).resolves.toEqual({ palettes: DEFAULT_PALETTES, source: "database" });
+});
+// paleta.test.ts
+it("RN-074: completa categorías faltantes o inválidas con la base", () => {
+  const p = sanitizePalette({ primary: "#264653", warning: "rojo" }, "light");
+  expect(p.primary).toBe("#264653");
+  expect(p.warning).toBe(DEFAULT_PALETTES.light.warning);
+  expect(p.success).toBe(DEFAULT_PALETTES.light.success);
+});
+// variables.test.ts
+it("no deja inyectar CSS con un valor inválido", () => {
+  const evil = { ...DEFAULT_PALETTES.light, primary: "red}body{display:none" };
+  const css = paletteCss({ light: evil as Palette, dark: DEFAULT_PALETTES.dark });
+  expect(css).not.toContain("body{");
+  expect(css).toContain(`--primary:${DEFAULT_PALETTES.light.primary};`);
 });
 ```
 
-- [ ] **Step 2:** `npm test -- lectura` → FAIL.
-- [ ] **Step 3:** Implementar. Leer `caching-without-cache-components.md` en los docs de Next. Generar migración con `npm run db:generate`, agregar a mano la línea de RLS, aplicar con `npm run db:migrate`.
-- [ ] **Step 4:** `npm test`, `npm run build` → PASS. Verificación manual: con `DATABASE_URL` inválida en `.env.local` la página carga con la paleta base.
+- [ ] **Step 2:** `npx vitest run src/modules/apariencia` → FAIL.
+- [ ] **Step 3:** Implementar. Generar la migración con `npm run db:generate` y aplicarla con `npm run db:migrate`.
+- [ ] **Step 4:** `npx vitest run`, `npm run typecheck`, `npm run lint`, `npm run build` → PASS. El build no debe mostrar errores de prerender.
 - [ ] **Step 5:** Commit `Guardar paletas en la base con lectura cacheada y paleta base de respaldo (RN-074)`.
 
 ## Fase 3 — necesita ingreso con Google y usuario admin
 
 ### Task 8: Página VA-08 y Server Action
 
-> Depende de un helper `getCurrentActor(): Promise<Actor | null>` que se define en el plan del ingreso con Google. No empezar antes.
+> `getCurrentActor(): Promise<Actor | null>` ya existe en `src/modules/usuarios/sesion.ts` (DT-034). La página lee la sesión: con Cache Components, la parte que llama a `getCurrentActor()` va dentro de `<Suspense>` y después de `await connection()` (DT-036).
 
 **Files:**
 - Create: `src/app/admin/configuracion/apariencia/page.tsx` (server), `actions.ts` (`"use server"`), `palette-form.tsx` (client)
 
 **Interfaces:**
 - Consumes: `getCurrentActor`, `getPalettes`, `preparePaletteUpdate`, `parseCoolorsUrl`, `toCoolorsUrl`, `toCssVariables`, `PALETTE_CATEGORIES`, `DEFAULT_PALETTES`, `PALETTES_TAG`, `db`, tabla `theme_palettes`.
-- Produces: `savePalettes(input: unknown): Promise<{ ok: true } | { ok: false; message: string; issues?: ... }>`: obtiene el actor, llama a `preparePaletteUpdate`, hace upsert de ambos modos en una transacción con `updated_by`, y `revalidateTag(PALETTES_TAG, { expire: 0 })`. Mensajes en español.
+- Produces: `savePalettes(input: unknown): Promise<{ ok: true } | { ok: false; message: string; issues?: ... }>`: obtiene el actor, llama a `preparePaletteUpdate`, hace upsert de ambos modos en una transacción con `updated_by`, y `updateTag(PALETTES_TAG)` (Server Action: el admin ve el cambio al instante). Mensajes en español.
 
 Comportamiento de la pantalla (solo presentación; la lógica está en el módulo):
 - Pestañas "Modo claro" / "Modo oscuro". Por categoría: nombre en español, muestra del color, campo hex y selector de color.
