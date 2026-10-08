@@ -61,6 +61,8 @@ function block(selector: string, p: Palette): string {
 }
 
 // CSS con las variables de ambos modos; el oscuro usa la clase .dark.
+// html:root y html.dark son más específicos que :root y .dark de
+// globals.css, así la paleta gana sin depender del orden de carga.
 export function paletteCss(palettes: Record<ThemeMode, Palette>): string {
-  return block(":root", palettes.light) + block(".dark", palettes.dark);
+  return block("html:root", palettes.light) + block("html.dark", palettes.dark);
 }

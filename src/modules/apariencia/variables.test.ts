@@ -33,10 +33,11 @@ describe("apariencia/variables", () => {
     }
   });
 
-  it("arma el CSS de ambos modos", () => {
+  it("arma el CSS de ambos modos, más específico que globals.css", () => {
+    // html:root y html.dark ganan a :root y .dark sin depender del orden de carga.
     const css = paletteCss(DEFAULT_PALETTES);
-    expect(css.startsWith(":root{")).toBe(true);
-    expect(css).toContain(".dark{--accent:#262626;");
+    expect(css.startsWith("html:root{")).toBe(true);
+    expect(css).toContain("html.dark{--accent:#262626;");
   });
 
   it("RN-074: globals.css coincide con la paleta base", () => {
