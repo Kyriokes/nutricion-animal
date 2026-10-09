@@ -1,6 +1,7 @@
 import { and, arrayContains, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
+import { pageWithin } from "@/lib/paginas";
 import { NutritionalInfoSchema, normalizeTag, type Product } from "./schema";
 import { products } from "./tables";
 
@@ -134,9 +135,31 @@ export async function listCatalogFacets() {
 
 // ---- VA-02: gestión del catálogo (admin) ----
 
-export async function listAllProducts(): Promise<StoredProduct[]> {
-  const rows = await db.select().from(products).orderBy(desc(products.updatedAt)).limit(500);
-  return rows.map(toProduct);
+export const ADMIN_PAGE_SIZE = 25;
+export type AdminProductSort = "stock" | "recientes";
+
+// VA-02, RN-090: todos los productos para el admin, paginados. Por defecto,
+// de menor a mayor stock, para ver primero los que no hay.
+export async function listProductsForAdmin(sort: AdminProductSort, requestedPage: number) {
+  const [{ total }] = await db.select({ total: count() }).from(products);
+  const { page, pages } = pageWithin(requestedPage, total, ADMIN_PAGE_SIZE);
+  const order =
+    sort === "stock"
+      ? [asc(products.stock), asc(products.name), asc(products.id)]
+      : [desc(products.updatedAt), asc(products.id)];
+  const rows = await db
+    .select()
+    .from(products)
+    .orderBy(...order)
+    .limit(ADMIN_PAGE_SIZE)
+    .offset((page - 1) * ADMIN_PAGE_SIZE);
+  return { items: rows.map(toProduct), total, page, pages };
+}
+
+// Dashboard (RN-090): productos sin stock.
+export async function countOutOfStockProducts(): Promise<number> {
+  const [{ n }] = await db.select({ n: count() }).from(products).where(eq(products.stock, 0));
+  return n;
 }
 
 export async function getProduct(id: string): Promise<StoredProduct | null> {

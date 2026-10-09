@@ -24,6 +24,8 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
   {
     label: "Administración",
     items: [
+      { href: "/admin", label: "Dashboard", permission: "order.view_all" },
+      { href: "/admin/ventas", label: "Ventas", permission: "order.view_all" },
       { href: "/admin/pedidos", label: "Pedidos", permission: "order.view_all" },
       { href: "/admin/reclamos", label: "Reclamos", permission: "claim.manage" },
       { href: "/admin/mensajes", label: "Mensajes", permission: "contact.manage" },

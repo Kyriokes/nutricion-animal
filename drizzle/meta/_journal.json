@@ -127,6 +127,13 @@
       "when": 1791584569150,
       "tag": "0017_contacto",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791588252433,
+      "tag": "0018_indice_ventas",
+      "breakpoints": true
     }
   ]
 }

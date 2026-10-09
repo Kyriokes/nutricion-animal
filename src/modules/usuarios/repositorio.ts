@@ -215,6 +215,12 @@ export const listPendingApplications = () => listWithUser(true, 100);
 // VA-06: últimas decididas, para tener historial a mano.
 export const listRecentlyDecidedApplications = () => listWithUser(false, 20);
 
+// Dashboard (RN-090): postulaciones pendientes.
+export async function countPendingApplications(): Promise<number> {
+  const [{ n }] = await db.select({ n: count() }).from(applications).where(eq(applications.status, "pending"));
+  return n;
+}
+
 // RN-024 y RN-043: aprueba o rechaza dentro de una transacción. Bloquea la
 // postulación y al postulante (FOR UPDATE) para que dos decisiones
 // simultáneas no se pisen, y aplica las reglas de postulaciones.ts.

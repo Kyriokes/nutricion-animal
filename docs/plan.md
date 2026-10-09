@@ -22,13 +22,14 @@
 - **Gestión de pedidos (VA-04)** en `/admin/pedidos`: lista paginada filtrada por defecto en pendientes, detalle con cliente, seguimiento (quién hizo cada cambio) y botones para avanzar o cancelar (DT-056).
 - **Reclamos (RN-066)**: el cliente los abre desde el detalle de su pedido; el admin los gestiona en `/admin/reclamos` (abre en los sin resolver) y los ve en el detalle del pedido (DT-057); cancelar un pedido pagado abre un reembolso pendiente (RN-069, DT-058).
 - **Contacto (VP-03, RN-080 a RN-083)**: formulario en `/contacto` (enlace en el pie) y en la pantalla de cuenta suspendida; email y WhatsApp de prueba; bandeja del admin en `/admin/mensajes` (DT-059). Responder desde el panel: [A DEFINIR].
+- **Dashboard (VA-01, RN-090, RN-091)** en `/admin`: tarjetas de pendientes, ventas de hoy, lo más vendido; búsquedas frecuentes reservado (pregunta 17). **Ventas** en `/admin/ventas` con filtro por día (por defecto hoy), mes o todo. Catálogo del admin paginado y ordenado por stock (DT-060).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 272 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 277 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
-- Parte 5: dashboard (RN-090, RN-091). Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
+- Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
 - Esperan definición: preguntas 11 a 18 (lista de deseos, reseñas, búsquedas guardadas, aviso de cambio de dieta) y VN-04.
 
 ## Versión avanzada (decidido dejar para después)
@@ -58,7 +59,7 @@ Quedan (menores):
 - `notFound()` dentro de `<Suspense>` responde 200 en vez de 404.
 - Imágenes reemplazadas o de productos borrados quedan en Storage sin registro.
 - `scripts/seed-catalogo.mjs`: validar `DATABASE_URL` y usar una transacción.
-- Restricciones en la base: `weight_value > 0`, unidades válidas; `listAllProducts` corta en 500 sin avisar.
+- Restricciones en la base: `weight_value > 0`, unidades válidas; (el corte de `listAllProducts` en 500 ya se resolvió con la paginación, DT-060).
 - El comentario de la landing contradice DT-049.
 
 ## Pendientes de la revisión de pedidos, parte 1 (2026-10-09)

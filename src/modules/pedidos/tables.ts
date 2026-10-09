@@ -105,6 +105,8 @@ export const orderStatusChanges = pgTable(
   (t) => [
     check("order_status_changes_actor_valid", sql`${t.actor} in ('gateway', 'customer', 'admin', 'system')`),
     index("order_status_changes_order_idx").on(t.orderId, t.createdAt),
+    // Ventas por período (RN-090): se buscan los pagos por fecha.
+    index("order_status_changes_status_idx").on(t.status, t.createdAt),
   ],
 ).enableRLS();
 

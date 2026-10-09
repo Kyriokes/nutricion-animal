@@ -59,3 +59,9 @@ export async function openContactMessage(id: string) {
   }
   return row;
 }
+
+// Dashboard (RN-090): mensajes sin leer.
+export async function countNewMessages(): Promise<number> {
+  const [{ n }] = await db.select({ n: count() }).from(contactMessages).where(isNull(contactMessages.readAt));
+  return n;
+}

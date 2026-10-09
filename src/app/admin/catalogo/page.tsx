@@ -3,18 +3,34 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { NoAccess } from "@/components/no-access";
 import { formatPrice } from "@/modules/catalogo/presentacion";
-import { listAllProducts } from "@/modules/catalogo/repositorio";
+import { z } from "zod";
+import { Pager } from "@/components/pager";
+import { listProductsForAdmin } from "@/modules/catalogo/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 
 const STATUS = { pending: "En revisión", approved: "Publicado", rejected: "Rechazado" } as const;
 
+// Por defecto, de menor a mayor stock (RN-090); se puede ver lo más reciente.
+const FilterSchema = z.object({
+  orden: z.enum(["stock", "recientes"]).catch("stock"),
+  pagina: z.coerce.number().int().min(1).max(10_000).catch(1),
+});
+type Sort = z.infer<typeof FilterSchema>["orden"];
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "stock", label: "Menos stock primero" },
+  { value: "recientes", label: "Modificados recientemente" },
+];
+const hrefFor = (orden: Sort, pagina = 1) => `/admin/catalogo?orden=${orden}${pagina > 1 ? `&pagina=${pagina}` : ""}`;
+
 // VA-02: gestión del catálogo.
-async function Content() {
+async function Content({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
   const actor = await getCurrentActor();
   if (!actor || !hasPermission(actor.roles, "catalog.manage")) return <NoAccess />;
-  const products = await listAllProducts();
+  const filter = FilterSchema.parse(await searchParams);
+  const result = await listProductsForAdmin(filter.orden, filter.pagina);
+  const products = result.items;
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -25,6 +41,22 @@ async function Content() {
           Nuevo producto
         </Link>
       </div>
+      <nav aria-label="Ordenar productos" className="flex flex-wrap gap-2 text-sm">
+        {SORTS.map((o) => (
+          <Link
+            key={o.value}
+            href={hrefFor(o.value)}
+            aria-current={o.value === filter.orden ? "page" : undefined}
+            className={
+              o.value === filter.orden
+                ? "rounded-full bg-primary px-3 py-1 text-primary-foreground"
+                : "rounded-full border px-3 py-1 hover:bg-muted"
+            }
+          >
+            {o.label}
+          </Link>
+        ))}
+      </nav>
       {products.length === 0 ? (
         <p className="text-muted-foreground">Todavía no hay productos.</p>
       ) : (
@@ -56,16 +88,17 @@ async function Content() {
           </table>
         </div>
       )}
+      <Pager page={result.page} pages={result.pages} hrefFor={(n) => hrefFor(filter.orden, n)} />
     </div>
   );
 }
 
-export default function AdminCatalogPage() {
+export default function AdminCatalogPage({ searchParams }: PageProps<"/admin/catalogo">) {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-semibold">Catálogo</h1>
       <Suspense fallback={<p className="text-muted-foreground">Cargando…</p>}>
-        <Content />
+        <Content searchParams={searchParams} />
       </Suspense>
     </main>
   );
