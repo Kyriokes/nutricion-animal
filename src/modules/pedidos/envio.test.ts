@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CARRIER, describeAddressZone, isInDeliveryZone } from "./envio";
+import {
+  CARRIER,
+  DEFAULT_SHIPPING_COST,
+  describeAddressZone,
+  isInDeliveryZone,
+  parseShippingCost,
+} from "./envio";
 
 describe("pedidos/envio (RN-068: envío simulado solo en Capital)", () => {
   it("reparte Mensajería Mandrake", () => {
@@ -46,5 +52,25 @@ describe("pedidos/envio: estado de la dirección en el perfil (RN-068)", () => {
       text: "Fuera de la zona de entrega: por ahora solo enviamos dentro de Capital",
       canVerify: false,
     });
+  });
+});
+
+describe("pedidos/envio: costo fijo de envío (RN-068, VA-08)", () => {
+  it("arranca con un costo de prueba", () => {
+    expect(DEFAULT_SHIPPING_COST).toBe(3000);
+  });
+
+  it("acepta montos escritos como en Argentina", () => {
+    expect(parseShippingCost("3.500")).toEqual({ ok: true, value: 3500 });
+    expect(parseShippingCost("2500,50")).toEqual({ ok: true, value: 2500.5 });
+    expect(parseShippingCost("1000,29")).toEqual({ ok: true, value: 1000.29 });
+  });
+
+  it("rechaza montos vacíos, en cero, con más de dos decimales o desmedidos", () => {
+    const invalid = { ok: false, message: "Escribí un monto mayor a 0, con hasta dos decimales (ej.: 3.500 o 2500,50)" };
+    for (const text of ["", "0", "abc", "12.5", "100,555", "-3"]) {
+      expect(parseShippingCost(text)).toEqual(invalid);
+    }
+    expect(parseShippingCost("1.000.001")).toEqual({ ok: false, message: "El costo de envío no puede superar $1.000.000" });
   });
 });

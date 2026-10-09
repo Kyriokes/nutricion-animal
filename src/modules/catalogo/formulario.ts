@@ -1,24 +1,7 @@
+import { parseArgentineNumber as parseNumber } from "@/lib/numeros";
 import { normalizeTag, ProductSchema, type Product } from "./schema";
 
 export { normalizeTag };
-
-// Números como se escriben en Argentina. Solo dos formatos, para no
-// interpretar mal "12.5" (¿decimal o miles?):
-// - entero o con coma decimal: "12500", "0,5";
-// - con punto de miles (solo el precio): "12.500,50", "1.234.567".
-const PLAIN = /^\d+(,\d+)?$/;
-const WITH_THOUSANDS = /^\d{1,3}(\.\d{3})+(,\d+)?$/;
-
-// Vacío → undefined; formato no válido → "invalid".
-function parseNumber(
-  text: string | undefined,
-  allowThousands = false,
-): number | undefined | "invalid" {
-  const t = text?.trim() ?? "";
-  if (!t) return undefined;
-  if (!PLAIN.test(t) && !(allowThousands && WITH_THOUSANDS.test(t))) return "invalid";
-  return Number(t.replace(/\./g, "").replace(",", "."));
-}
 
 const FORMAT_ERRORS = {
   price: "El precio no es válido: usá coma para los decimales (ej.: 12.500,50)",

@@ -1,3 +1,4 @@
+import { parseArgentineNumber } from "@/lib/numeros";
 import {
   CABA_PROVINCE_ID,
   isCabaCityText,
@@ -38,4 +39,19 @@ export function describeAddressZone(a: ZoneCheckable): { ok: boolean; text: stri
     return { ok: false, text: "Fuera de la zona de entrega: por ahora solo enviamos dentro de Capital", canVerify: false };
   }
   return { ok: true, text: "Sin verificar", canVerify: true };
+}
+
+// RN-068: costo fijo por pedido. Lo cambia el Administrador (VA-08); este es
+// el valor de prueba mientras no lo haya cargado.
+export const DEFAULT_SHIPPING_COST = 3000;
+export const MAX_SHIPPING_COST = 1_000_000;
+
+export function parseShippingCost(text: string): { ok: true; value: number } | { ok: false; message: string } {
+  const n = parseArgentineNumber(text, true);
+  // Los decimales se cuentan en el texto: con flotantes, 0,29 × 100 no da 29 exacto.
+  if (n === undefined || n === "invalid" || n <= 0 || /,\d{3,}$/.test(text.trim())) {
+    return { ok: false, message: "Escribí un monto mayor a 0, con hasta dos decimales (ej.: 3.500 o 2500,50)" };
+  }
+  if (n > MAX_SHIPPING_COST) return { ok: false, message: "El costo de envío no puede superar $1.000.000" };
+  return { ok: true, value: n };
 }

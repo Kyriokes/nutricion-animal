@@ -28,6 +28,7 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
       { href: "/admin/catalogo", label: "Catálogo", permission: "catalog.manage" },
       { href: "/admin/contenido", label: "Contenido", permission: "content.manage" },
       { href: "/admin/configuracion/apariencia", label: "Apariencia", permission: "settings.manage" },
+      { href: "/admin/configuracion/envio", label: "Envío", permission: "settings.manage" },
     ],
   },
 ];
