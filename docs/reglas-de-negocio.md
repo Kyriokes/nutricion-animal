@@ -117,6 +117,8 @@ Lista aportada por Sergio. Los nombres de las vistas son los suyos. Las responsa
 
 ### 4.2 Vistas con login (Cliente)
 - **VU-01** Perfil y datos personales: mis direcciones, mis tarjetas
+  - **RN-016** El usuario puede cambiar su foto de perfil: imágenes JPG, PNG o WebP de hasta 1 MB.
+  - **RN-017** El usuario guarda una o más direcciones de entrega, como en un delivery de comida: ciudad, calle y altura (obligatorias), piso y departamento (opcionales).
 - **VU-02** Historial de pedidos y seguimiento de envíos (RN-060, RN-062)
 - **VU-03** Mis mascotas
 - **VU-04** Detalle de mascota, con sección "Dieta actual" que muestra la dieta asignada (RN-015)
@@ -192,10 +194,16 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - Auditor es un usuario que el Administrador elige desde el dashboard.
 - Proveedor también requiere aprobación.
 - Nadie decide su propia postulación, salvo el Administrador.
+- **RN-044** Al rechazar, quien decide escribe una nota corta con el motivo, que el postulante ve.
+- **RN-045** El resultado (aprobada o rechazada) se informa dentro de la aplicación: el postulante ve un aviso hasta que lo marca como leído. Los emails quedan para una versión avanzada.
+- Formulario de proveedor: en la primera versión solo el nombre del negocio; el resto, en una versión avanzada.
+- El Administrador es omnipotente (RN-001): puede dar cualquier rol directamente, sin postulación.
+- **RN-046** Un usuario bloqueado (sin roles) ve un mensaje que le indica que contacte a soporte si tiene dudas (soporte: versión avanzada). No ve la nota del administrador.
 
 **Perfil del nutricionista (pregunta 3):**
 - Públicamente visible: nombre, foto, dirección, número de contacto.
 - Privado (solo para él): número de matrícula/certificación.
+- **RN-029** Al aprobarse la postulación, sus datos pasan a un perfil profesional (VN-05) que el nutricionista puede editar y que ven los clientes con sesión iniciada (VU-08, VU-09), sin la matrícula.
 - No se valida la matrícula al dar de alta: es responsabilidad del Administrador/Auditor revisar en el formulario.
 
 **Dietas (pregunta 4):**
