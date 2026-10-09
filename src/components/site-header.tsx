@@ -30,6 +30,14 @@ async function UserMenu() {
           Postulaciones
         </Link>
       )}
+      {hasPermission(user.roles, "user.manage_roles") && (
+        <Link
+          href="/admin/usuarios"
+          className="text-sm underline-offset-4 hover:underline"
+        >
+          Usuarios
+        </Link>
+      )}
       {hasPermission(user.roles, "settings.manage") && (
         <Link
           href="/admin/configuracion/apariencia"

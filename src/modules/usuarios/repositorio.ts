@@ -9,6 +9,7 @@ import {
   type ApplicationData,
   type ApplicationError,
 } from "./postulaciones";
+import { planUserUpdate } from "./gestion";
 import { RoleSchema, type Actor, type Role } from "./roles";
 import { applications, users } from "./tables";
 
@@ -36,6 +37,52 @@ const onlyValid = (rows: ApplicationRow[]) =>
 
 const knownRoles = (roles: string[]) =>
   roles.filter((r): r is Role => RoleSchema.safeParse(r).success);
+
+// VA-10: usuarios para la gestión del admin, los más nuevos primero.
+export async function listUsers(limit = 200) {
+  const rows = await db
+    .select()
+    .from(users)
+    .orderBy(desc(users.createdAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    photoUrl: r.photoUrl,
+    roles: knownRoles(r.roles),
+    adminNote: r.adminNote,
+    createdAt: r.createdAt,
+  }));
+}
+
+// VA-10: aplica planUserUpdate dentro de una transacción, leyendo los roles
+// actuales con FOR UPDATE para no pisar un cambio simultáneo.
+export async function updateUserByAdmin(input: {
+  actor: Actor;
+  targetId: string;
+  input: unknown;
+}) {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ id: users.id, roles: users.roles })
+      .from(users)
+      .where(eq(users.id, input.targetId))
+      .for("update");
+    if (!row) return { ok: false as const, error: "not_found" as const };
+    const plan = planUserUpdate({
+      actor: input.actor,
+      target: { id: row.id, roles: knownRoles(row.roles) },
+      input: input.input,
+    });
+    if (!plan.ok) return plan;
+    await tx
+      .update(users)
+      .set({ roles: plan.update.roles, adminNote: plan.update.adminNote })
+      .where(eq(users.id, row.id));
+    return { ok: true as const };
+  });
+}
 
 // VU-01: el usuario cambia su nombre.
 export async function updateUserName(userId: string, name: string) {
