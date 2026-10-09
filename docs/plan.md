@@ -21,13 +21,14 @@
 - **Pedidos, parte 1 (RN-060 a RN-068, VU-02, VU-07 simulada, VU-10)**: direcciones validadas con Georef, costo de envío editable en `/admin/configuracion/envio`, pedido con reserva de stock de 30 minutos, pago de prueba en `/pedidos/[id]/pagar`, resultado y seguimiento en `/pedidos/[id]`, historial en `/pedidos`. Tablas `orders`, `order_items`, `order_status_changes`, `shop_settings` (DT-055).
 - **Gestión de pedidos (VA-04)** en `/admin/pedidos`: lista paginada filtrada por defecto en pendientes, detalle con cliente, seguimiento (quién hizo cada cambio) y botones para avanzar o cancelar (DT-056).
 - **Reclamos (RN-066)**: el cliente los abre desde el detalle de su pedido; el admin los gestiona en `/admin/reclamos` (abre en los sin resolver) y los ve en el detalle del pedido (DT-057); cancelar un pedido pagado abre un reembolso pendiente (RN-069, DT-058).
+- **Contacto (VP-03, RN-080 a RN-083)**: formulario en `/contacto` (enlace en el pie) y en la pantalla de cuenta suspendida; email y WhatsApp de prueba; bandeja del admin en `/admin/mensajes` (DT-059). Responder desde el panel: [A DEFINIR].
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 265 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 272 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
-- Parte 4: contacto (RN-080 a RN-083). Parte 5: dashboard (RN-090, RN-091). Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
+- Parte 5: dashboard (RN-090, RN-091). Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
 - Esperan definición: preguntas 11 a 18 (lista de deseos, reseñas, búsquedas guardadas, aviso de cambio de dieta) y VN-04.
 
 ## Versión avanzada (decidido dejar para después)

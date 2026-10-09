@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { ContactForm } from "@/components/contact-form";
 import { isSuspended } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
@@ -17,8 +18,10 @@ export async function AccountGate({ children }: { children: React.ReactNode }) {
       </p>
       <h1 className="text-2xl font-semibold">Tu cuenta está suspendida</h1>
       <p className="text-muted-foreground">
-        No podés usar el sitio por ahora. Si tenés dudas, contactá a soporte.
+        No podés usar el sitio por ahora. Si tenés dudas, escribinos a soporte.
       </p>
+      {/* RN-082: la misma vista de contacto, para llegar a soporte. */}
+      <ContactForm defaults={{ name: user.name, email: user.email }} />
     </main>
   );
 }

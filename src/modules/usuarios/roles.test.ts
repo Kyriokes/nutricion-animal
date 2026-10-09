@@ -66,6 +66,13 @@ describe("usuarios/roles", () => {
     }
   });
 
+  it("RN-080: solo el admin lee los mensajes de contacto", () => {
+    expect(hasPermission(["admin"], "contact.manage")).toBe(true);
+    for (const role of ["auditor", "customer", "nutritionist", "supplier"] as const) {
+      expect(hasPermission([role], "contact.manage")).toBe(false);
+    }
+  });
+
   it("RN-046: una cuenta sin roles está suspendida", () => {
     expect(isSuspended([])).toBe(true);
     expect(isSuspended(["customer"])).toBe(false);

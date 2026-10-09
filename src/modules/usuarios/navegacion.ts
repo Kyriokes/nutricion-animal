@@ -26,6 +26,7 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
     items: [
       { href: "/admin/pedidos", label: "Pedidos", permission: "order.view_all" },
       { href: "/admin/reclamos", label: "Reclamos", permission: "claim.manage" },
+      { href: "/admin/mensajes", label: "Mensajes", permission: "contact.manage" },
       { href: "/admin/postulaciones", label: "Postulaciones", permission: "application.decide" },
       { href: "/admin/usuarios", label: "Usuarios", permission: "user.manage_roles" },
       { href: "/admin/catalogo", label: "Catálogo", permission: "catalog.manage" },

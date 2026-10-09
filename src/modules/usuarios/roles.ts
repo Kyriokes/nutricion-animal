@@ -43,6 +43,7 @@ export const PERMISSIONS = [
   "order.manage", // RN-065: avanzar estados y cancelar pedidos
   "claim.open", // RN-066
   "claim.manage", // RN-066: revisar y resolver reclamos
+  "contact.manage", // RN-080: leer los mensajes de contacto
   "user.manage_roles", // VA-10
   "settings.manage", // VA-08, RN-070
   "catalog.manage", // VA-02
