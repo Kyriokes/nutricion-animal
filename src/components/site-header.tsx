@@ -22,6 +22,14 @@ async function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
+      {hasPermission(user.roles, "application.decide") && (
+        <Link
+          href="/admin/postulaciones"
+          className="text-sm underline-offset-4 hover:underline"
+        >
+          Postulaciones
+        </Link>
+      )}
       {hasPermission(user.roles, "settings.manage") && (
         <Link
           href="/admin/configuracion/apariencia"
@@ -30,16 +38,22 @@ async function UserMenu() {
           Apariencia
         </Link>
       )}
-      {user.photoUrl && (
-        <Image
-          src={user.photoUrl}
-          alt=""
-          width={32}
-          height={32}
-          className="rounded-full"
-        />
-      )}
-      <span className="hidden text-sm sm:inline">{user.name}</span>
+      <Link
+        href="/perfil"
+        className="flex items-center gap-2 rounded-lg underline-offset-4 hover:underline"
+        aria-label="Mi perfil"
+      >
+        {user.photoUrl && (
+          <Image
+            src={user.photoUrl}
+            alt=""
+            width={32}
+            height={32}
+            className="rounded-full"
+          />
+        )}
+        <span className="hidden text-sm sm:inline">{user.name}</span>
+      </Link>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Salir

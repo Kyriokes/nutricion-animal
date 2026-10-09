@@ -15,6 +15,13 @@
       "when": 1791502054985,
       "tag": "0001_paletas",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791504340861,
+      "tag": "0002_postulaciones",
+      "breakpoints": true
     }
   ]
 }
