@@ -66,7 +66,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Datos</h2>
-        <ProductForm key={product.updatedAt.toISOString()} productId={product.id} initial={toFormValues(product)} />
+        <ProductForm key={product.id} productId={product.id} initial={toFormValues(product)} />
       </section>
       <DeleteProductButton productId={product.id} />
     </div>

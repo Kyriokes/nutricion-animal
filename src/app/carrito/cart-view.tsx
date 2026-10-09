@@ -19,6 +19,49 @@ const ISSUES = {
   stock_reduced: "Ajustamos la cantidad al stock disponible.",
 } as const;
 
+// Campo de cantidad con borrador propio: mientras se escribe (por ejemplo, al
+// borrar "2" para poner "3") el campo puede quedar vacío sin que el producto
+// se quite del carrito. Se aplica cuando hay un número válido de 1 o más; al
+// salir del campo, si quedó vacío o inválido, vuelve a la cantidad anterior.
+// Para quitar el producto está el botón de la papelera.
+function QuantityInput({
+  quantity,
+  max,
+  onChange,
+}: {
+  quantity: number;
+  max: number;
+  onChange: (quantity: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(quantity));
+  // Si la cantidad cambia desde afuera (otra pestaña, ajuste por stock), se
+  // refleja en el campo. Se hace al renderizar y no con una key, porque
+  // remontar el campo le saca el foco a quien está escribiendo.
+  const [shown, setShown] = useState(quantity);
+  if (quantity !== shown) {
+    setShown(quantity);
+    if (Number(draft) !== quantity) setDraft(String(quantity));
+  }
+  return (
+    <label className="flex items-center gap-1 text-sm">
+      Cantidad
+      <input
+        type="number"
+        min={1}
+        max={max}
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const n = Number(e.target.value);
+          if (e.target.value !== "" && Number.isInteger(n) && n >= 1) onChange(Math.min(n, max));
+        }}
+        onBlur={() => setDraft(String(quantity))}
+        className="h-8 w-16 rounded-lg border border-input bg-background px-2 text-sm"
+      />
+    </label>
+  );
+}
+
 // VP-07: carrito. VP-08: para continuar hay que ingresar; el pago todavía no
 // existe (pagos y estados del pedido: [A DEFINIR], preguntas 9 y 12).
 export function CartView({ signedIn }: { signedIn: boolean }) {
@@ -85,17 +128,11 @@ export function CartView({ signedIn }: { signedIn: boolean }) {
                 {line.issue && <p className="text-sm text-destructive">{ISSUES[line.issue]}</p>}
               </div>
               {p && p.stock > 0 && (
-                <label className="flex items-center gap-1 text-sm">
-                  Cantidad
-                  <input
-                    type="number"
-                    min={1}
-                    max={Math.min(MAX_QUANTITY, p.stock)}
-                    value={line.quantity}
-                    onChange={(e) => update(line.productId, Number(e.target.value))}
-                    className="h-8 w-16 rounded-lg border border-input bg-background px-2 text-sm"
-                  />
-                </label>
+                <QuantityInput
+                  quantity={line.quantity}
+                  max={Math.min(MAX_QUANTITY, p.stock)}
+                  onChange={(q) => update(line.productId, q)}
+                />
               )}
               <span className="w-24 text-right font-medium">{formatPrice(line.subtotal)}</span>
               <Button variant="ghost" size="icon" aria-label="Quitar del carrito" onClick={() => update(line.productId, 0)}>

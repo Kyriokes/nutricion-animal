@@ -24,7 +24,9 @@ export const products = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     supplierId: uuid("supplier_id").references(() => users.id, { onDelete: "set null" }),
-    status: text("status").notNull().default("approved"),
+    // Por defecto "pending": cualquier alta que no indique el estado queda
+    // sin publicar hasta que la revisen (RN-041). El admin publica explícito.
+    status: text("status").notNull().default("pending"),
     reviewNote: text("review_note"),
     name: text("name").notNull(),
     description: text("description").notNull(),

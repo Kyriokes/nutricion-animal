@@ -59,10 +59,41 @@ describe("catalogo/formulario (RN-030, sección 7: campos del producto)", () => 
     });
   });
 
+  it("rechaza números con punto decimal en vez de multiplicarlos sin avisar", () => {
+    // Antes: "12.5" se guardaba como 125, "0.5" kg como 5 kg y "3.5" % como 35 %.
+    for (const price of ["12.5", "1,000.50", "12.50"]) {
+      expect(parseProductForm({ ...base, price })).toEqual({
+        ok: false,
+        message: "El precio no es válido: usá coma para los decimales (ej.: 12.500,50)",
+      });
+    }
+    expect(parseProductForm({ ...base, weightValue: "0.5" })).toEqual({
+      ok: false,
+      message: "El peso no es válido: usá coma para los decimales (ej.: 0,5)",
+    });
+    expect(parseProductForm({ ...base, fat: "3.5" })).toEqual({
+      ok: false,
+      message: "Los valores nutricionales no son válidos: usá coma para los decimales (ej.: 3,5)",
+    });
+  });
+
+  it("acepta los formatos argentinos: punto de miles solo en el precio", () => {
+    expect(parseProductForm({ ...base, price: "12.500,50" })).toMatchObject({ ok: true, product: { price: 12500.5 } });
+    expect(parseProductForm({ ...base, price: "1.234.567" })).toMatchObject({ ok: true, product: { price: 1234567 } });
+    expect(parseProductForm({ ...base, price: "12500" })).toMatchObject({ ok: true, product: { price: 12500 } });
+    expect(parseProductForm({ ...base, weightValue: "0,5", fat: "3,5" })).toMatchObject({
+      ok: true,
+      product: { weight: { value: 0.5 }, nutritionalInfo: { fat: 3.5 } },
+    });
+  });
+
   it("explica en español qué está mal", () => {
     expect(parseProductForm({ ...base, price: "0" })).toEqual({ ok: false, message: "El precio debe ser mayor a 0" });
-    expect(parseProductForm({ ...base, price: "caro" })).toEqual({ ok: false, message: "El precio debe ser un número" });
-    expect(parseProductForm({ ...base, stock: "-1" })).toEqual({ ok: false, message: "El stock no puede ser negativo" });
+    expect(parseProductForm({ ...base, price: "caro" })).toEqual({
+      ok: false,
+      message: "El precio no es válido: usá coma para los decimales (ej.: 12.500,50)",
+    });
+    expect(parseProductForm({ ...base, stock: "-1" })).toEqual({ ok: false, message: "El stock debe ser un número entero, 0 o más" });
     expect(parseProductForm({ ...base, petTypes: " , " })).toEqual({
       ok: false,
       message: "Debe indicar al menos un tipo de mascota",

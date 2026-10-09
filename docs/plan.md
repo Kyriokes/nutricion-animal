@@ -45,6 +45,18 @@ Quedan (menores):
 - El admin al clonar una dieta ajena queda como dueño de la copia.
 - Si la base falla al leer la sesión, las acciones terminan en la pantalla de error en vez de un mensaje.
 
+## Pendientes de la revisión de catálogo, carrito y contenido (2026-10-09)
+Arreglados: números con punto decimal ("12.5" se guardaba como 125); "Guardado." no aparecía al editar un producto; vaciar la cantidad en el carrito quitaba el producto; `products.status` por defecto ahora es `pending` (DT-052).
+Quedan (menores):
+- Carrito: parpadeo de "vacío" al cargar, sin botón de reintentar si falla, "no disponible" mientras carga, "Agregado." aunque el navegador bloquee el guardado, el contador suma unidades sin stock y dice "1 unidades", botones sin el nombre del producto para lectores de pantalla.
+- Menú: usar `Menu.LinkItem` para los enlaces.
+- Catálogo: orden de paginación inestable (agregar `id` como desempate), página fuera de rango sin aviso, atajos por mascota que no tienen productos.
+- `notFound()` dentro de `<Suspense>` responde 200 en vez de 404.
+- Imágenes reemplazadas o de productos borrados quedan en Storage sin registro.
+- `scripts/seed-catalogo.mjs`: validar `DATABASE_URL` y usar una transacción.
+- Restricciones en la base: `weight_value > 0`, unidades válidas; `listAllProducts` corta en 500 sin avisar.
+- El comentario de la landing contradice DT-049.
+
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.
 - Las pantallas de admin sin permiso muestran un texto; redirigir a VP-13 cuando exista.

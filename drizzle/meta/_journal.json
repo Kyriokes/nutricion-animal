@@ -78,6 +78,13 @@
       "when": 1791519104218,
       "tag": "0010_paginas",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791540416648,
+      "tag": "0011_productos_pendientes_por_defecto",
+      "breakpoints": true
     }
   ]
 }
