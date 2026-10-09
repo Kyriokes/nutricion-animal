@@ -6,7 +6,7 @@ import { signOut } from "@/app/auth/actions";
 import { LoginDialog } from "@/components/login-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { hasPermission } from "@/modules/usuarios/roles";
+import { hasPermission, isSuspended } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
 // Lee la sesión: con Cache Components va dentro de <Suspense> y se resuelve en
@@ -19,6 +19,16 @@ async function UserMenu() {
   await connection();
   const user = await getCurrentUser();
   if (!user) return <LoginDialog />;
+  // RN-046: una cuenta suspendida solo puede cerrar sesión.
+  if (isSuspended(user.roles)) {
+    return (
+      <form action={signOut}>
+        <Button type="submit" variant="outline">
+          Salir
+        </Button>
+      </form>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">

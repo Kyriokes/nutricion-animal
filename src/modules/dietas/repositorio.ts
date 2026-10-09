@@ -1,10 +1,11 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pets } from "@/modules/mascotas/tables";
-import type { Actor } from "@/modules/usuarios/roles";
+import { RoleSchema, type Actor, type Role } from "@/modules/usuarios/roles";
 import { users } from "@/modules/usuarios/tables";
 import { assignDiet, unassignDiet } from "./asignaciones";
 import { latestVersion, type DietError } from "./base";
+import { isIssuerActive } from "./emisor";
 import {
   DietContentSchema,
   type Diet,
@@ -254,14 +255,25 @@ export async function listActiveDietsForPet(petId: string) {
       versionNumber: dietVersions.number,
       content: dietVersions.content,
       nutritionistName: users.name,
+      nutritionistRoles: users.roles,
     })
     .from(dietAssignments)
     .innerJoin(dietVersions, eq(dietVersions.id, dietAssignments.dietVersionId))
     .innerJoin(diets, eq(diets.id, dietVersions.dietId))
-    .innerJoin(users, eq(users.id, diets.nutritionistId))
+    // leftJoin: la cuenta del nutricionista puede no existir más (RN-047).
+    .leftJoin(users, eq(users.id, diets.nutritionistId))
     .where(and(eq(dietAssignments.petId, petId), isNull(dietAssignments.endedAt)))
     .orderBy(desc(dietAssignments.assignedAt));
-  return rows.map((r) => ({ ...r, content: DietContentSchema.parse(r.content) }));
+  return rows.map(({ nutritionistRoles, ...r }) => ({
+    ...r,
+    content: DietContentSchema.parse(r.content),
+    // RN-047: si quien la emitió ya no forma parte, se avisa en la dieta.
+    issuerActive: isIssuerActive(
+      nutritionistRoles
+        ? nutritionistRoles.filter((x): x is Role => RoleSchema.safeParse(x).success)
+        : null,
+    ),
+  }));
 }
 
 // VN-04: buscar clientes por nombre o email para elegir una de sus mascotas.

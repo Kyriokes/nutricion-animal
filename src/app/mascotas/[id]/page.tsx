@@ -59,9 +59,17 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           diets.map((d) => (
             <article key={d.assignmentId} className="flex flex-col gap-2 rounded-lg border p-4">
               <p className="font-medium">{d.dietName}</p>
+              {/* RN-047: aviso en la misma dieta si quien la emitió se fue. */}
+              {!d.issuerActive && (
+                <p role="alert" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+                  Quien emitió esta dieta ya no forma parte de la plataforma. La
+                  plataforma desaconseja continuarla: consultá con otro
+                  nutricionista.
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
-                De {d.nutritionistName} · versión {d.versionNumber} · desde el{" "}
-                {dateFormat.format(d.assignedAt)}
+                De {d.nutritionistName ?? "un nutricionista que ya no está en la plataforma"} ·
+                versión {d.versionNumber} · desde el {dateFormat.format(d.assignedAt)}
               </p>
               <DietContentView content={d.content} />
             </article>

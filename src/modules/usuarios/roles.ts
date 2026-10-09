@@ -74,6 +74,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   auditor: ["product.review", "application.decide"],
 };
 
+// RN-046 y DT-019: una cuenta sin roles está suspendida. Solo ve la pantalla
+// de cuenta suspendida y no puede hacer ninguna acción, salvo cerrar sesión.
+export function isSuspended(roles: readonly Role[]): boolean {
+  return roles.length === 0;
+}
+
 // Un usuario sin roles no tiene ningún permiso.
 export function hasPermission(
   roles: readonly Role[],

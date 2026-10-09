@@ -17,20 +17,27 @@ import {
   updateUserPhoto,
 } from "@/modules/usuarios/repositorio";
 import { ProfileUpdateSchema } from "@/modules/usuarios/schema";
+import { isSuspended } from "@/modules/usuarios/roles";
 import { getCurrentActor, getCurrentUser } from "@/modules/usuarios/sesion";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
+
+// RN-046: una cuenta suspendida no puede hacer ninguna acción.
+const SUSPENDED: ActionResult = {
+  ok: false,
+  message: "Tu cuenta está suspendida. Si tenés dudas, contactá a soporte.",
+};
 
 const NOT_SIGNED_IN: ActionResult = {
   ok: false,
   message: "Tenés que ingresar para hacer esto.",
 };
 
-// VU-01: cambiar el nombre. Cualquier usuario con sesión, incluso bloqueado:
-// es su propio dato y no da acceso a nada.
+// VU-01: cambiar el nombre.
 export async function updateNameAction(input: unknown): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   const parsed = ProfileUpdateSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Nombre inválido." };
@@ -48,6 +55,7 @@ export async function updateNameAction(input: unknown): Promise<ActionResult> {
 export async function saveProfessionalProfileAction(input: unknown): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   const plan = planProfessionalProfileUpdate({ actor, input });
   if (!plan.ok) {
     return {
@@ -80,6 +88,7 @@ const PHOTO_ERRORS = {
 export async function uploadPhotoAction(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return NOT_SIGNED_IN;
+  if (isSuspended(user.roles)) return SUSPENDED;
   const file = formData.get("photo");
   if (!(file instanceof File)) return { ok: false, message: PHOTO_ERRORS.empty };
 
@@ -108,6 +117,7 @@ export async function uploadPhotoAction(formData: FormData): Promise<ActionResul
 export async function addAddressAction(input: unknown): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   const parsed = AddressSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dirección inválida." };
@@ -128,6 +138,7 @@ export async function addAddressAction(input: unknown): Promise<ActionResult> {
 export async function deleteAddressAction(addressId: unknown): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   const id = z.uuid().safeParse(addressId);
   if (!id.success) return { ok: false, message: "Dirección inválida." };
   try {
@@ -143,6 +154,7 @@ export async function deleteAddressAction(addressId: unknown): Promise<ActionRes
 export async function markDecisionsSeenAction(): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   try {
     await markDecisionsSeen(actor.id);
   } catch {
@@ -162,6 +174,7 @@ const APPLY_ERRORS = {
 export async function submitApplicationAction(input: unknown): Promise<ActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
   const parsed = ApplicationDataSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." };

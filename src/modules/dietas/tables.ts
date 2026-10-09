@@ -17,9 +17,11 @@ export const diets = pgTable(
   "diets",
   {
     id: uuid("id").primaryKey(),
-    nutritionistId: uuid("nutritionist_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // RN-047: si se borra la cuenta del nutricionista, la dieta queda sin
+    // autor (null) y los clientes la siguen viendo, con un aviso.
+    nutritionistId: uuid("nutritionist_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },

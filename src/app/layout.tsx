@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { AccountGate } from "@/components/account-gate";
 import { AccountNotice } from "@/components/account-notice";
 import { PaletteStyle } from "@/components/palette-style";
 import { SignInError } from "@/components/sign-in-error";
@@ -47,7 +48,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={null}>
             <AccountNotice />
           </Suspense>
-          {children}
+          {/* RN-046: una cuenta suspendida no ve ninguna página. */}
+          <Suspense fallback={null}>
+            <AccountGate>{children}</AccountGate>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

@@ -44,7 +44,8 @@ export const DietContentSchema = z.object({
 // El nombre vive en la dieta, no en la versión: renombrar no crea versión.
 export const DietSchema = z.object({
   id: z.uuid(),
-  nutritionistId: z.uuid(),
+  // null si la cuenta del nutricionista ya no existe (RN-047).
+  nutritionistId: z.uuid().nullable(),
   name: z.string().trim().min(1, "El nombre de la dieta es requerido"),
   createdAt: z.date(),
 });

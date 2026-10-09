@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PERMISSIONS, ROLE_PERMISSIONS, hasPermission } from "./roles";
+import { PERMISSIONS, ROLE_PERMISSIONS, hasPermission, isSuspended } from "./roles";
 
 describe("usuarios/roles", () => {
   it("RN-001: el admin tiene todos los permisos", () => {
@@ -48,6 +48,12 @@ describe("usuarios/roles", () => {
     expect(hasPermission(["customer", "nutritionist"], "order.view_all")).toBe(
       false,
     );
+  });
+
+  it("RN-046: una cuenta sin roles está suspendida", () => {
+    expect(isSuspended([])).toBe(true);
+    expect(isSuspended(["customer"])).toBe(false);
+    expect(isSuspended(["auditor"])).toBe(false);
   });
 
   it("un usuario sin roles no tiene ningún permiso", () => {

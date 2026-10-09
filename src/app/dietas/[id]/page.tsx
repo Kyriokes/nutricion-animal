@@ -94,6 +94,11 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           </ul>
         )}
         <h3 className="font-medium">Asignar a una mascota</h3>
+        {/* VN-04 [A DEFINIR]: alcance de la búsqueda pendiente de definición. */}
+        <p role="note" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+          Funcionamiento provisorio: todavía no está definido qué clientes puede
+          buscar cada nutricionista. Usalo solo con clientes que te consultaron.
+        </p>
         <AssignPet dietId={diet.id} />
       </section>
 
