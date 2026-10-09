@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { NoAccess } from "@/components/no-access";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { readPalettesForEditing } from "@/modules/apariencia/repositorio";
@@ -13,14 +13,7 @@ async function Content() {
   const actor = await getCurrentActor();
   if (!actor || !hasPermission(actor.roles, "settings.manage")) {
     // VP-13: acceso sin permisos.
-    return (
-      <div className="flex flex-col gap-2">
-        <p>No tenés permisos para ver esta página.</p>
-        <Link href="/" className="text-primary underline underline-offset-4">
-          Volver al inicio
-        </Link>
-      </div>
-    );
+    return <NoAccess />;
   }
   const { palettes, source } = await readPalettesForEditing();
   if (source === "fallback") {

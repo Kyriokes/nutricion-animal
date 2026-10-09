@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { NoAccess } from "@/components/no-access";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import type { Application } from "@/modules/usuarios/postulaciones";
@@ -46,14 +46,7 @@ async function Content() {
   const actor = await getCurrentActor();
   if (!actor || !hasPermission(actor.roles, "application.decide")) {
     // VP-13: acceso sin permisos.
-    return (
-      <div className="flex flex-col gap-2">
-        <p>No tenés permisos para ver esta página.</p>
-        <Link href="/" className="text-primary underline underline-offset-4">
-          Volver al inicio
-        </Link>
-      </div>
-    );
+    return <NoAccess />;
   }
 
   const [pending, decided] = await Promise.all([

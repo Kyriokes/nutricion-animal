@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { NoAccess } from "@/components/no-access";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -21,7 +22,7 @@ async function Content() {
     );
   }
   if (!hasPermission(actor.roles, "nutritionist.search")) {
-    return <p>No tenés permisos para ver esta página.</p>;
+    return <NoAccess />;
   }
 
   const nutritionists = await listPublicNutritionists();
