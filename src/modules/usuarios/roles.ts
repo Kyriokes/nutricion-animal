@@ -42,6 +42,7 @@ export const PERMISSIONS = [
   "order.view_all", // RN-061
   "user.manage_roles", // VA-10
   "settings.manage", // VA-08, RN-070
+  "catalog.manage", // VA-02
 ] as const;
 
 export const PermissionSchema = z.enum(PERMISSIONS);

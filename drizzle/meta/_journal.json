@@ -64,6 +64,13 @@
       "when": 1791510332566,
       "tag": "0008_dietas_sin_autor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791517546812,
+      "tag": "0009_catalogo",
+      "breakpoints": true
     }
   ]
 }
