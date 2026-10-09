@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
+import { CartButton } from "@/components/cart/cart-button";
 import { LoginDialog } from "@/components/login-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export function SiteHeader() {
         </Link>
       </nav>
       <div className="flex items-center gap-2">
+        <CartButton />
         <ThemeToggle />
         <Suspense fallback={<div className="h-9 w-24" aria-hidden />}>
           <UserArea />

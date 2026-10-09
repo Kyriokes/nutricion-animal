@@ -1,4 +1,4 @@
-import { and, arrayContains, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, arrayContains, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { NutritionalInfoSchema, normalizeTag, type Product } from "./schema";
 import { products } from "./tables";
@@ -85,6 +85,16 @@ export async function getCatalogProduct(id: string): Promise<StoredProduct | nul
     .from(products)
     .where(and(eq(products.id, id), eq(products.status, "approved")));
   return row ? toProduct(row) : null;
+}
+
+// VP-07: productos del carrito, con precio y stock actuales (solo aprobados).
+export async function getCatalogProductsByIds(ids: readonly string[]): Promise<StoredProduct[]> {
+  if (ids.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(products)
+    .where(and(inArray(products.id, [...ids]), eq(products.status, "approved")));
+  return rows.map(toProduct);
 }
 
 // Especies y tipos de dieta presentes en el catálogo, para los filtros.

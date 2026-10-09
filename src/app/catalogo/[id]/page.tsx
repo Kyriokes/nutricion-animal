@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { ProductImage } from "@/components/product-card";
 import { describeSize, formatPrice, stockLabel } from "@/modules/catalogo/presentacion";
 import { getCatalogProduct } from "@/modules/catalogo/repositorio";
@@ -38,6 +39,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
         <p className={product.stock === 0 ? "text-destructive" : "text-muted-foreground"}>
           {stockLabel(product.stock)}
         </p>
+        <AddToCartButton productId={product.id} inStock={product.stock > 0} />
         <p>{product.description}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">Apto para</dt>
