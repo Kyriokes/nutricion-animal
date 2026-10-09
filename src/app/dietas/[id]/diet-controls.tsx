@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   assignDietAction,
   cloneDietAction,
+  deleteDietAction,
   deleteVersionAction,
   renameDietAction,
   searchPetsAction,
@@ -71,6 +72,27 @@ function ActionButton({
 // RN-027.
 export function CloneButton({ dietId }: { dietId: string }) {
   return <ActionButton label="Clonar" run={() => cloneDietAction(dietId)} />;
+}
+
+// RN-021: borrar la dieta (solo si nunca se asignó). Pide confirmación.
+export function DeleteDietButton({ dietId }: { dietId: string }) {
+  const [confirming, setConfirming] = useState(false);
+  if (!confirming) {
+    return (
+      <Button size="sm" variant="ghost" onClick={() => setConfirming(true)}>
+        Borrar dieta
+      </Button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-2 text-sm">
+      ¿Seguro?
+      <ActionButton label="Sí, borrar" variant="default" run={() => deleteDietAction(dietId)} />
+      <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
+        Cancelar
+      </Button>
+    </span>
+  );
 }
 
 // RN-025: solo versiones nunca asignadas, y no la única.

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   cloneDiet,
   createDiet,
+  deleteDiet,
   deleteVersion,
   editVersion,
+  isEditStale,
   planEdit,
   publishVersion,
   renameDiet,
@@ -86,6 +88,47 @@ describe("dietas/versiones: crear y clonar", () => {
       now: NOW,
     });
     expect(result).toEqual({ ok: false, error: "not_owner" });
+  });
+});
+
+describe("dietas/versiones: la dieta no cambió mientras se editaba", () => {
+  it("RN-026: coincide la versión y el modo que vio el editor", () => {
+    expect(isEditStale({ diet, versions: [v1], assignments: [], expectedLatestVersionId: "v1", expectedMode: "in_place" })).toBe(false);
+  });
+
+  it("RN-026: si se asignó mientras editaba, ya no es en el lugar", () => {
+    expect(
+      isEditStale({
+        diet,
+        versions: [v1],
+        assignments: [assignment("a1", "pet-1", "v1")],
+        expectedLatestVersionId: "v1",
+        expectedMode: "in_place",
+      }),
+    ).toBe(true);
+  });
+
+  it("RN-026: si apareció otra versión, el editor quedó viejo", () => {
+    expect(
+      isEditStale({ diet, versions: [v1, v2], assignments: [], expectedLatestVersionId: "v1", expectedMode: "in_place" }),
+    ).toBe(true);
+  });
+});
+
+describe("dietas/versiones: borrar la dieta (RN-021)", () => {
+  it("se borra si ninguna versión se asignó nunca", () => {
+    expect(deleteDiet({ diet, versions: [v1, v2], assignments: [], actor: owner })).toEqual({ ok: true });
+  });
+
+  it("no se borra si alguna versión se asignó, aunque haya terminado", () => {
+    expect(
+      deleteDiet({ diet, versions: [v1, v2], assignments: [assignment("a1", "pet-1", "v1", NOW)], actor: owner }),
+    ).toEqual({ ok: false, error: "diet_frozen" });
+  });
+
+  it("solo el dueño con permiso", () => {
+    expect(deleteDiet({ diet, versions: [v1], assignments: [], actor: otherNutritionist })).toEqual({ ok: false, error: "not_owner" });
+    expect(deleteDiet({ diet, versions: [v1], assignments: [], actor: blocked })).toEqual({ ok: false, error: "not_allowed" });
   });
 });
 

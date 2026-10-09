@@ -123,6 +123,23 @@ export function deleteVersion(input: {
   };
 }
 
+// RN-021: el nutricionista borra una dieta propia, solo si ninguna de sus
+// versiones se asignó nunca (RN-025: lo que una mascota siguió no se pierde).
+export function deleteDiet(input: {
+  diet: Diet;
+  versions: readonly DietVersion[];
+  assignments: readonly DietAssignment[];
+  actor: Actor;
+}): Result<object, DietError | "diet_frozen"> {
+  const denied = authorize(input.actor, input.diet, "diet.manage");
+  if (denied) return { ok: false, error: denied };
+  const frozen = versionsOf(input.diet, input.versions).some((v) =>
+    isVersionFrozen(v.id, input.assignments),
+  );
+  if (frozen) return { ok: false, error: "diet_frozen" };
+  return { ok: true };
+}
+
 // RN-026: qué hay que hacer al editar. Si la última versión nunca se asignó
 // se edita en el lugar; si no, se crea una versión nueva y el nutricionista
 // ve una alerta con las mascotas que hoy tienen esta dieta.
@@ -143,6 +160,23 @@ export function planEdit(input: {
       input.assignments,
     ).map((a) => a.petId),
   };
+}
+
+// RN-026: el editor manda la última versión y el modo que vio. Si cambiaron
+// (otra pestaña asignó la dieta o creó una versión), guardar movería mascotas
+// sin que nadie las eligiera: hay que recargar.
+export function isEditStale(input: {
+  diet: Diet;
+  versions: readonly DietVersion[];
+  assignments: readonly DietAssignment[];
+  expectedLatestVersionId: string;
+  expectedMode: "in_place" | "new_version";
+}): boolean {
+  const latest = latestVersion(versionsOf(input.diet, input.versions));
+  return (
+    latest?.id !== input.expectedLatestVersionId ||
+    planEdit(input).mode !== input.expectedMode
+  );
 }
 
 // RN-026: crea la versión siguiente y mueve a ella las mascotas elegidas

@@ -16,15 +16,19 @@ import { dietAssignments, diets, dietVersions } from "./tables";
 import {
   cloneDiet,
   createDiet,
+  deleteDiet,
   deleteVersion,
   editVersion,
+  isEditStale,
   planEdit,
   publishVersion,
   renameDiet,
 } from "./versiones";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type Outcome<T = object> = ({ ok: true } & T) | { ok: false; error: DietError | "not_found" | "invalid_name" };
+type Outcome<T = object> =
+  | ({ ok: true } & T)
+  | { ok: false; error: DietError | "not_found" | "invalid_name" | "stale" | "diet_frozen" };
 
 const toDiet = (r: typeof diets.$inferSelect): Diet => ({
   id: r.id,
@@ -122,10 +126,14 @@ export async function saveDietContentInDb(input: {
   dietId: string;
   content: DietContent;
   movePetIds: "all" | string[];
+  // Lo que vio el editor; si cambió, se pide recargar (RN-026).
+  expectedLatestVersionId: string;
+  expectedMode: "in_place" | "new_version";
 }): Promise<Outcome<{ mode: "in_place" | "new_version"; movedPetIds: string[] }>> {
   return db.transaction(async (tx) => {
     const agg = await loadAggregate(tx, input.dietId, true);
     if (!agg) return { ok: false, error: "not_found" };
+    if (isEditStale({ ...agg, ...input })) return { ok: false, error: "stale" };
     const plan = planEdit(agg);
     const latest = latestVersion(agg.versions);
     if (plan.mode === "in_place" && latest) {
@@ -147,6 +155,19 @@ export async function saveDietContentInDb(input: {
       }
     }
     return { ok: true, mode: "new_version", movedPetIds: r.movedPetIds };
+  });
+}
+
+// RN-021: borrar una dieta propia que nunca se asignó (sus versiones se
+// borran en cascada).
+export async function deleteDietInDb(actor: Actor, dietId: string): Promise<Outcome> {
+  return db.transaction(async (tx) => {
+    const agg = await loadAggregate(tx, dietId, true);
+    if (!agg) return { ok: false, error: "not_found" };
+    const r = deleteDiet({ ...agg, actor });
+    if (!r.ok) return r;
+    await tx.delete(diets).where(eq(diets.id, dietId));
+    return { ok: true };
   });
 }
 

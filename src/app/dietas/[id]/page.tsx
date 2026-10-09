@@ -12,6 +12,7 @@ import { DietEditor, type EditPlan } from "../diet-editor";
 import {
   AssignPet,
   CloneButton,
+  DeleteDietButton,
   DeleteVersionButton,
   RenameForm,
   UnassignButton,
@@ -52,7 +53,10 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RenameForm dietId={diet.id} name={diet.name} />
-        <CloneButton dietId={diet.id} />
+        <div className="flex items-center gap-2">
+          <CloneButton dietId={diet.id} />
+          {assignments.length === 0 && <DeleteDietButton dietId={diet.id} />}
+        </div>
       </div>
 
       <section className="flex flex-col gap-3">
@@ -62,7 +66,14 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Editar</h2>
-        <DietEditor key={latest.id} mode="edit" dietId={diet.id} initial={latest.content} plan={plan} />
+        <DietEditor
+          key={`${latest.id}-${plan.mode}`}
+          mode="edit"
+          dietId={diet.id}
+          latestVersionId={latest.id}
+          initial={latest.content}
+          plan={plan}
+        />
       </section>
 
       <section className="flex flex-col gap-3">

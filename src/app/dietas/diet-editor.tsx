@@ -79,7 +79,13 @@ export type EditPlan =
 export function DietEditor(
   props:
     | { mode: "create" }
-    | { mode: "edit"; dietId: string; initial: DietContent; plan: EditPlan },
+    | {
+        mode: "edit";
+        dietId: string;
+        latestVersionId: string;
+        initial: DietContent;
+        plan: EditPlan;
+      },
 ) {
   const initial = props.mode === "edit" ? props.initial : undefined;
   const [name, setName] = useState("");
@@ -112,7 +118,10 @@ export function DietEditor(
           : await saveDietContentAction({
               dietId: props.dietId,
               content,
-              movePetIds: props.plan.mode === "new_version" ? move : "all",
+              // En el lugar no se mueve ninguna mascota.
+              movePetIds: props.plan.mode === "new_version" ? move : [],
+              expectedLatestVersionId: props.latestVersionId,
+              expectedMode: props.plan.mode,
             });
       setResult(r);
     });

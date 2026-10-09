@@ -7,6 +7,7 @@ import {
   assignDietInDb,
   cloneDietInDb,
   createDietInDb,
+  deleteDietInDb,
   deleteVersionInDb,
   renameDietInDb,
   saveDietContentInDb,
@@ -29,6 +30,8 @@ const MESSAGES: Record<string, string> = {
   already_assigned: "Esa mascota ya tiene esta dieta.",
   already_ended: "Esa asignación ya había terminado.",
   invalid_name: "El nombre es obligatorio (hasta 80 caracteres).",
+  diet_frozen: "La dieta ya se asignó alguna vez: no se puede borrar (se conserva el historial).",
+  stale: "La dieta cambió mientras la editabas (por ejemplo, se asignó). Recargá la página.",
 };
 
 const fail = (error: string): DietActionResult => ({
@@ -82,6 +85,8 @@ export async function saveDietContentAction(input: unknown): Promise<DietActionR
       dietId: Id,
       content: DietContentSchema,
       movePetIds: z.union([z.literal("all"), z.array(Id)]),
+      expectedLatestVersionId: Id,
+      expectedMode: z.enum(["in_place", "new_version"]),
     })
     .safeParse(input);
   if (!parsed.success) return INVALID_DIET;
@@ -116,6 +121,22 @@ export async function cloneDietAction(dietId: unknown): Promise<DietActionResult
   }
   if (!r.ok) return fail(r.error);
   redirect(`/dietas/${r.dietId}`);
+}
+
+// RN-021: borrar una dieta que nunca se asignó.
+export async function deleteDietAction(dietId: unknown): Promise<DietActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  const id = Id.safeParse(dietId);
+  if (!id.success) return fail("not_found");
+  let r;
+  try {
+    r = await deleteDietInDb(actor, id.data);
+  } catch {
+    return SAVE_FAILED;
+  }
+  if (!r.ok) return fail(r.error);
+  redirect("/dietas");
 }
 
 // RN-025: borrar una versión que nunca se asignó.
