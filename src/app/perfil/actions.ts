@@ -107,7 +107,7 @@ export async function uploadPhotoAction(formData: FormData): Promise<ActionResul
     await storage.remove([path]);
     return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
   }
-  const previous = avatarPathFromUrl(user.photoUrl, process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  const previous = avatarPathFromUrl(user.photoUrl, process.env.NEXT_PUBLIC_SUPABASE_URL!, user.id);
   if (previous) await storage.remove([previous]);
   refresh();
   return { ok: true };

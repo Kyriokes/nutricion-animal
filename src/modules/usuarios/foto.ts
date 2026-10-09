@@ -40,10 +40,17 @@ export function validatePhoto(file: {
 
 // Si la URL es de una foto de nuestro bucket, devuelve su ruta dentro del
 // bucket (para borrar la anterior al cambiarla). La foto de Google no se toca.
+// Además exige que esté en la carpeta del propio usuario, sin "..", para que
+// nunca se borre la foto de otro aunque la URL guardada estuviera mal.
 export function avatarPathFromUrl(
   url: string | null | undefined,
   supabaseUrl: string,
+  userId: string,
 ): string | null {
   const prefix = `${supabaseUrl}/storage/v1/object/public/${AVATARS_BUCKET}/`;
-  return url?.startsWith(prefix) ? url.slice(prefix.length) : null;
+  if (!url?.startsWith(prefix)) return null;
+  const path = url.slice(prefix.length);
+  const parts = path.split("/");
+  const ownFile = parts.length === 2 && parts[0] === userId && parts[1] && !parts[1].startsWith(".");
+  return ownFile ? path : null;
 }

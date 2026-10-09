@@ -5,18 +5,18 @@ import { hasPermission, type Actor, type Role } from "./roles";
 // RN-024: quien quiere ser nutricionista o proveedor se postula desde su perfil.
 export const NutritionistApplicationDataSchema = z.object({
   kind: z.literal("nutritionist"),
-  address: z.string().trim().min(1, "La dirección es requerida"),
+  address: z.string().trim().min(1, "La dirección es requerida").max(200, "La dirección puede tener hasta 200 caracteres"),
   phone: z
     .string()
     .trim()
     .regex(/^\+?[\d\s()-]{6,20}$/, "El teléfono no es válido"),
-  licenseNumber: z.string().trim().min(1, "La matrícula es requerida"),
+  licenseNumber: z.string().trim().min(1, "La matrícula es requerida").max(40, "La matrícula puede tener hasta 40 caracteres"),
 });
 
 // Campos del formulario de proveedor: [A DEFINIR], por ahora solo el mínimo.
 export const SupplierApplicationDataSchema = z.object({
   kind: z.literal("supplier"),
-  businessName: z.string().trim().min(1, "El nombre del negocio es requerido"),
+  businessName: z.string().trim().min(1, "El nombre del negocio es requerido").max(120, "El nombre del negocio puede tener hasta 120 caracteres"),
 });
 
 export const ApplicationDataSchema = z.discriminatedUnion("kind", [

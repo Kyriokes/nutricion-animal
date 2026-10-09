@@ -15,7 +15,7 @@ export const FoodConsumptionPatternSchema = z.union([
 
 // Un alimento con su patrón de consumo.
 export const FoodItemSchema = z.object({
-  name: z.string().min(1, "El alimento no puede estar vacío"),
+  name: z.string().min(1, "El alimento no puede estar vacío").max(80, "El alimento puede tener hasta 80 caracteres"),
   quantity: z.number().positive("La cantidad debe ser positiva"),
   unit: z.enum(["g", "kg", "ml", "l", "taza", "cucharada"]),
   pattern: FoodConsumptionPatternSchema,
@@ -34,10 +34,10 @@ export const DietDurationSchema = z.union([
 
 // Lo que cambia entre versiones de una dieta.
 export const DietContentSchema = z.object({
-  description: z.string().min(1, "La descripción es requerida"),
-  foods: z.array(FoodItemSchema).min(1, "Al menos un alimento es requerido"),
+  description: z.string().min(1, "La descripción es requerida").max(2000, "La descripción puede tener hasta 2000 caracteres"),
+  foods: z.array(FoodItemSchema).min(1, "Al menos un alimento es requerido").max(50, "Hasta 50 alimentos"),
   duration: DietDurationSchema,
-  notes: z.string().optional(), // Aclaraciones, no afecta lógica
+  notes: z.string().max(1000, "Las notas pueden tener hasta 1000 caracteres").optional(), // Aclaraciones, no afecta lógica
 });
 
 // RN-021: cada nutricionista tiene sus propias dietas; no se comparten.
@@ -46,7 +46,7 @@ export const DietSchema = z.object({
   id: z.uuid(),
   // null si la cuenta del nutricionista ya no existe (RN-047).
   nutritionistId: z.uuid().nullable(),
-  name: z.string().trim().min(1, "El nombre de la dieta es requerido"),
+  name: z.string().trim().min(1, "El nombre de la dieta es requerido").max(80),
   createdAt: z.date(),
 });
 

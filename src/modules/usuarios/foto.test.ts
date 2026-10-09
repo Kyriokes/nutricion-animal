@@ -31,11 +31,18 @@ describe("usuarios/foto (RN-016)", () => {
   it("reconoce las fotos del propio bucket para poder borrar la anterior", () => {
     const base = "https://xilzwjudufoplgqpzxkx.supabase.co";
     expect(
-      avatarPathFromUrl(`${base}/storage/v1/object/public/avatars/u-1/abc.jpg`, base),
+      avatarPathFromUrl(`${base}/storage/v1/object/public/avatars/u-1/abc.jpg`, base, "u-1"),
     ).toBe("u-1/abc.jpg");
     // La foto de Google o de otro sitio no es nuestra: no se borra.
-    expect(avatarPathFromUrl("https://lh3.googleusercontent.com/a/x", base)).toBeNull();
-    expect(avatarPathFromUrl(`${base}/storage/v1/object/public/otro/u-1/abc.jpg`, base)).toBeNull();
-    expect(avatarPathFromUrl(null, base)).toBeNull();
+    expect(avatarPathFromUrl("https://lh3.googleusercontent.com/a/x", base, "u-1")).toBeNull();
+    expect(avatarPathFromUrl(`${base}/storage/v1/object/public/otro/u-1/abc.jpg`, base, "u-1")).toBeNull();
+    expect(avatarPathFromUrl(null, base, "u-1")).toBeNull();
+  });
+
+  it("nunca devuelve una foto de la carpeta de otro usuario", () => {
+    const base = "https://xilzwjudufoplgqpzxkx.supabase.co";
+    const prefix = `${base}/storage/v1/object/public/avatars`;
+    expect(avatarPathFromUrl(`${prefix}/u-2/abc.jpg`, base, "u-1")).toBeNull();
+    expect(avatarPathFromUrl(`${prefix}/u-1/../u-2/abc.jpg`, base, "u-1")).toBeNull();
   });
 });

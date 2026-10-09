@@ -69,13 +69,16 @@ export async function deletePet(id: string) {
 }
 
 // DT-024: especies ya cargadas, para sugerirlas y evitar "Perro" y "perro".
-// Las más usadas primero; se agrupa en la base (DT-002).
+// Las más usadas primero; se agrupa en la base (DT-002). Solo las que cargaron
+// al menos 2 mascotas: así un texto de un único usuario (que puede ser
+// personal o inadecuado) no se les muestra a los demás.
 export async function listKnownSpecies(): Promise<string[]> {
   const species = sql<string>`lower(${pets.species})`;
   const rows = await db
     .select({ species })
     .from(pets)
     .groupBy(species)
+    .having(sql`count(*) >= 2`)
     .orderBy(desc(sql`count(*)`), asc(species))
     .limit(30);
   return rows.map((r) => r.species);
