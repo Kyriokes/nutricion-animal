@@ -133,7 +133,7 @@ Lista aportada por Sergio. Los nombres de las vistas son los suyos. Las responsa
 - **VN-01** Mis dietas
 - **VN-02** Mis pacientes
 - **VN-03** Crear dieta
-- **VN-04** Asignar dieta a las mascotas de sus usuarios. Flujo provisorio (decidido por el desarrollador): el nutricionista busca al cliente por nombre o email, o a la mascota por nombre, y elige la mascota de una lista; por ahora cualquier nutricionista ve a todos los clientes y sus mascotas. Se revisa cuando se defina cómo se vuelve paciente un cliente (pregunta 5.1).
+- **VN-04** Asignar dieta a las mascotas de sus usuarios. Flujo provisorio (decidido por el desarrollador): el nutricionista busca al cliente por nombre o email, o a la mascota por nombre, y elige la mascota de una lista; por ahora cualquier nutricionista ve a todos los clientes y sus mascotas. Se revisa cuando se defina cómo se vuelve paciente un cliente (pregunta 5.1). **[A DEFINIR]** El alcance de la búsqueda (qué datos de qué clientes ve un nutricionista, por la Ley 25.326) queda pendiente hasta que el desarrollador lo consulte; mientras tanto la pantalla muestra un aviso de funcionamiento provisorio.
 - **VN-05** Mi perfil profesional: donde el nutricionista carga sus datos
 
 ### 4.4 Vistas del Administrador
@@ -198,12 +198,14 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - **RN-045** El resultado (aprobada o rechazada) se informa dentro de la aplicación: el postulante ve un aviso hasta que lo marca como leído. Los emails quedan para una versión avanzada.
 - Formulario de proveedor: en la primera versión solo el nombre del negocio; el resto, en una versión avanzada.
 - El Administrador es omnipotente (RN-001): puede dar cualquier rol directamente, sin postulación.
-- **RN-046** Un usuario bloqueado (sin roles) ve un mensaje que le indica que contacte a soporte si tiene dudas (soporte: versión avanzada). No ve la nota del administrador.
+- **RN-046** Un usuario bloqueado (sin roles) solo ve una pantalla estilo "página no encontrada" que le indica que contacte a soporte (soporte: versión avanzada). No ve nada más del sitio ni puede hacer ninguna acción, salvo cerrar sesión. No ve la nota del administrador.
 
 **Perfil del nutricionista (pregunta 3):**
 - Públicamente visible: nombre, foto, dirección, número de contacto.
 - Privado (solo para él): número de matrícula/certificación.
 - **RN-029** Al aprobarse la postulación, sus datos pasan a un perfil profesional (VN-05) que el nutricionista puede editar y que ven los clientes con sesión iniciada (VU-08, VU-09), sin la matrícula.
+- **RN-047** Si quien emitió una dieta deja de formar parte de la plataforma (pierde el rol de nutricionista, queda bloqueado o se da de baja), sus dietas no se borran: el cliente sigue viéndolas, con un aviso en la misma dieta de que quien la emitió ya no forma parte de la plataforma y que la plataforma desaconseja continuarla.
+- Al clonar una dieta ajena, el administrador queda como dueño de la copia (confirmado).
 - No se valida la matrícula al dar de alta: es responsabilidad del Administrador/Auditor revisar en el formulario.
 
 **Dietas (pregunta 4):**
