@@ -22,6 +22,7 @@ import {
   ApplicationForm,
   MarkSeenButton,
   NameForm,
+  PhotoForm,
   ProfessionalProfileForm,
 } from "./profile-forms";
 
@@ -92,8 +93,9 @@ async function Profile() {
         </div>
       </section>
 
-      <section className="max-w-md">
+      <section className="flex max-w-md flex-col gap-4">
         <NameForm name={user.name} />
+        <PhotoForm />
       </section>
 
       <section className="flex flex-col gap-3">

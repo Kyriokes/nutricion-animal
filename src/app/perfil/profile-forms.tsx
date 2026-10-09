@@ -9,6 +9,7 @@ import {
   deleteAddressAction,
   markDecisionsSeenAction,
   saveProfessionalProfileAction,
+  uploadPhotoAction,
   submitApplicationAction,
   updateNameAction,
   type ActionResult,
@@ -123,6 +124,53 @@ const ADDRESS_FIELDS = [
   { name: "floor", label: "Piso (opcional)", placeholder: "4", required: false },
   { name: "apartment", label: "Depto. (opcional)", placeholder: "B", required: false },
 ] as const;
+
+// RN-016: cambiar la foto de perfil (JPG, PNG o WebP, hasta 1 MB). El
+// servidor vuelve a validar todo; acá solo se avisa antes de subir.
+export function PhotoForm() {
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [pending, start] = useTransition();
+
+  return (
+    <form
+      className="flex flex-col gap-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formEl = e.currentTarget;
+        const data = new FormData(formEl);
+        const file = data.get("photo");
+        if (file instanceof File && file.size > 1024 * 1024) {
+          setResult({ ok: false, message: "La imagen puede pesar hasta 1 MB." });
+          return;
+        }
+        start(async () => {
+          const r = await uploadPhotoAction(data);
+          setResult(r);
+          if (r.ok) formEl.reset();
+        });
+      }}
+    >
+      <label className="text-sm font-medium" htmlFor="photo">
+        Foto de perfil (JPG, PNG o WebP, hasta 1 MB)
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id="photo"
+          name="photo"
+          type="file"
+          required
+          accept="image/jpeg,image/png,image/webp"
+          className="text-sm file:mr-2 file:rounded-lg file:border file:bg-background file:px-2 file:py-1 file:text-sm"
+          onChange={() => setResult(null)}
+        />
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? "Subiendo…" : "Cambiar foto"}
+        </Button>
+      </div>
+      <Message result={result} />
+    </form>
+  );
+}
 
 // RN-017: direcciones de entrega, como en un delivery de comida.
 export function AddressesSection({

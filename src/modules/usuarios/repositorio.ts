@@ -403,3 +403,8 @@ export async function deleteAddress(userId: string, addressId: string) {
     .delete(addresses)
     .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
 }
+
+// RN-016: guarda la URL de la nueva foto de perfil.
+export async function updateUserPhoto(userId: string, photoUrl: string) {
+  await db.update(users).set({ photoUrl }).where(eq(users.id, userId));
+}
