@@ -5,8 +5,8 @@ const hrefs = (roles: Parameters<typeof navigationFor>[0]) =>
   navigationFor(roles).flatMap((g) => g.items.map((i) => i.href));
 
 describe("usuarios/navegacion", () => {
-  it("un cliente ve su cuenta y la búsqueda de nutricionistas", () => {
-    expect(hrefs(["customer"])).toEqual(["/perfil", "/mascotas", "/nutricionistas"]);
+  it("un cliente ve su cuenta, sus pedidos y la búsqueda de nutricionistas", () => {
+    expect(hrefs(["customer"])).toEqual(["/perfil", "/mascotas", "/pedidos", "/nutricionistas"]);
   });
 
   it("un nutricionista suma sus dietas", () => {

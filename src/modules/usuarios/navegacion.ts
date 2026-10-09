@@ -11,6 +11,7 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
     items: [
       { href: "/perfil", label: "Mi perfil" },
       { href: "/mascotas", label: "Mis mascotas", permission: "pet.register" },
+      { href: "/pedidos", label: "Mis pedidos", permission: "order.view_own" },
     ],
   },
   {

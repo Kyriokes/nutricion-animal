@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pager } from "@/components/pager";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -123,23 +124,7 @@ async function Catalog({ searchParams }: { searchParams: Promise<Record<string, 
         </>
       )}
 
-      {result.pages > 1 && (
-        <nav aria-label="Páginas" className="flex items-center justify-center gap-4 text-sm">
-          {result.page > 1 && (
-            <Link href={hrefWith({ ...current, pagina: String(result.page - 1) })} className="underline">
-              ← Anterior
-            </Link>
-          )}
-          <span>
-            Página {result.page} de {result.pages}
-          </span>
-          {result.page < result.pages && (
-            <Link href={hrefWith({ ...current, pagina: String(result.page + 1) })} className="underline">
-              Siguiente →
-            </Link>
-          )}
-        </nav>
-      )}
+      <Pager page={result.page} pages={result.pages} hrefFor={(n) => hrefWith({ ...current, pagina: String(n) })} />
     </div>
   );
 }

@@ -1,13 +1,25 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { isInDeliveryZone } from "@/modules/pedidos/envio";
+import { getShippingCost } from "@/modules/pedidos/repositorio";
+import { formatAddress } from "@/modules/usuarios/direcciones";
+import { listAddresses } from "@/modules/usuarios/repositorio";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 import { CartView } from "./cart-view";
 
-// Lee la sesión solo para saber si pedir ingresar (VP-08).
+// Lee la sesión para saber si pedir ingresar (VP-08) o mostrar las
+// direcciones para confirmar la compra; y el costo de envío vigente (RN-068).
 async function Content() {
   await connection();
-  const user = await getCurrentUser();
-  return <CartView signedIn={user !== null} />;
+  const [user, shippingCost] = await Promise.all([getCurrentUser(), getShippingCost()]);
+  const addresses = user
+    ? (await listAddresses(user.id)).map((a) => ({
+        id: a.id,
+        label: formatAddress(a),
+        inZone: isInDeliveryZone(a),
+      }))
+    : null;
+  return <CartView shippingCost={shippingCost} addresses={addresses} />;
 }
 
 // VP-07: carrito de compras (funciona sin sesión).

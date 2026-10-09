@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/modules/catalogo/presentacion";
 import { MAX_QUANTITY, priceCart, setQuantity } from "@/modules/pedidos/carrito";
 import { getCartProductsAction } from "./actions";
+import { CheckoutPanel, type CheckoutAddress } from "./checkout-panel";
 
 type CartProduct = NonNullable<Awaited<ReturnType<typeof getCartProductsAction>>>[number];
 
@@ -62,12 +63,22 @@ function QuantityInput({
   );
 }
 
-// VP-07: carrito. VP-08: para continuar hay que ingresar; el pago todavía no
-// existe (pagos y estados del pedido: [A DEFINIR], preguntas 9 y 12).
-export function CartView({ signedIn }: { signedIn: boolean }) {
+// VP-07: carrito. VP-08: para continuar hay que ingresar; con sesión se
+// elige la dirección y se confirma la compra (RN-062, RN-068).
+export function CartView({
+  shippingCost,
+  addresses,
+}: {
+  shippingCost: number;
+  // null: sin sesión.
+  addresses: CheckoutAddress[] | null;
+}) {
   const cart = useCart();
   const [products, setProducts] = useState<CartProduct[] | null>(null);
   const [error, setError] = useState(false);
+  // Se incrementa para volver a pedir precios y stock (por ejemplo, si al
+  // confirmar cambiaron).
+  const [reload, setReload] = useState(0);
   const ids = cart.map((l) => l.productId).join(",");
 
   useEffect(() => {
@@ -81,7 +92,7 @@ export function CartView({ signedIn }: { signedIn: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [ids]);
+  }, [ids, reload]);
 
   if (cart.length === 0) {
     return (
@@ -99,6 +110,8 @@ export function CartView({ signedIn }: { signedIn: boolean }) {
   const byId = new Map(products.map((p) => [p.id, p]));
   const { lines, total } = priceCart(cart, products);
   const update = (productId: string, quantity: number) => writeCart(setQuantity(readCart(), productId, quantity));
+  // RN-068: costo fijo por pedido. Se suma en centavos.
+  const grandTotal = (Math.round(total * 100) + Math.round(shippingCost * 100)) / 100;
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,14 +157,22 @@ export function CartView({ signedIn }: { signedIn: boolean }) {
       </ul>
 
       <div className="flex flex-col items-end gap-3">
-        <p className="text-lg">
-          Total: <span className="font-semibold">{formatPrice(total)}</span>
+        <p className="text-sm">Productos: {formatPrice(total)}</p>
+        <p className="text-sm">
+          Envío: {formatPrice(shippingCost)}{" "}
+          <span className="text-muted-foreground">(solo dentro de Capital)</span>
         </p>
-        <p className="text-sm text-muted-foreground">El costo de envío todavía no está definido.</p>
-        {signedIn ? (
-          <p role="status" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
-            El pago en línea todavía no está disponible.
-          </p>
+        <p className="text-lg">
+          Total: <span className="font-semibold">{formatPrice(grandTotal)}</span>
+        </p>
+        {addresses ? (
+          <CheckoutPanel
+            lines={cart}
+            total={grandTotal}
+            addresses={addresses}
+            blocked={lines.some((l) => l.issue)}
+            onStale={() => setReload((n) => n + 1)}
+          />
         ) : (
           <div className="flex flex-col items-end gap-2">
             <p className="text-sm">Para continuar, ingresá con tu cuenta.</p>
