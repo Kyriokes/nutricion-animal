@@ -9,24 +9,21 @@
 - **Base de datos:** tabla `users` (roles, perfil, nota del admin) con RLS y vínculo a `auth.users`. Migraciones en `drizzle/`, se aplican con `npm run db:migrate`.
 - **Sergio es admin** (roles `customer` y `admin`, asignados a mano el 2026-10-08).
 - **Paleta de colores completa** (RN-070 a RN-075, DT-030 a DT-033, DT-037): tabla `theme_palettes`, lectura cacheada con respaldo, pantalla VA-08 en `/admin/configuracion/apariencia` (coolors, vista previa, restaurar por categoría, ajustar contraste). Plan: `docs/superpowers/plans/2026-10-08-paleta-de-colores.md`.
-- **Perfil (VU-01)** en `/perfil`: datos, editar nombre, postularse como nutricionista o proveedor y ver el estado (RN-024, DT-040).
-- **Postulaciones (VA-06)** en `/admin/postulaciones`: admin y auditor aprueban o rechazan; aprobar suma el rol (RN-024, RN-043). Tabla `applications`.
-- **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041).
-- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, gestión), `mascotas` (esquema), `dietas` (versiones, clonado, asignación), `catalogo` (esquema), `apariencia`.
-- `npm test`: 141 tests. Los flujos con base de datos se verificaron con pruebas de humo temporales (datos restaurados).
+- **Perfil (VU-01)** en `/perfil`: datos, editar nombre, cambiar foto (RN-016, bucket `avatars`), direcciones de entrega (RN-017), postularse como nutricionista o proveedor y ver el resultado con su motivo (RN-024, RN-044, RN-045).
+- **Postulaciones (VA-06)** en `/admin/postulaciones`: admin y auditor aprueban o rechazan (con motivo); aprobar suma el rol y, si es nutricionista, crea su perfil profesional (RN-029). Tabla `applications`.
+- **Perfil profesional y búsqueda** (RN-012, RN-029, VN-05, VU-08, VU-09): el nutricionista lo edita en Mi perfil; los clientes lo ven en `/nutricionistas`, sin matrícula.
+- **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041). Las cuentas bloqueadas ven un aviso de contactar a soporte (RN-046).
+- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, perfil profesional, direcciones, foto, gestión), `mascotas` (esquema), `dietas` (versiones, clonado, asignación), `catalogo` (esquema), `apariencia`.
+- `npm test`: 156 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos restaurados).
 
 ## Próximo paso
-- Que Sergio pruebe `/perfil`, `/admin/postulaciones` y `/admin/usuarios`, y responda la lista de decisiones (abajo, "Decisiones pendientes del 2026-10-08").
+- Que Sergio pruebe en pantalla: Mi perfil (foto, direcciones, postulación), Postulaciones (rechazo con motivo), Nutricionistas y Usuarios.
+- Después, candidatos sin bloqueos: tablas y pantallas de mascotas (RN-010, VU-03, VU-04) y de dietas del nutricionista (VN-01, VN-03).
 
-## Decisiones pendientes del 2026-10-08 (responde Sergio)
-- Avisar por email al postulante cuando se aprueba o rechaza (necesita dominio y servicio de email).
-- Motivo del rechazo: ¿se pide y el postulante lo ve?
-- Datos del perfil profesional del nutricionista (VN-05, VU-09): hoy quedan en la postulación aprobada; ¿se copian a un perfil editable?
-- Campos del formulario de proveedor (hoy solo el nombre del negocio).
-- ¿El admin puede dar roles de nutricionista o proveedor directo, sin postulación? Hoy sí puede (RN-001).
-- ¿Qué ve un usuario bloqueado? Hoy entra y ve "Cuenta sin roles"; no ve la nota del admin.
-- Cambiar la foto de perfil (requiere guardar archivos en Supabase Storage).
-- Direcciones del cliente en el perfil (VU-01), atadas a envíos (pregunta 12).
+## Versión avanzada (decidido dejar para después)
+- Emails: avisar al postulante (RN-045), cambios de dieta (RN-028), y soporte para cuentas suspendidas (RN-046).
+- Formulario completo de proveedor (hoy solo el nombre del negocio).
+- Editar una dirección (hoy se borra y se carga de nuevo).
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.
