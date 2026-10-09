@@ -9,17 +9,28 @@
 - **Base de datos:** tabla `users` (roles, perfil, nota del admin) con RLS y vínculo a `auth.users`. Migraciones en `drizzle/`, se aplican con `npm run db:migrate`.
 - **Sergio es admin** (roles `customer` y `admin`, asignados a mano el 2026-10-08).
 - **Paleta de colores completa** (RN-070 a RN-075, DT-030 a DT-033, DT-037): tabla `theme_palettes`, lectura cacheada con respaldo, pantalla VA-08 en `/admin/configuracion/apariencia` (coolors, vista previa, restaurar por categoría, ajustar contraste). Plan: `docs/superpowers/plans/2026-10-08-paleta-de-colores.md`.
-- Módulos con lógica y tests: `usuarios` (roles, postulaciones, ingreso), `mascotas` (esquema), `dietas` (versiones, clonado, asignación), `catalogo` (esquema), `apariencia`.
-- `npm test`: 127 tests.
+- **Perfil (VU-01)** en `/perfil`: datos, editar nombre, postularse como nutricionista o proveedor y ver el estado (RN-024, DT-040).
+- **Postulaciones (VA-06)** en `/admin/postulaciones`: admin y auditor aprueban o rechazan; aprobar suma el rol (RN-024, RN-043). Tabla `applications`.
+- **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041).
+- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, gestión), `mascotas` (esquema), `dietas` (versiones, clonado, asignación), `catalogo` (esquema), `apariencia`.
+- `npm test`: 141 tests. Los flujos con base de datos se verificaron con pruebas de humo temporales (datos restaurados).
 
 ## Próximo paso
-- Elegir con Sergio lo siguiente. Candidatos sin bloqueos: perfil (VU-01) con la postulación a nutricionista o proveedor (RN-024), o gestión de usuarios y roles (VA-10).
+- Que Sergio pruebe `/perfil`, `/admin/postulaciones` y `/admin/usuarios`, y responda la lista de decisiones (abajo, "Decisiones pendientes del 2026-10-08").
+
+## Decisiones pendientes del 2026-10-08 (responde Sergio)
+- Avisar por email al postulante cuando se aprueba o rechaza (necesita dominio y servicio de email).
+- Motivo del rechazo: ¿se pide y el postulante lo ve?
+- Datos del perfil profesional del nutricionista (VN-05, VU-09): hoy quedan en la postulación aprobada; ¿se copian a un perfil editable?
+- Campos del formulario de proveedor (hoy solo el nombre del negocio).
+- ¿El admin puede dar roles de nutricionista o proveedor directo, sin postulación? Hoy sí puede (RN-001).
+- ¿Qué ve un usuario bloqueado? Hoy entra y ve "Cuenta sin roles"; no ve la nota del admin.
+- Cambiar la foto de perfil (requiere guardar archivos en Supabase Storage).
+- Direcciones del cliente en el perfil (VU-01), atadas a envíos (pregunta 12).
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.
-- `onConflictDoNothing({ target: users.id })` en `syncUserOnSignIn`, para que un email repetido no falle en silencio.
-- Mostrar un aviso cuando el ingreso vuelve con `?ingreso=error`; si falla crear el usuario, cerrar la sesión y avisar.
-- VA-08 sin permiso muestra un texto; redirigir a VP-13 cuando exista.
+- Las pantallas de admin sin permiso muestran un texto; redirigir a VP-13 cuando exista.
 - Ajustar el fondo o el texto puede hacer fallar otras categorías; los avisos lo muestran.
 - Verificar en Supabase (Settings > JWT Signing Keys) que el proyecto use claves asimétricas, así `getClaims()` valida localmente sin llamar a Supabase Auth en cada pedido.
 
