@@ -9,10 +9,18 @@ import {
   type Application,
   type ApplicationKind,
 } from "@/modules/usuarios/postulaciones";
-import { listOwnApplications } from "@/modules/usuarios/repositorio";
+import {
+  getProfessionalProfile,
+  listOwnApplications,
+} from "@/modules/usuarios/repositorio";
 import { ROLE_LABELS } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
-import { ApplicationForm, MarkSeenButton, NameForm } from "./profile-forms";
+import {
+  ApplicationForm,
+  MarkSeenButton,
+  NameForm,
+  ProfessionalProfileForm,
+} from "./profile-forms";
 
 const KIND_LABELS: Record<ApplicationKind, string> = {
   nutritionist: "Nutricionista",
@@ -84,6 +92,16 @@ async function Profile() {
       <section className="max-w-md">
         <NameForm name={user.name} />
       </section>
+
+      {user.roles.includes("nutritionist") && (
+        <section className="flex max-w-md flex-col gap-3">
+          <h2 className="text-lg font-medium">Perfil profesional</h2>
+          <p className="text-sm text-muted-foreground">
+            Los clientes ven tu nombre, tu foto, tu dirección y tu teléfono.
+          </p>
+          <ProfessionalProfileForm profile={await getProfessionalProfile(user.id)} />
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Postulaciones</h2>

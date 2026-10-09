@@ -2,9 +2,11 @@
 
 import { refresh } from "next/cache";
 import { ApplicationDataSchema } from "@/modules/usuarios/postulaciones";
+import { planProfessionalProfileUpdate } from "@/modules/usuarios/perfil-profesional";
 import {
   createApplication,
   markDecisionsSeen,
+  saveProfessionalProfile,
   updateUserName,
 } from "@/modules/usuarios/repositorio";
 import { ProfileUpdateSchema } from "@/modules/usuarios/schema";
@@ -28,6 +30,29 @@ export async function updateNameAction(input: unknown): Promise<ActionResult> {
   }
   try {
     await updateUserName(actor.id, parsed.data.name);
+  } catch {
+    return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+// VN-05, RN-029: el nutricionista edita su perfil profesional.
+export async function saveProfessionalProfileAction(input: unknown): Promise<ActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  const plan = planProfessionalProfileUpdate({ actor, input });
+  if (!plan.ok) {
+    return {
+      ok: false,
+      message:
+        plan.error === "not_allowed"
+          ? "Solo un nutricionista puede editar su perfil profesional."
+          : "Revisá los datos: dirección, teléfono y matrícula son obligatorios.",
+    };
+  }
+  try {
+    await saveProfessionalProfile(actor.id, plan.profile);
   } catch {
     return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
   }

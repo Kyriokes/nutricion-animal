@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { ApplicationKind } from "@/modules/usuarios/postulaciones";
 import {
   markDecisionsSeenAction,
+  saveProfessionalProfileAction,
   submitApplicationAction,
   updateNameAction,
   type ActionResult,
@@ -56,6 +57,55 @@ export function NameForm({ name }: { name: string }) {
         />
         <Button type="submit" disabled={pending || value.trim() === name}>
           {pending ? "Guardando…" : "Guardar"}
+        </Button>
+      </div>
+      <Message result={result} />
+    </form>
+  );
+}
+
+// VN-05, RN-029: perfil profesional del nutricionista.
+export function ProfessionalProfileForm({
+  profile,
+}: {
+  profile: { address: string; phone: string; licenseNumber: string } | null;
+}) {
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [pending, start] = useTransition();
+
+  return (
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const form = new FormData(e.currentTarget);
+        const data = Object.fromEntries(
+          FIELDS.nutritionist.map((f) => [f.name, String(form.get(f.name) ?? "")]),
+        );
+        start(async () => setResult(await saveProfessionalProfileAction(data)));
+      }}
+    >
+      {FIELDS.nutritionist.map((f) => (
+        <div key={f.name} className="flex flex-col gap-1">
+          <label htmlFor={`pro-${f.name}`} className="text-sm">
+            {f.label}
+            {f.name === "licenseNumber" && " (no la ven los clientes)"}
+          </label>
+          <input
+            id={`pro-${f.name}`}
+            name={f.name}
+            type={f.type ?? "text"}
+            required
+            className={inputClass}
+            placeholder={f.placeholder}
+            defaultValue={profile?.[f.name as keyof typeof profile] ?? ""}
+            onChange={() => setResult(null)}
+          />
+        </div>
+      ))}
+      <div>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Guardando…" : "Guardar perfil profesional"}
         </Button>
       </div>
       <Message result={result} />

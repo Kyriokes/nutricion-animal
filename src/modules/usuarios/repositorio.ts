@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, arrayContains, count, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   ApplicationDataSchema,
@@ -10,8 +10,14 @@ import {
   type ApplicationError,
 } from "./postulaciones";
 import { planUserUpdate } from "./gestion";
+import {
+  professionalProfileFromApplication,
+  toPublicProfile,
+  type ProfessionalProfile,
+  type PublicProfile,
+} from "./perfil-profesional";
 import { RoleSchema, type Actor, type Role } from "./roles";
-import { applications, users } from "./tables";
+import { applications, nutritionistProfiles, users } from "./tables";
 
 type ApplicationRow = typeof applications.$inferSelect;
 
@@ -264,7 +270,84 @@ export async function decideApplicationInDb(input: {
         .update(users)
         .set({ roles: newRoles })
         .where(eq(users.id, application.userId));
+      // RN-029: los datos de la postulación pasan al perfil profesional.
+      const profile = professionalProfileFromApplication(decided);
+      if (profile) {
+        await tx
+          .insert(nutritionistProfiles)
+          .values({ userId: application.userId, ...profile })
+          .onConflictDoUpdate({
+            target: nutritionistProfiles.userId,
+            set: { ...profile, updatedAt: now },
+          });
+      }
     }
     return { ok: true };
   });
+}
+
+// VN-05: perfil profesional propio (con la matrícula).
+export async function getProfessionalProfile(
+  userId: string,
+): Promise<ProfessionalProfile | null> {
+  const [row] = await db
+    .select({
+      address: nutritionistProfiles.address,
+      phone: nutritionistProfiles.phone,
+      licenseNumber: nutritionistProfiles.licenseNumber,
+    })
+    .from(nutritionistProfiles)
+    .where(eq(nutritionistProfiles.userId, userId));
+  return row ?? null;
+}
+
+// VN-05: guarda el perfil profesional (ya validado con planProfessionalProfileUpdate).
+export async function saveProfessionalProfile(
+  userId: string,
+  profile: ProfessionalProfile,
+) {
+  await db
+    .insert(nutritionistProfiles)
+    .values({ userId, ...profile })
+    .onConflictDoUpdate({
+      target: nutritionistProfiles.userId,
+      set: { ...profile, updatedAt: new Date() },
+    });
+}
+
+const publicProfileColumns = {
+  userId: users.id,
+  name: users.name,
+  photoUrl: users.photoUrl,
+  address: nutritionistProfiles.address,
+  phone: nutritionistProfiles.phone,
+};
+
+// VU-08: nutricionistas con perfil y con el rol vigente (un nutricionista
+// bloqueado o al que le quitaron el rol no aparece). Sin la matrícula.
+export async function listPublicNutritionists(): Promise<PublicProfile[]> {
+  const rows = await db
+    .select(publicProfileColumns)
+    .from(nutritionistProfiles)
+    .innerJoin(users, eq(users.id, nutritionistProfiles.userId))
+    .where(arrayContains(users.roles, ["nutritionist"]))
+    .orderBy(users.name);
+  return rows.map(toPublicProfile);
+}
+
+// VU-09: un nutricionista, con las mismas condiciones que la lista.
+export async function getPublicNutritionist(
+  userId: string,
+): Promise<PublicProfile | null> {
+  const [row] = await db
+    .select(publicProfileColumns)
+    .from(nutritionistProfiles)
+    .innerJoin(users, eq(users.id, nutritionistProfiles.userId))
+    .where(
+      and(
+        eq(nutritionistProfiles.userId, userId),
+        arrayContains(users.roles, ["nutritionist"]),
+      ),
+    );
+  return row ? toPublicProfile(row) : null;
 }

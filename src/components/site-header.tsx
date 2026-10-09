@@ -22,6 +22,11 @@ async function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
+      {hasPermission(user.roles, "nutritionist.search") && (
+        <Link href="/nutricionistas" className="text-sm underline-offset-4 hover:underline">
+          Nutricionistas
+        </Link>
+      )}
       {hasPermission(user.roles, "application.decide") && (
         <Link
           href="/admin/postulaciones"

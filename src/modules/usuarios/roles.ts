@@ -35,6 +35,7 @@ export const PERMISSIONS = [
   "order.view_own", // RN-060
   "diet.manage", // RN-021, RN-025 a RN-027: crear, editar, clonar y versionar sus dietas
   "diet.assign", // RN-023
+  "nutritionist.edit_profile", // RN-029, VN-05
   "product.publish", // RN-030
   "product.review", // RN-041
   "application.decide", // RN-024, RN-043
@@ -66,6 +67,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     ...CUSTOMER_PERMISSIONS,
     "diet.manage",
     "diet.assign",
+    "nutritionist.edit_profile",
   ],
   supplier: ["product.publish"],
   // RN-040: administrador con menos permisos. RN-041 y RN-043.

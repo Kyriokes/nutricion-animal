@@ -79,3 +79,17 @@ export const applications = pgTable(
       .where(sql`${t.status} = 'pending'`),
   ],
 ).enableRLS();
+
+// RN-029: perfil profesional del nutricionista (VN-05). Se crea al aprobarse
+// su postulación; los clientes ven todo menos la matrícula (VU-09).
+export const nutritionistProfiles = pgTable("nutritionist_profiles", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  address: text("address").notNull(),
+  phone: text("phone").notNull(),
+  licenseNumber: text("license_number").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}).enableRLS();
