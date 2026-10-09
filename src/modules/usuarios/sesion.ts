@@ -54,5 +54,7 @@ export async function syncUserOnSignIn(profile: GoogleProfile): Promise<void> {
       photoUrl: plan.user.photoUrl ?? null,
       roles: plan.user.roles,
     })
-    .onConflictDoNothing();
+    // Solo el id: si el email ya está tomado por otra cuenta, que falle a la
+    // vista en vez de dejar al usuario con sesión y sin fila.
+    .onConflictDoNothing({ target: users.id });
 }

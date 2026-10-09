@@ -16,8 +16,13 @@ export async function GET(request: NextRequest) {
     if (!error && data.user) {
       const result = profileFromGoogle(data.user);
       if (result.ok) {
-        await syncUserOnSignIn(result.profile);
-        return NextResponse.redirect(`${origin}${next}`);
+        try {
+          await syncUserOnSignIn(result.profile);
+          return NextResponse.redirect(`${origin}${next}`);
+        } catch {
+          // Base caída o email ya usado por otra cuenta: no dejamos una
+          // sesión sin usuario.
+        }
       }
       // Sin un perfil válido no dejamos una sesión a medias.
       await supabase.auth.signOut();
