@@ -5,6 +5,7 @@ import { AccountGate } from "@/components/account-gate";
 import { AccountNotice } from "@/components/account-notice";
 import { PaletteStyle } from "@/components/palette-style";
 import { SignInError } from "@/components/sign-in-error";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getPalettes } from "@/modules/apariencia/repositorio";
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={null}>
             <AccountGate>{children}</AccountGate>
           </Suspense>
+          <SiteFooter />
         </ThemeProvider>
       </body>
     </html>

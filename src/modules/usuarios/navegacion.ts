@@ -26,6 +26,7 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
       { href: "/admin/postulaciones", label: "Postulaciones", permission: "application.decide" },
       { href: "/admin/usuarios", label: "Usuarios", permission: "user.manage_roles" },
       { href: "/admin/catalogo", label: "Catálogo", permission: "catalog.manage" },
+      { href: "/admin/contenido", label: "Contenido", permission: "content.manage" },
       { href: "/admin/configuracion/apariencia", label: "Apariencia", permission: "settings.manage" },
     ],
   },
