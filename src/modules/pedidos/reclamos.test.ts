@@ -8,6 +8,8 @@ import {
   claimStatusesFor,
   ClaimInputSchema,
   MAX_CLAIMS_PER_ORDER,
+  needsRefundClaim,
+  REFUND_CLAIM_DESCRIPTION,
   RESOLUTION_LABELS,
   ResolveClaimSchema,
 } from "./reclamos";
@@ -92,5 +94,24 @@ describe("pedidos/reclamos: lista del admin (RN-090)", () => {
     expect(claimStatusesFor("todos")).toBeNull();
     expect(claimStatusesFor("resolved")).toEqual(["resolved"]);
     expect(AdminClaimFilterSchema.parse({ estado: "otro", pagina: "2" })).toEqual({ estado: "abiertos", pagina: 2 });
+  });
+});
+
+describe("pedidos/reclamos: reembolso al cancelar un pedido pagado (RN-066, decisión 1a)", () => {
+  it("cancelar después de pagar abre un reclamo de reembolso", () => {
+    expect(needsRefundClaim("paid", "cancelled")).toBe(true);
+    expect(needsRefundClaim("preparing", "cancelled")).toBe(true);
+  });
+
+  it("cancelar sin haber pagado, o cualquier otro cambio, no", () => {
+    expect(needsRefundClaim("pending_payment", "cancelled")).toBe(false);
+    expect(needsRefundClaim("paid", "preparing")).toBe(false);
+    expect(needsRefundClaim("pending_payment", "rejected")).toBe(false);
+  });
+
+  it("explica el reclamo automático", () => {
+    expect(REFUND_CLAIM_DESCRIPTION).toBe(
+      "Reembolso pendiente: el pedido se canceló después de pagado. Generado automáticamente.",
+    );
   });
 });

@@ -86,3 +86,13 @@ export function claimStatusesFor(filter: ClaimFilter): readonly ClaimStatus[] | 
   if (filter === "abiertos") return ["open", "in_review"];
   return [filter];
 }
+
+// Decisión de Sergio (1a): si un pedido se cancela después de pagado, el
+// sistema abre solo un reclamo de reembolso, así la devolución del dinero no
+// se olvida. Nace abierto; el admin lo resuelve con "Reembolso" al devolverlo.
+export const REFUND_CLAIM_DESCRIPTION =
+  "Reembolso pendiente: el pedido se canceló después de pagado. Generado automáticamente.";
+
+export function needsRefundClaim(from: OrderStatus, to: OrderStatus): boolean {
+  return to === "cancelled" && (from === "paid" || from === "preparing");
+}

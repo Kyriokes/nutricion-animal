@@ -19,6 +19,8 @@ import {
   canChangeClaim,
   canOpenClaim,
   type ClaimStatus,
+  needsRefundClaim,
+  REFUND_CLAIM_DESCRIPTION,
   type OpenClaimError,
   type Resolution,
 } from "./reclamos";
@@ -242,6 +244,11 @@ async function transitionOrder(
     if (!canTransition(status, to, actor)) return { ok: false as const, error: "invalid_transition" as const };
     if (releasesStock(to)) await lockProductsOf(tx, [orderId]);
     await applyTransition(tx, orderId, to, actor, opts.by, opts.paymentRef ? { paymentRef: opts.paymentRef } : {});
+    // RN-066 (decisión 1a): cancelado después de pagado → reembolso pendiente,
+    // en la misma transacción para que no quede uno sin el otro.
+    if (needsRefundClaim(status, to)) {
+      await tx.insert(claims).values({ orderId, description: REFUND_CLAIM_DESCRIPTION, origin: "system" });
+    }
     return { ok: true as const };
   });
 }
@@ -403,7 +410,11 @@ export async function openClaim(
         .where(and(eq(orderStatusChanges.orderId, orderId), eq(orderStatusChanges.status, "received")))
         .orderBy(desc(orderStatusChanges.createdAt))
         .limit(1),
-      tx.select({ n: count() }).from(claims).where(eq(claims.orderId, orderId)),
+      // El tope cuenta solo los que abrió el cliente.
+      tx
+        .select({ n: count() })
+        .from(claims)
+        .where(and(eq(claims.orderId, orderId), eq(claims.origin, "customer"))),
     ]);
     const check = canOpenClaim(
       { status: order.status as OrderStatus, receivedAt: received?.at ?? null, claims: n },
@@ -417,6 +428,7 @@ export async function openClaim(
 
 const toClaim = (c: typeof claims.$inferSelect) => ({
   ...c,
+  origin: c.origin as "customer" | "system",
   status: c.status as ClaimStatus,
   resolution: c.resolution as Resolution | null,
 });

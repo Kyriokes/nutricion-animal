@@ -38,12 +38,14 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   const result = resultMessage(order.status);
   const claims = await listOrderClaims(order.id);
+  // El tope cuenta solo los que abrió el cliente (no el reembolso automático).
+  const ownClaims = claims.filter((c) => c.origin === "customer").length;
   // RN-066: si todavía puede reclamar (estado, 48 h desde que lo recibió, tope).
   const receivedAt = order.history.findLast((h) => h.status === "received")?.createdAt ?? null;
   const claimable =
     !!actor &&
     hasPermission(actor.roles, "claim.open") &&
-    canOpenClaim({ status: order.status, receivedAt, claims: claims.length }, new Date()).ok;
+    canOpenClaim({ status: order.status, receivedAt, claims: ownClaims }, new Date()).ok;
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +80,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <h2 className="text-lg font-medium">Reclamos</h2>
           <ClaimList claims={claims} />
           {claimable && <ClaimForm orderId={order.id} />}
-          {claims.length >= MAX_CLAIMS_PER_ORDER && (
+          {ownClaims >= MAX_CLAIMS_PER_ORDER && (
             <p className="text-sm text-muted-foreground">
               Recibimos tus reclamos. Llegaste al máximo de {MAX_CLAIMS_PER_ORDER} para este pedido.
             </p>

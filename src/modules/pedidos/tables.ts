@@ -119,6 +119,9 @@ export const claims = pgTable(
       .references(() => orders.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("open"),
     description: text("description").notNull(),
+    // "customer": lo abrió el cliente (cuenta para el tope). "system": lo
+    // abrió el sistema, por ejemplo el reembolso al cancelar un pedido pagado.
+    origin: text("origin").notNull().default("customer"),
     resolution: text("resolution"),
     resolutionNote: text("resolution_note"),
     resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
@@ -128,6 +131,7 @@ export const claims = pgTable(
   },
   (t) => [
     check("claims_status_valid", sql`${t.status} in ('open', 'in_review', 'resolved')`),
+    check("claims_origin_valid", sql`${t.origin} in ('customer', 'system')`),
     check("claims_resolution_valid", sql`${t.resolution} is null or ${t.resolution} in ('refund', 'resend', 'no_change')`),
     // Resuelto si y solo si tiene resolución.
     check("claims_resolved_has_resolution", sql`(${t.status} = 'resolved') = (${t.resolution} is not null)`),

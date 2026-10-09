@@ -1,0 +1,2 @@
+ALTER TABLE "claims" ADD COLUMN "origin" text DEFAULT 'customer' NOT NULL;--> statement-breakpoint
+ALTER TABLE "claims" ADD CONSTRAINT "claims_origin_valid" CHECK ("claims"."origin" in ('customer', 'system'));
