@@ -32,35 +32,34 @@ const CARDS: Card[] = [
   { href: "/admin/mensajes", label: "Mensajes nuevos", permission: "contact.manage", count: countNewMessages },
 ];
 
-// VA-01: dashboard del admin (RN-090, RN-091). Cada bloque se muestra solo a
-// quien tiene el permiso de esa lista.
+// VA-01: dashboard del admin (RN-090, RN-091). Se entra con el mismo permiso
+// que lo muestra en el menú; cada tarjeta, además, solo si se tiene el permiso
+// de esa lista.
 async function Content() {
   await connection();
   const actor = await getCurrentActor();
-  if (!actor || !CARDS.some((c) => hasPermission(actor.roles, c.permission))) return <NoAccess />;
+  if (!actor || !hasPermission(actor.roles, "order.view_all")) return <NoAccess />;
   const can = (p: Permission) => hasPermission(actor.roles, p);
   const cards = CARDS.filter((c) => can(c.permission));
   const today = periodRange(SalesFilterSchema(new Date()).parse({}));
   const [counts, todaySales, topSold] = await Promise.all([
     Promise.all(cards.map((c) => c.count())),
-    can("order.view_all") ? salesSummary(today) : null,
-    can("order.view_all") ? topSoldProducts(10) : null,
+    salesSummary(today),
+    topSoldProducts(10),
   ]);
 
   return (
     <div className="flex flex-col gap-8">
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {todaySales && (
-          <li>
-            <Link href="/admin/ventas" className="flex h-full flex-col gap-1 rounded-lg border p-3 hover:bg-muted">
-              <span className="text-sm text-muted-foreground">Ventas de hoy</span>
-              <span className="text-2xl font-semibold">{formatPrice(todaySales.total)}</span>
-              <span className="text-xs text-muted-foreground">
-                {todaySales.count} pedido{todaySales.count === 1 ? "" : "s"}
-              </span>
-            </Link>
-          </li>
-        )}
+        <li>
+          <Link href="/admin/ventas" className="flex h-full flex-col gap-1 rounded-lg border p-3 hover:bg-muted">
+            <span className="text-sm text-muted-foreground">Ventas de hoy</span>
+            <span className="text-2xl font-semibold">{formatPrice(todaySales.total)}</span>
+            <span className="text-xs text-muted-foreground">
+              {todaySales.count} pedido{todaySales.count === 1 ? "" : "s"}
+            </span>
+          </Link>
+        </li>
         {cards.map((c, i) => (
           <li key={c.href}>
             <Link href={c.href} className="flex h-full flex-col gap-1 rounded-lg border p-3 hover:bg-muted">
@@ -72,30 +71,28 @@ async function Content() {
       </ul>
 
       <div className="grid gap-8 md:grid-cols-2">
-        {topSold && (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-lg font-medium">Lo más vendido</h2>
-            {topSold.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Todavía no hay ventas.</p>
-            ) : (
-              <ol className="flex flex-col gap-1 text-sm">
-                {topSold.map((p, i) => (
-                  <li key={p.productId} className="flex justify-between gap-2 border-b py-1">
-                    <span>
-                      {i + 1}.{" "}
-                      <Link href={`/admin/catalogo/${p.productId}`} className="underline-offset-4 hover:underline">
-                        {p.name}
-                      </Link>
-                    </span>
-                    <span className="text-muted-foreground">
-                      {p.units} unidad{p.units === 1 ? "" : "es"}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        )}
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium">Lo más vendido</h2>
+          {topSold.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todavía no hay ventas.</p>
+          ) : (
+            <ol className="flex flex-col gap-1 text-sm">
+              {topSold.map((p, i) => (
+                <li key={p.productId} className="flex justify-between gap-2 border-b py-1">
+                  <span>
+                    {i + 1}.{" "}
+                    <Link href={`/admin/catalogo/${p.productId}`} className="underline-offset-4 hover:underline">
+                      {p.name}
+                    </Link>
+                  </span>
+                  <span className="text-muted-foreground">
+                    {p.units} unidad{p.units === 1 ? "" : "es"}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
         {/* RN-091: espera la definición de qué se guarda de cada búsqueda (pregunta 17). */}
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-medium">Búsquedas más frecuentes</h2>

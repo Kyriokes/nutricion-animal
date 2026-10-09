@@ -25,11 +25,18 @@ export function isSpamTrap(input: { website?: unknown }): boolean {
   return typeof input.website === "string" && input.website.trim() !== "";
 }
 
-// Freno simple al abuso: hasta 5 mensajes por hora por email.
+// Freno al abuso, sin servicios externos:
+// - hasta 5 mensajes por hora por remitente: con sesión, por cuenta (así
+//   nadie puede agotarle el cupo a otro escribiendo su email, por ejemplo a
+//   una cuenta suspendida, cuyo único canal es este); sin sesión, por email;
+// - sin sesión, además, un tope total por hora para frenar envíos masivos
+//   con emails inventados. No afecta a quien escribe con su cuenta.
 export const MAX_MESSAGES_PER_HOUR = 5;
+export const MAX_ANONYMOUS_PER_HOUR = 50;
 
-export function canSendMore(sentInLastHour: number): boolean {
-  return sentInLastHour < MAX_MESSAGES_PER_HOUR;
+export function canSendMore(sent: { bySender: number; anonymousTotal: number }, signedIn: boolean): boolean {
+  if (sent.bySender >= MAX_MESSAGES_PER_HOUR) return false;
+  return signedIn || sent.anonymousTotal < MAX_ANONYMOUS_PER_HOUR;
 }
 
 // RN-081: email y WhatsApp de contacto. Datos de prueba en la primera versión.

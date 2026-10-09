@@ -59,7 +59,9 @@ export function ContactForm({ defaults }: { defaults?: { name: string; email: st
             required
             maxLength={254}
             defaultValue={defaults?.email}
-            className={`${fieldClass} h-8`}
+            // Con sesión se usa el email de la cuenta (el servidor lo impone igual).
+            readOnly={!!defaults}
+            className={`${fieldClass} h-8 read-only:bg-muted`}
           />
         </label>
       </div>

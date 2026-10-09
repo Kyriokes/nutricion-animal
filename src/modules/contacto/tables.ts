@@ -20,5 +20,6 @@ export const contactMessages = pgTable(
     index("contact_messages_created_idx").on(t.createdAt),
     // Para el tope de mensajes por hora por email.
     index("contact_messages_email_idx").on(t.email, t.createdAt),
+    index("contact_messages_user_idx").on(t.userId, t.createdAt),
   ],
 ).enableRLS();

@@ -9,6 +9,7 @@ import {
   smallint,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { products } from "@/modules/catalogo/tables";
@@ -107,6 +108,9 @@ export const orderStatusChanges = pgTable(
     index("order_status_changes_order_idx").on(t.orderId, t.createdAt),
     // Ventas por período (RN-090): se buscan los pagos por fecha.
     index("order_status_changes_status_idx").on(t.status, t.createdAt),
+    // Un pedido se paga una sola vez: así una venta nunca se cuenta doble
+    // (RN-090), aunque algún día otro proceso escriba el historial.
+    uniqueIndex("order_status_changes_paid_once").on(t.orderId).where(sql`${t.status} = 'paid'`),
   ],
 ).enableRLS();
 

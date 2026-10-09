@@ -31,7 +31,8 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   if (!actor || !hasPermission(actor.roles, "order.view_all")) return <NoAccess />;
   const filter = SalesFilterSchema(new Date()).parse(await searchParams);
   const range = periodRange(filter);
-  const [summary, result] = await Promise.all([salesSummary(range), listSales(range, filter.pagina)]);
+  const summary = await salesSummary(range);
+  const result = await listSales(range, filter.pagina, summary.count);
 
   return (
     <div className="flex flex-col gap-4">

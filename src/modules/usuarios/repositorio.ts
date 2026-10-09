@@ -1,5 +1,6 @@
-import { and, arrayContains, count, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, arrayContains, asc, count, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { pageWithin } from "@/lib/paginas";
 import {
   ApplicationDataSchema,
   approveApplication,
@@ -171,7 +172,14 @@ export type ApplicationWithUser = {
   user: { name: string; email: string; photoUrl: string | null; suspended: boolean };
 };
 
-async function listWithUser(pending: boolean, limit: number) {
+export const APPLICATIONS_PAGE_SIZE = 20;
+
+// VA-06, RN-090: postulaciones paginadas. Pendientes, de la más antigua a la
+// más nueva (se atienden en orden); decididas, las más recientes primero.
+export async function listApplications(pending: boolean, requestedPage: number) {
+  const where = pending ? eq(applications.status, "pending") : ne(applications.status, "pending");
+  const [{ total }] = await db.select({ total: count() }).from(applications).where(where);
+  const { page, pages } = pageWithin(requestedPage, total, APPLICATIONS_PAGE_SIZE);
   const rows = await db
     .select({
       application: applications,
@@ -182,16 +190,15 @@ async function listWithUser(pending: boolean, limit: number) {
     })
     .from(applications)
     .innerJoin(users, eq(users.id, applications.userId))
-    .where(
-      pending
-        ? eq(applications.status, "pending")
-        : ne(applications.status, "pending"),
-    )
+    .where(where)
     .orderBy(
-      pending ? applications.submittedAt : desc(applications.decidedAt),
+      ...(pending
+        ? [asc(applications.submittedAt), asc(applications.id)]
+        : [desc(applications.decidedAt), desc(applications.id)]),
     )
-    .limit(limit);
-  return rows.flatMap((r): ApplicationWithUser[] => {
+    .limit(APPLICATIONS_PAGE_SIZE)
+    .offset((page - 1) * APPLICATIONS_PAGE_SIZE);
+  const items = rows.flatMap((r): ApplicationWithUser[] => {
     const application = toApplication(r.application);
     return application
       ? [
@@ -208,12 +215,8 @@ async function listWithUser(pending: boolean, limit: number) {
         ]
       : [];
   });
+  return { items, total, page, pages };
 }
-
-// VA-06: pendientes, de la más antigua a la más nueva.
-export const listPendingApplications = () => listWithUser(true, 100);
-// VA-06: últimas decididas, para tener historial a mano.
-export const listRecentlyDecidedApplications = () => listWithUser(false, 20);
 
 // Dashboard (RN-090): postulaciones pendientes.
 export async function countPendingApplications(): Promise<number> {

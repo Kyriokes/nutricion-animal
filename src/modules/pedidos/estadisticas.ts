@@ -39,9 +39,9 @@ export async function salesSummary(range: Range): Promise<{ count: number; total
 
 export const SALES_PAGE_SIZE = 20;
 
-// RN-090: ventas del período, las más recientes primero, paginadas.
-export async function listSales(range: Range, requestedPage: number) {
-  const { count: total } = await salesSummary(range);
+// RN-090: ventas del período, las más recientes primero, paginadas. Recibe
+// la cantidad total (de salesSummary) para no volver a contarlas.
+export async function listSales(range: Range, requestedPage: number, total: number) {
   const { page, pages } = pageWithin(requestedPage, total, SALES_PAGE_SIZE);
   const rows = await db.execute<{
     id: string;

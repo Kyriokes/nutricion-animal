@@ -4,6 +4,7 @@ import {
   ContactMessageSchema,
   canSendMore,
   isSpamTrap,
+  MAX_ANONYMOUS_PER_HOUR,
   MAX_MESSAGES_PER_HOUR,
   whatsappLink,
 } from "./mensajes";
@@ -40,10 +41,18 @@ describe("contacto/mensajes (RN-080: formulario de contacto)", () => {
     expect(isSpamTrap({ website: "http://spam.example" })).toBe(true);
   });
 
-  it("hasta 5 mensajes por hora por email", () => {
+  it("hasta 5 mensajes por hora por remitente", () => {
     expect(MAX_MESSAGES_PER_HOUR).toBe(5);
-    expect(canSendMore(4)).toBe(true);
-    expect(canSendMore(5)).toBe(false);
+    expect(canSendMore({ bySender: 4, anonymousTotal: 0 }, true)).toBe(true);
+    expect(canSendMore({ bySender: 5, anonymousTotal: 0 }, true)).toBe(false);
+  });
+
+  it("sin sesión, además hay un tope total por hora para frenar envíos masivos", () => {
+    expect(MAX_ANONYMOUS_PER_HOUR).toBe(50);
+    expect(canSendMore({ bySender: 0, anonymousTotal: 49 }, false)).toBe(true);
+    expect(canSendMore({ bySender: 0, anonymousTotal: 50 }, false)).toBe(false);
+    // Con sesión no lo afecta: una cuenta (por ejemplo, suspendida) siempre puede escribir a soporte.
+    expect(canSendMore({ bySender: 0, anonymousTotal: 500 }, true)).toBe(true);
   });
 });
 

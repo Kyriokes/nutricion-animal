@@ -34,6 +34,15 @@ describe("pedidos/ventas (RN-090: ventas del dashboard)", () => {
     });
   });
 
+  it("ignora páginas inválidas y parámetros repetidos en la URL", () => {
+    expect(SalesFilterSchema(now).parse({ pagina: "0" }).pagina).toBe(1);
+    expect(SalesFilterSchema(now).parse({ pagina: "99999" }).pagina).toBe(1);
+    expect(SalesFilterSchema(now).parse({ periodo: ["mes", "dia"], mes: ["2026-01", "2026-02"] })).toMatchObject({
+      periodo: "dia",
+      mes: "2026-10",
+    });
+  });
+
   it("convierte el período en un rango de fechas (Buenos Aires, UTC-3)", () => {
     expect(periodRange({ periodo: "dia", fecha: "2026-10-09", mes: "2026-10" })).toEqual({
       from: new Date("2026-10-09T03:00:00Z"),

@@ -1,6 +1,6 @@
 "use server";
 
-import { ContactMessageSchema, isSpamTrap, MAX_MESSAGES_PER_HOUR } from "@/modules/contacto/mensajes";
+import { ContactMessageSchema, isSpamTrap } from "@/modules/contacto/mensajes";
 import { saveContactMessage } from "@/modules/contacto/repositorio";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
@@ -16,12 +16,9 @@ export async function sendContactMessageAction(input: unknown): Promise<ContactA
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
   try {
     const user = await getCurrentUser();
-    const r = await saveContactMessage(parsed.data, user?.id ?? null);
+    const r = await saveContactMessage(parsed.data, user ? { id: user.id, email: user.email } : null);
     if (!r.ok) {
-      return {
-        ok: false,
-        message: `Ya recibimos ${MAX_MESSAGES_PER_HOUR} mensajes tuyos en la última hora. Probá más tarde.`,
-      };
+      return { ok: false, message: "Recibimos muchos mensajes en la última hora. Probá más tarde." };
     }
   } catch {
     return { ok: false, message: "No se pudo enviar. Probá de nuevo." };

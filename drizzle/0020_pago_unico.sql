@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "order_status_changes_paid_once" ON "order_status_changes" USING btree ("order_id") WHERE "order_status_changes"."status" = 'paid';

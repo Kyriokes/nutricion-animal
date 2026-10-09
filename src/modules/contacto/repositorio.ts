@@ -4,21 +4,42 @@ import { pageWithin } from "@/lib/paginas";
 import { canSendMore, type ContactMessage } from "./mensajes";
 import { contactMessages } from "./tables";
 
-// RN-080: guarda un mensaje si ese email no pasó el tope de la última hora.
-// Cuenta e inserta en una transacción con un bloqueo por email, así varios
-// envíos simultáneos no pasan el tope.
+// RN-080: guarda un mensaje si el remitente no pasó los topes de la última
+// hora (canSendMore). Con sesión, el email que se guarda es el de la cuenta y
+// el tope se cuenta por cuenta. Cuenta e inserta en una transacción con un
+// bloqueo (por cuenta, o uno común a los envíos sin sesión), así varios envíos
+// simultáneos no pasan los topes.
 export async function saveContactMessage(
   msg: ContactMessage,
-  userId: string | null,
+  user: { id: string; email: string } | null,
 ): Promise<{ ok: true } | { ok: false; error: "too_many" }> {
+  const lastHour = gt(contactMessages.createdAt, sql`now() - interval '1 hour'`);
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`contact:${msg.email}`}))`);
-    const [{ n }] = await tx
-      .select({ n: count() })
-      .from(contactMessages)
-      .where(and(eq(contactMessages.email, msg.email), gt(contactMessages.createdAt, sql`now() - interval '1 hour'`)));
-    if (!canSendMore(n)) return { ok: false as const, error: "too_many" as const };
-    await tx.insert(contactMessages).values({ ...msg, userId });
+    const lockKey = user ? `contact:user:${user.id}` : "contact:anonymous";
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${lockKey}))`);
+    const [[{ bySender }], [{ anonymousTotal }]] = await Promise.all([
+      tx
+        .select({ bySender: count() })
+        .from(contactMessages)
+        .where(
+          and(
+            lastHour,
+            user
+              ? eq(contactMessages.userId, user.id)
+              : and(eq(contactMessages.email, msg.email), isNull(contactMessages.userId)),
+          ),
+        ),
+      user
+        ? Promise.resolve([{ anonymousTotal: 0 }])
+        : tx
+            .select({ anonymousTotal: count() })
+            .from(contactMessages)
+            .where(and(lastHour, isNull(contactMessages.userId))),
+    ]);
+    if (!canSendMore({ bySender, anonymousTotal }, user !== null)) {
+      return { ok: false as const, error: "too_many" as const };
+    }
+    await tx.insert(contactMessages).values({ ...msg, email: user?.email ?? msg.email, userId: user?.id ?? null });
     return { ok: true as const };
   });
 }

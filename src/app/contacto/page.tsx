@@ -35,7 +35,8 @@ export default function ContactPage() {
           </a>
         </li>
       </ul>
-      <Suspense fallback={<ContactForm />}>
+      {/* Mientras carga la sesión, sin campos para escribir: así no se pierde nada al reemplazarlo. */}
+      <Suspense fallback={<p className="text-muted-foreground">Cargando el formulario…</p>}>
         <Form />
       </Suspense>
     </main>

@@ -25,7 +25,7 @@
 - **Dashboard (VA-01, RN-090, RN-091)** en `/admin`: tarjetas de pendientes, ventas de hoy, lo más vendido; búsquedas frecuentes reservado (pregunta 17). **Ventas** en `/admin/ventas` con filtro por día (por defecto hoy), mes o todo. Catálogo del admin paginado y ordenado por stock (DT-060).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 277 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 279 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
@@ -72,6 +72,12 @@ Quedan (menores):
 ## Pendientes de la revisión de gestión de pedidos y reclamos (2026-10-09)
 Arreglados: página fuera de rango en las listas de pedidos y reclamos, enlace a reclamos solo para quien los gestiona, aviso al llegar al tope de reclamos, mensaje de permiso al abrir un reclamo.
 Decidido (1a): un pedido cancelado después de pagado abre solo un reclamo de reembolso (RN-069, DT-058).
+
+## Pendientes de la revisión de contacto y dashboard (2026-10-09)
+Arreglados: freno al abuso del contacto (tope por cuenta con el email de la cuenta, tope total sin sesión), postulaciones paginadas (RN-090), pago único por pedido en la base, ventas contadas una sola vez por página, formulario de contacto que no se reemplaza mientras se escribe, mismo permiso para el dashboard y su entrada en el menú, tests de bordes de los filtros.
+Quedan (aceptados):
+- Abrir un mensaje lo marca leído durante la carga de la página (los enlaces no adelantan la página con prefetch). No hay "marcar como no leído".
+- El filtro de ventas es un formulario GET clásico: recarga la página entera (funciona sin JavaScript).
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.
