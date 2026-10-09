@@ -13,12 +13,15 @@
 - **Postulaciones (VA-06)** en `/admin/postulaciones`: admin y auditor aprueban o rechazan (con motivo); aprobar suma el rol y, si es nutricionista, crea su perfil profesional (RN-029). Tabla `applications`.
 - **Perfil profesional y búsqueda** (RN-012, RN-029, VN-05, VU-08, VU-09): el nutricionista lo edita en Mi perfil; los clientes lo ven en `/nutricionistas`, sin matrícula.
 - **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041). Las cuentas bloqueadas ven un aviso de contactar a soporte (RN-046).
-- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, perfil profesional, direcciones, foto, gestión), `mascotas` (esquema), `dietas` (versiones, clonado, asignación), `catalogo` (esquema), `apariencia`.
-- `npm test`: 156 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos restaurados).
+- **Mis mascotas (VU-03, VU-04)** en `/mascotas`: alta, edición, borrado; el detalle muestra la "Dieta actual" con la versión asignada (RN-010, RN-015). Tabla `pets`.
+- **Mis dietas (VN-01, VN-03, VN-04)** en `/dietas`: crear, renombrar, editar (en el lugar o versión nueva eligiendo qué mascotas pasan), clonar, borrar versiones nunca asignadas, asignar buscando cliente o mascota, terminar asignaciones e historial (RN-021 a RN-027, DT-047). Tablas `diets`, `diet_versions`, `diet_assignments`.
+- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, perfil profesional, direcciones, foto, gestión), `mascotas` (esquema, formulario), `dietas` (versiones, clonado, asignación, textos), `catalogo` (esquema), `apariencia`.
+- `npm test`: 167 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
-- Que Sergio pruebe en pantalla: Mi perfil (foto, direcciones, postulación), Postulaciones (rechazo con motivo), Nutricionistas y Usuarios.
-- Después, candidatos sin bloqueos: tablas y pantallas de mascotas (RN-010, VU-03, VU-04) y de dietas del nutricionista (VN-01, VN-03).
+- Que Sergio pruebe en pantalla: Mis mascotas, Mis dietas (con el rol de nutricionista), y la Dieta actual desde el detalle de la mascota.
+- Navegación: el encabezado ya tiene muchos enlaces; conviene un menú (desplegable o lateral) antes de sumar más secciones.
+- Siguiente bloque grande: catálogo de productos (RN-030, RN-031, VP-04, VP-05), que hoy solo tiene el esquema.
 
 ## Versión avanzada (decidido dejar para después)
 - Emails: avisar al postulante (RN-045), cambios de dieta (RN-028), y soporte para cuentas suspendidas (RN-046).
