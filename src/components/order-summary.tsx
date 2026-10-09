@@ -1,9 +1,9 @@
 import { formatPrice } from "@/modules/catalogo/presentacion";
-import type { CustomerOrder } from "@/modules/pedidos/repositorio";
+import type { OrderDetail } from "@/modules/pedidos/repositorio";
 import { formatAddress } from "@/modules/usuarios/direcciones";
 
 // Detalle de un pedido: productos con el precio que se pagó, envío y total.
-export function OrderSummary({ order }: { order: CustomerOrder }) {
+export function OrderSummary({ order }: { order: OrderDetail }) {
   return (
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col divide-y rounded-lg border">

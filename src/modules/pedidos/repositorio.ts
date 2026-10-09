@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { products } from "@/modules/catalogo/tables";
 import type { Address } from "@/modules/usuarios/direcciones";
 import { getAddress } from "@/modules/usuarios/repositorio";
+import { users } from "@/modules/usuarios/tables";
 import { planOrder, type CheckoutError, type CheckoutInput } from "./checkout";
 import { CARRIER, DEFAULT_SHIPPING_COST } from "./envio";
 import {
@@ -108,8 +109,9 @@ export async function expireOverdueOrders(customerId?: string) {
   });
 }
 
-// Al leer, vencer reservas es un extra: si falla, se muestra igual lo que hay.
-async function tryExpireOverdue(customerId: string) {
+// Al leer, vencer reservas es un extra: si falla, se muestra igual lo que
+// hay. Sin `customerId`, las de todos (lo que ve el admin).
+async function tryExpireOverdue(customerId?: string) {
   try {
     await expireOverdueOrders(customerId);
   } catch {
@@ -281,14 +283,15 @@ export async function listCustomerOrders(customerId: string, page: number) {
   };
 }
 
-// VU-10, VU-02: un pedido del cliente con sus productos y su seguimiento.
-export async function getCustomerOrder(customerId: string, orderId: string) {
-  await tryExpireOverdue(customerId);
-  const [order] = await db
-    .select()
+// Un pedido con sus productos, su seguimiento y quién lo hizo. Con
+// `customerId`, solo si es de ese cliente.
+async function loadOrder(orderId: string, customerId?: string) {
+  const [row] = await db
+    .select({ order: orders, customerName: users.name, customerEmail: users.email })
     .from(orders)
-    .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)));
-  if (!order) return null;
+    .innerJoin(users, eq(users.id, orders.customerId))
+    .where(and(eq(orders.id, orderId), customerId ? eq(orders.customerId, customerId) : undefined));
+  if (!row) return null;
   const [items, history] = await Promise.all([
     db
       .select({
@@ -301,17 +304,74 @@ export async function getCustomerOrder(customerId: string, orderId: string) {
       .where(eq(orderItems.orderId, orderId))
       .orderBy(asc(orderItems.productName)),
     db
-      .select({ status: orderStatusChanges.status, createdAt: orderStatusChanges.createdAt })
+      .select({
+        status: orderStatusChanges.status,
+        actor: orderStatusChanges.actor,
+        byName: users.name,
+        createdAt: orderStatusChanges.createdAt,
+      })
       .from(orderStatusChanges)
+      .leftJoin(users, eq(users.id, orderStatusChanges.changedBy))
       .where(eq(orderStatusChanges.orderId, orderId))
       .orderBy(asc(orderStatusChanges.createdAt)),
   ]);
   return {
-    ...order,
-    status: order.status as OrderStatus,
+    ...row.order,
+    status: row.order.status as OrderStatus,
+    customer: { name: row.customerName, email: row.customerEmail },
     items,
-    history: history.map((h) => ({ ...h, status: h.status as OrderStatus })),
+    history: history.map((h) => ({ ...h, status: h.status as OrderStatus, actor: h.actor as OrderActor })),
   };
 }
 
-export type CustomerOrder = NonNullable<Awaited<ReturnType<typeof getCustomerOrder>>>;
+export type OrderDetail = NonNullable<Awaited<ReturnType<typeof loadOrder>>>;
+
+// VU-10, VU-02: un pedido del cliente con sus productos y su seguimiento.
+export async function getCustomerOrder(customerId: string, orderId: string) {
+  await tryExpireOverdue(customerId);
+  return loadOrder(orderId, customerId);
+}
+
+// VA-04, RN-061: cualquier pedido, para el admin.
+export async function getOrderForAdmin(orderId: string) {
+  await tryExpireOverdue();
+  return loadOrder(orderId);
+}
+
+// VA-04, RN-065: el admin avanza el pedido o lo cancela antes del envío.
+export function transitionOrderByAdmin(adminId: string, orderId: string, to: OrderStatus) {
+  return transitionOrder(orderId, to, "admin", { by: adminId });
+}
+
+export const ADMIN_ORDERS_PAGE_SIZE = 20;
+
+// VA-04, RN-061, RN-090: todos los pedidos, los más nuevos primero, filtrados
+// por estado (null = todos).
+export async function listAllOrders(statuses: readonly OrderStatus[] | null, page: number) {
+  await tryExpireOverdue();
+  const where = statuses ? inArray(orders.status, [...statuses]) : undefined;
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        total: orders.total,
+        createdAt: orders.createdAt,
+        customerName: users.name,
+        customerEmail: users.email,
+      })
+      .from(orders)
+      .innerJoin(users, eq(users.id, orders.customerId))
+      .where(where)
+      .orderBy(desc(orders.createdAt), desc(orders.id))
+      .limit(ADMIN_ORDERS_PAGE_SIZE)
+      .offset((page - 1) * ADMIN_ORDERS_PAGE_SIZE),
+    db.select({ total: count() }).from(orders).where(where),
+  ]);
+  return {
+    orders: rows.map((r) => ({ ...r, status: r.status as OrderStatus })),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE)),
+  };
+}

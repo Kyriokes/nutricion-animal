@@ -50,6 +50,13 @@ describe("usuarios/roles", () => {
     );
   });
 
+  it("RN-065: solo el admin avanza los estados de los pedidos", () => {
+    expect(hasPermission(["admin"], "order.manage")).toBe(true);
+    for (const role of ["auditor", "customer", "nutritionist", "supplier"] as const) {
+      expect(hasPermission([role], "order.manage")).toBe(false);
+    }
+  });
+
   it("RN-046: una cuenta sin roles está suspendida", () => {
     expect(isSuspended([])).toBe(true);
     expect(isSuspended(["customer"])).toBe(false);

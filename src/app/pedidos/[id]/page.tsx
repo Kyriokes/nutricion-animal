@@ -9,7 +9,7 @@ import { getCustomerOrder } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { CancelOrderButton } from "../order-buttons";
-import { OrderSummary } from "../order-summary";
+import { OrderSummary } from "@/components/order-summary";
 
 const dateTime = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "medium",

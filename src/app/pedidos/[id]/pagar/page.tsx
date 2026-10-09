@@ -10,7 +10,7 @@ import { hasPermission } from "@/modules/usuarios/roles";
 import { getCustomerOrder } from "@/modules/pedidos/repositorio";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { SimulatedPaymentButtons } from "../../order-buttons";
-import { OrderSummary } from "../../order-summary";
+import { OrderSummary } from "@/components/order-summary";
 
 const time = new Intl.DateTimeFormat("es-AR", {
   timeStyle: "short",

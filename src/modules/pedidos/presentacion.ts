@@ -1,4 +1,4 @@
-import { canTransition, type OrderStatus } from "./estados";
+import { canTransition, type OrderActor, type OrderStatus } from "./estados";
 
 // Número corto para mostrar y para que el cliente lo cite ("Pedido 9F1C2A3B").
 export function orderNumber(id: string): string {
@@ -26,3 +26,26 @@ const RESULTS: Record<OrderStatus, { tone: Tone; text: string }> = {
 export function resultMessage(status: OrderStatus): { tone: Tone; text: string } {
   return RESULTS[status];
 }
+
+const ACTOR_LABELS: Record<OrderActor, string> = {
+  gateway: "Pasarela de pago",
+  customer: "Cliente",
+  admin: "Administración",
+  system: "Sistema: venció la reserva",
+};
+
+// VA-04: quién hizo un cambio de estado, para el seguimiento del admin.
+export function changedByLabel(change: { actor: OrderActor; byName: string | null }): string {
+  if (change.byName && (change.actor === "admin" || change.actor === "customer")) {
+    return `${change.byName} (${ACTOR_LABELS[change.actor].toLowerCase()})`;
+  }
+  return ACTOR_LABELS[change.actor];
+}
+
+// VA-04, RN-065: texto del botón de cada cambio que puede hacer el admin.
+export const ADMIN_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
+  preparing: "Marcar en preparación",
+  shipping: "Marcar en envío",
+  received: "Marcar recibido",
+  cancelled: "Cancelar pedido",
+};

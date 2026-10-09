@@ -40,6 +40,7 @@ export const PERMISSIONS = [
   "product.review", // RN-041
   "application.decide", // RN-024, RN-043
   "order.view_all", // RN-061
+  "order.manage", // RN-065: avanzar estados y cancelar pedidos
   "user.manage_roles", // VA-10
   "settings.manage", // VA-08, RN-070
   "catalog.manage", // VA-02
