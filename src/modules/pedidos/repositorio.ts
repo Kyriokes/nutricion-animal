@@ -14,7 +14,14 @@ import {
   type OrderActor,
   type OrderStatus,
 } from "./estados";
-import { orderItems, orders, orderStatusChanges, shopSettings } from "./tables";
+import {
+  canChangeClaim,
+  canOpenClaim,
+  type ClaimStatus,
+  type OpenClaimError,
+  type Resolution,
+} from "./reclamos";
+import { claims, orderItems, orders, orderStatusChanges, shopSettings } from "./tables";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -374,4 +381,128 @@ export async function listAllOrders(statuses: readonly OrderStatus[] | null, pag
     page,
     pages: Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE)),
   };
+}
+
+// RN-066: el cliente abre un reclamo sobre su pedido. Se bloquea el pedido
+// para que el tope de reclamos no se pase con dos envíos simultáneos.
+export async function openClaim(
+  customerId: string,
+  orderId: string,
+  description: string,
+): Promise<{ ok: true } | { ok: false; error: OpenClaimError | "not_found" }> {
+  return db.transaction(async (tx) => {
+    const [order] = await tx
+      .select({ status: orders.status })
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)))
+      .for("update");
+    if (!order) return { ok: false as const, error: "not_found" as const };
+    const [[received], [{ n }]] = await Promise.all([
+      tx
+        .select({ at: orderStatusChanges.createdAt })
+        .from(orderStatusChanges)
+        .where(and(eq(orderStatusChanges.orderId, orderId), eq(orderStatusChanges.status, "received")))
+        .orderBy(desc(orderStatusChanges.createdAt))
+        .limit(1),
+      tx.select({ n: count() }).from(claims).where(eq(claims.orderId, orderId)),
+    ]);
+    const check = canOpenClaim(
+      { status: order.status as OrderStatus, receivedAt: received?.at ?? null, claims: n },
+      new Date(),
+    );
+    if (!check.ok) return check;
+    await tx.insert(claims).values({ orderId, description });
+    return { ok: true as const };
+  });
+}
+
+const toClaim = (c: typeof claims.$inferSelect) => ({
+  ...c,
+  status: c.status as ClaimStatus,
+  resolution: c.resolution as Resolution | null,
+});
+
+// RN-066: reclamos de un pedido, los más viejos primero.
+export async function listOrderClaims(orderId: string) {
+  const rows = await db.select().from(claims).where(eq(claims.orderId, orderId)).orderBy(asc(claims.createdAt));
+  return rows.map(toClaim);
+}
+
+export const CLAIMS_PAGE_SIZE = 20;
+
+// RN-066, RN-090: reclamos para el admin, los más nuevos primero.
+export async function listClaims(statuses: readonly ClaimStatus[] | null, page: number) {
+  const where = statuses ? inArray(claims.status, [...statuses]) : undefined;
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: claims.id,
+        orderId: claims.orderId,
+        status: claims.status,
+        description: claims.description,
+        createdAt: claims.createdAt,
+        customerName: users.name,
+      })
+      .from(claims)
+      .innerJoin(orders, eq(orders.id, claims.orderId))
+      .innerJoin(users, eq(users.id, orders.customerId))
+      .where(where)
+      .orderBy(desc(claims.createdAt), desc(claims.id))
+      .limit(CLAIMS_PAGE_SIZE)
+      .offset((page - 1) * CLAIMS_PAGE_SIZE),
+    db.select({ total: count() }).from(claims).where(where),
+  ]);
+  return {
+    claims: rows.map((r) => ({ ...r, status: r.status as ClaimStatus })),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / CLAIMS_PAGE_SIZE)),
+  };
+}
+
+// RN-066: un reclamo con su pedido y su cliente, para el admin.
+export async function getClaimForAdmin(claimId: string) {
+  const [row] = await db
+    .select({ claim: claims, customerName: users.name, customerEmail: users.email, orderStatus: orders.status })
+    .from(claims)
+    .innerJoin(orders, eq(orders.id, claims.orderId))
+    .innerJoin(users, eq(users.id, orders.customerId))
+    .where(eq(claims.id, claimId));
+  if (!row) return null;
+  return {
+    ...toClaim(row.claim),
+    customer: { name: row.customerName, email: row.customerEmail },
+    orderStatus: row.orderStatus as OrderStatus,
+  };
+}
+
+// RN-066: el admin pasa el reclamo a revisión o lo resuelve.
+export async function changeClaim(
+  adminId: string,
+  claimId: string,
+  change: { to: "in_review" } | { to: "resolved"; resolution: Resolution; note?: string },
+): Promise<{ ok: true } | { ok: false; error: "not_found" | "invalid_transition" }> {
+  return db.transaction(async (tx) => {
+    const [claim] = await tx.select({ status: claims.status }).from(claims).where(eq(claims.id, claimId)).for("update");
+    if (!claim) return { ok: false as const, error: "not_found" as const };
+    if (!canChangeClaim(claim.status as ClaimStatus, change.to)) {
+      return { ok: false as const, error: "invalid_transition" as const };
+    }
+    await tx
+      .update(claims)
+      .set(
+        change.to === "resolved"
+          ? {
+              status: "resolved",
+              resolution: change.resolution,
+              resolutionNote: change.note ?? null,
+              resolvedBy: adminId,
+              resolvedAt: sql`now()`,
+              updatedAt: sql`now()`,
+            }
+          : { status: "in_review", updatedAt: sql`now()` },
+      )
+      .where(eq(claims.id, claimId));
+    return { ok: true as const };
+  });
 }

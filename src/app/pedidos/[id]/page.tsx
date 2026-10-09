@@ -5,10 +5,12 @@ import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modules/pedidos/presentacion";
-import { getCustomerOrder } from "@/modules/pedidos/repositorio";
+import { canOpenClaim } from "@/modules/pedidos/reclamos";
+import { getCustomerOrder, listOrderClaims } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
-import { CancelOrderButton } from "../order-buttons";
+import { ClaimList } from "@/components/claim-list";
+import { CancelOrderButton, ClaimForm } from "../order-buttons";
 import { OrderSummary } from "@/components/order-summary";
 
 const dateTime = new Intl.DateTimeFormat("es-AR", {
@@ -35,6 +37,13 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       : null;
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   const result = resultMessage(order.status);
+  const claims = await listOrderClaims(order.id);
+  // RN-066: si todavía puede reclamar (estado, 48 h desde que lo recibió, tope).
+  const receivedAt = order.history.findLast((h) => h.status === "received")?.createdAt ?? null;
+  const claimable =
+    !!actor &&
+    hasPermission(actor.roles, "claim.open") &&
+    canOpenClaim({ status: order.status, receivedAt, claims: claims.length }, new Date()).ok;
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,6 +72,14 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       </section>
 
       {canCustomerCancel(order.status) && <CancelOrderButton orderId={order.id} />}
+
+      {(claims.length > 0 || claimable) && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium">Reclamos</h2>
+          <ClaimList claims={claims} />
+          {claimable && <ClaimForm orderId={order.id} />}
+        </section>
+      )}
     </div>
   );
 }

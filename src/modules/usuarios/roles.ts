@@ -41,6 +41,8 @@ export const PERMISSIONS = [
   "application.decide", // RN-024, RN-043
   "order.view_all", // RN-061
   "order.manage", // RN-065: avanzar estados y cancelar pedidos
+  "claim.open", // RN-066
+  "claim.manage", // RN-066: revisar y resolver reclamos
   "user.manage_roles", // VA-10
   "settings.manage", // VA-08, RN-070
   "catalog.manage", // VA-02
@@ -58,6 +60,7 @@ const CUSTOMER_PERMISSIONS: readonly Permission[] = [
   "product.search_by_diet",
   "diet.view_assigned",
   "order.view_own",
+  "claim.open",
 ];
 
 // Cada rol lleva su lista explícita de permisos, sin herencia entre roles.

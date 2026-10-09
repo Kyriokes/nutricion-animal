@@ -3,8 +3,19 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
-import { cancelOrderByCustomer, simulatePayment, type TransitionError } from "@/modules/pedidos/repositorio";
-import { isSuspended } from "@/modules/usuarios/roles";
+import {
+  cancelOrderByCustomer,
+  openClaim,
+  simulatePayment,
+  type TransitionError,
+} from "@/modules/pedidos/repositorio";
+import {
+  CLAIM_WINDOW_HOURS,
+  ClaimInputSchema,
+  MAX_CLAIMS_PER_ORDER,
+  type OpenClaimError,
+} from "@/modules/pedidos/reclamos";
+import { hasPermission, isSuspended } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 
 export type OrderActionResult = { ok: true } | { ok: false; message: string };
@@ -47,6 +58,33 @@ export async function cancelOrderAction(orderId: unknown): Promise<OrderActionRe
     if (!r.ok) return { ok: false, message: ERRORS[r.error] };
   } catch {
     return { ok: false, message: "No se pudo cancelar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+const CLAIM_ERRORS: Record<OpenClaimError | "not_found", string> = {
+  not_found: "No encontramos ese pedido.",
+  not_allowed: "Este pedido no admite reclamos.",
+  window_closed: `Pasaron más de ${CLAIM_WINDOW_HOURS} horas desde que recibiste el pedido.`,
+  too_many: `Llegaste al máximo de ${MAX_CLAIMS_PER_ORDER} reclamos para este pedido.`,
+};
+
+// RN-066: el cliente abre un reclamo sobre su pedido.
+export async function openClaimAction(orderId: unknown, input: unknown): Promise<OrderActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor || !hasPermission(actor.roles, "claim.open")) {
+    return { ok: false, message: "Tenés que ingresar para hacer esto." };
+  }
+  const order = z.uuid().safeParse(orderId);
+  const claim = ClaimInputSchema.safeParse(input);
+  if (!order.success) return { ok: false, message: "Datos inválidos." };
+  if (!claim.success) return { ok: false, message: claim.error.issues[0]?.message ?? "Datos inválidos." };
+  try {
+    const r = await openClaim(actor.id, order.data, claim.data.description);
+    if (!r.ok) return { ok: false, message: CLAIM_ERRORS[r.error] };
+  } catch {
+    return { ok: false, message: "No se pudo enviar el reclamo. Probá de nuevo." };
   }
   refresh();
   return { ok: true };

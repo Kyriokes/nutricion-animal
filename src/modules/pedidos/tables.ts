@@ -107,3 +107,31 @@ export const orderStatusChanges = pgTable(
     index("order_status_changes_order_idx").on(t.orderId, t.createdAt),
   ],
 ).enableRLS();
+
+// RN-066: reclamos sobre un pedido, con su propio estado y una resolución al
+// cerrarse. La nota de resolución la ve el cliente.
+export const claims = pgTable(
+  "claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("open"),
+    description: text("description").notNull(),
+    resolution: text("resolution"),
+    resolutionNote: text("resolution_note"),
+    resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("claims_status_valid", sql`${t.status} in ('open', 'in_review', 'resolved')`),
+    check("claims_resolution_valid", sql`${t.resolution} is null or ${t.resolution} in ('refund', 'resend', 'no_change')`),
+    // Resuelto si y solo si tiene resolución.
+    check("claims_resolved_has_resolution", sql`(${t.status} = 'resolved') = (${t.resolution} is not null)`),
+    index("claims_order_idx").on(t.orderId),
+    index("claims_status_idx").on(t.status, t.createdAt),
+  ],
+).enableRLS();

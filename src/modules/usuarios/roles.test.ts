@@ -57,6 +57,15 @@ describe("usuarios/roles", () => {
     }
   });
 
+  it("RN-066: el cliente abre reclamos y solo el admin los resuelve", () => {
+    expect(hasPermission(["customer"], "claim.open")).toBe(true);
+    expect(hasPermission(["nutritionist"], "claim.open")).toBe(true);
+    expect(hasPermission(["admin"], "claim.manage")).toBe(true);
+    for (const role of ["auditor", "customer", "nutritionist", "supplier"] as const) {
+      expect(hasPermission([role], "claim.manage")).toBe(false);
+    }
+  });
+
   it("RN-046: una cuenta sin roles está suspendida", () => {
     expect(isSuspended([])).toBe(true);
     expect(isSuspended(["customer"])).toBe(false);

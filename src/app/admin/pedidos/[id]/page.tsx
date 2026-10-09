@@ -7,7 +7,8 @@ import { OrderSummary } from "@/components/order-summary";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { adminActions } from "@/modules/pedidos/filtros";
 import { changedByLabel, orderNumber } from "@/modules/pedidos/presentacion";
-import { getOrderForAdmin } from "@/modules/pedidos/repositorio";
+import { getOrderForAdmin, listOrderClaims } from "@/modules/pedidos/repositorio";
+import { ClaimList } from "@/components/claim-list";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { AdminOrderActions } from "../order-actions";
@@ -26,6 +27,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await params).id);
   const order = id.success ? await getOrderForAdmin(id.data) : null;
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
+  const claims = await listOrderClaims(order.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,6 +60,13 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           ))}
         </ol>
       </section>
+
+      {claims.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium">Reclamos</h2>
+          <ClaimList claims={claims} hrefFor={(id) => `/admin/reclamos/${id}`} />
+        </section>
+      )}
     </div>
   );
 }
