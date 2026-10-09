@@ -133,7 +133,7 @@ Lista aportada por Sergio. Los nombres de las vistas son los suyos. Las responsa
 - **VN-01** Mis dietas
 - **VN-02** Mis pacientes
 - **VN-03** Crear dieta
-- **VN-04** Asignar dieta a las mascotas de sus usuarios (**[A DEFINIR]** el flujo)
+- **VN-04** Asignar dieta a las mascotas de sus usuarios. Flujo provisorio (decidido por el desarrollador): el nutricionista busca al cliente por nombre o email, o a la mascota por nombre, y elige la mascota de una lista; por ahora cualquier nutricionista ve a todos los clientes y sus mascotas. Se revisa cuando se defina cómo se vuelve paciente un cliente (pregunta 5.1).
 - **VN-05** Mi perfil profesional: donde el nutricionista carga sus datos
 
 ### 4.4 Vistas del Administrador

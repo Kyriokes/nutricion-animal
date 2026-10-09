@@ -28,6 +28,19 @@
 - Formulario completo de proveedor (hoy solo el nombre del negocio).
 - Editar una dirección (hoy se borra y se carga de nuevo).
 
+## Pendientes de la revisión final de perfil, mascotas y dietas (2026-10-08)
+Arreglados: aprobar ya no desbloquea a un usuario (RN-024); el editor desactualizado ya no mueve mascotas (RN-026); borrar dietas nunca asignadas (RN-021).
+Quedan (menores):
+- Pasar una mascota que quedó en una versión vieja a la última (hoy: terminar y volver a asignar).
+- Dos admins quitándose el rol entre sí a la vez podrían dejar el sistema sin admins.
+- Fotos: dos subidas simultáneas dejan una huérfana; exigir el prefijo `<id de usuario>/` antes de borrar la anterior.
+- `import "server-only"` en `src/lib/supabase/admin.ts` (requiere instalar el paquete `server-only`).
+- Largos máximos en los esquemas (descripción y notas de dieta, alimentos, listas de la mascota, dirección y matrícula).
+- Sugerencias de especies: hoy muestran texto libre de otros usuarios; exigir que se repita o usar lista cerrada.
+- El admin al clonar una dieta ajena queda como dueño de la copia.
+- Qué puede hacer un usuario bloqueado: hoy sube foto y carga direcciones.
+- Si la base falla al leer la sesión, las acciones terminan en la pantalla de error en vez de un mensaje.
+
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.
 - Las pantallas de admin sin permiso muestran un texto; redirigir a VP-13 cuando exista.
