@@ -15,13 +15,17 @@
 - **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041). Las cuentas bloqueadas ven un aviso de contactar a soporte (RN-046).
 - **Mis mascotas (VU-03, VU-04)** en `/mascotas`: alta, edición, borrado; el detalle muestra la "Dieta actual" con la versión asignada (RN-010, RN-015). Tabla `pets`.
 - **Mis dietas (VN-01, VN-03, VN-04)** en `/dietas`: crear, renombrar, editar (en el lugar o versión nueva eligiendo qué mascotas pasan), clonar, borrar versiones nunca asignadas, asignar buscando cliente o mascota, terminar asignaciones e historial (RN-021 a RN-027, DT-047). Tablas `diets`, `diet_versions`, `diet_assignments`.
-- Módulos con lógica y tests: `usuarios` (roles, ingreso, postulaciones, perfil, perfil profesional, direcciones, foto, gestión), `mascotas` (esquema, formulario), `dietas` (versiones, clonado, asignación, textos), `catalogo` (esquema), `apariencia`.
-- `npm test`: 167 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- **Catálogo (VP-04, VP-05, VP-06, RN-013, RN-014, RN-030, RN-031)** en `/catalogo`: búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. Tabla `products` preparada para proveedores y revisión (`supplier_id`, `status`). 12 productos de prueba con `npm run db:seed` (DT-052).
+- **Gestión del catálogo (VA-02)** en `/admin/catalogo`: crear, editar, imagen (bucket `products`) y borrar.
+- **Carrito (VP-07) y pre-checkout (VP-08)** en `/carrito`: sin sesión, guardado en el navegador; precio y stock siempre del servidor; para continuar pide ingresar. El pago no existe todavía (DT-053).
+- **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
+- Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito), `contenido`, `apariencia`.
+- `npm test`: 203 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
-- Que Sergio pruebe en pantalla: Mis mascotas, Mis dietas (con el rol de nutricionista), y la Dieta actual desde el detalle de la mascota.
-- Navegación: el encabezado ya tiene muchos enlaces; conviene un menú (desplegable o lateral) antes de sumar más secciones.
-- Siguiente bloque grande: catálogo de productos (RN-030, RN-031, VP-04, VP-05), que hoy solo tiene el esquema.
+- Que Sergio pruebe en pantalla: menú, catálogo (filtros, detalle, agregar al carrito), carrito, gestión del catálogo (crear producto con imagen), contenido (FAQ, quiénes somos, términos) y landing.
+- Lo que sigue depende de definiciones: pedidos y pagos (preguntas 9 y 12), búsquedas guardadas (sección 3 y preguntas 10 y 11), VN-04 (alcance de búsqueda de clientes).
+- Sin definir todavía, para conversar: contacto (VP-03: ¿formulario, email, WhatsApp?), dashboard del admin (VA-01: ¿qué indicadores?), lista de deseos (VU-05: ¿cómo se vinculan dietas y productos?), reseñas (VU-06, necesita pedidos).
 
 ## Versión avanzada (decidido dejar para después)
 - Emails: avisar al postulante (RN-045), cambios de dieta (RN-028), y soporte para cuentas suspendidas (RN-046).
@@ -36,10 +40,8 @@ Arreglados: aprobar ya no desbloquea a un usuario (RN-024); el editor desactuali
 Quedan (menores):
 - Pasar una mascota que quedó en una versión vieja a la última (hoy: terminar y volver a asignar).
 - Dos admins quitándose el rol entre sí a la vez podrían dejar el sistema sin admins.
-- Fotos: dos subidas simultáneas dejan una huérfana; exigir el prefijo `<id de usuario>/` antes de borrar la anterior.
+- Fotos: dos subidas simultáneas dejan una huérfana.
 - `import "server-only"` en `src/lib/supabase/admin.ts` (requiere instalar el paquete `server-only`).
-- Largos máximos en los esquemas (descripción y notas de dieta, alimentos, listas de la mascota, dirección y matrícula).
-- Sugerencias de especies: hoy muestran texto libre de otros usuarios; exigir que se repita o usar lista cerrada.
 - El admin al clonar una dieta ajena queda como dueño de la copia.
 - Si la base falla al leer la sesión, las acciones terminan en la pantalla de error en vez de un mensaje.
 

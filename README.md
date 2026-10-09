@@ -2,7 +2,7 @@
 
 Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus mascotas), **nutricionistas animales** y **proveedores** de alimentos. El cliente compra alimentos y ve la dieta que un nutricionista le asignó a cada mascota.
 
-> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones y la apariencia administrable. El catálogo, el carrito y los pagos vienen después.
+> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones, el catálogo con búsqueda, el carrito y la apariencia y el contenido administrables. Los pedidos y los pagos vienen después.
 
 ---
 
@@ -24,6 +24,9 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 
 | Área | Funcionalidad | Ruta |
 |---|---|---|
+| Inicio | Presentación y productos destacados. | `/` |
+| Catálogo | Búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. | `/catalogo` |
+| Carrito | Funciona sin sesión; precios y stock siempre actualizados desde el servidor. Para continuar pide ingresar. | `/carrito` |
 | Ingreso | Ingreso con Google (sin contraseñas). El primer ingreso crea la cuenta como Cliente. | modal "Ingresar" |
 | Perfil | Nombre, foto (JPG/PNG/WebP hasta 1 MB), direcciones de entrega, postulación a nutricionista o proveedor y aviso del resultado. | `/perfil` |
 | Mascotas | Alta y edición con alergias, alimentos no permitidos y de necesidad. El detalle muestra la **dieta actual** asignada. | `/mascotas` |
@@ -32,6 +35,8 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 | Postulaciones | Admin y auditor aprueban o rechazan (con motivo) a nutricionistas y proveedores. | `/admin/postulaciones` |
 | Usuarios | El admin asigna roles, nombra auditores y suspende cuentas con una nota interna. | `/admin/usuarios` |
 | Apariencia | Paleta clara y oscura editable, importable desde coolors.co, con control de contraste (WCAG AA). | `/admin/configuracion/apariencia` |
+| Gestión del catálogo | El admin crea y edita productos, con imagen. | `/admin/catalogo` |
+| Contenido | El admin edita las preguntas frecuentes, quiénes somos y términos. | `/admin/contenido` |
 
 **Roles:** Cliente, Nutricionista, Proveedor, Auditor y Administrador. Un usuario puede tener varios roles a la vez. Una cuenta sin roles queda suspendida: solo ve una pantalla que la manda a soporte.
 
@@ -82,7 +87,9 @@ docs/                           reglas de negocio, decisiones y plan
 | `mascotas` | Mascotas y su formulario |
 | `dietas` | Dietas, versiones, asignaciones a mascotas, textos para mostrarlas |
 | `apariencia` | Paletas de colores, contraste, coolors.co, variables CSS |
-| `catalogo` | Esquema de productos (en preparación) |
+| `catalogo` | Productos, búsqueda y filtros, formulario y textos (precio, tamaño, stock) |
+| `pedidos` | Carrito (los pedidos y pagos vienen después) |
+| `contenido` | Páginas de texto editables (FAQ, quiénes somos, términos) |
 
 ### Cómo fluye un pedido
 
@@ -159,9 +166,14 @@ npm run db:migrate
 
 Todas las tablas se crean con **RLS activado** (ver [Seguridad](#seguridad)).
 
-### 5. Bucket de fotos de perfil
+### 5. Almacenamiento de imágenes y productos de prueba
 
-Creá en Supabase Storage un bucket **público** llamado `avatars`, con límite de 1 MB y tipos permitidos `image/jpeg`, `image/png` e `image/webp`.
+```bash
+npm run storage:setup
+npm run db:seed
+```
+
+El primero crea en Supabase Storage los buckets públicos `avatars` (fotos de perfil) y `products` (imágenes de productos), con límite de 1 MB y solo JPG, PNG o WebP. El segundo carga 12 productos de prueba en el catálogo; se puede correr varias veces sin duplicar.
 
 ### 6. Levantar el sitio
 
@@ -191,6 +203,8 @@ Desde ahí, el resto de los roles se asigna desde `/admin/usuarios`.
 | `npm test` | Tests con Vitest |
 | `npm run db:generate` | Genera una migración a partir de los cambios en `tables.ts` |
 | `npm run db:migrate` | Aplica las migraciones pendientes (lee `.env.local`) |
+| `npm run db:seed` | Carga los productos de prueba del catálogo |
+| `npm run storage:setup` | Crea o actualiza los buckets de imágenes en Supabase |
 
 ---
 
@@ -238,9 +252,12 @@ Convenciones: código en inglés y textos en español. Los commits citan la regl
 - [x] Postulaciones de nutricionistas y proveedores
 - [x] Mascotas y dietas versionadas
 - [x] Apariencia administrable
-- [ ] Menú de navegación
-- [ ] Catálogo de productos y búsqueda
-- [ ] Carrito, pedidos y estados
+- [x] Menú de navegación
+- [x] Catálogo de productos y búsqueda
+- [x] Carrito
+- [x] Páginas de contenido editables (FAQ, quiénes somos, términos)
+- [ ] Pedidos y estados
+- [ ] Publicación de productos por proveedores y revisión del auditor
 - [ ] Pagos y envíos (webhooks)
 - [ ] Estadísticas de búsquedas
 - [ ] Notificaciones por email
