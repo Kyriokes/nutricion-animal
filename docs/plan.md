@@ -17,15 +17,17 @@
 - **Mis dietas (VN-01, VN-03, VN-04)** en `/dietas`: crear, renombrar, editar (en el lugar o versión nueva eligiendo qué mascotas pasan), clonar, borrar versiones nunca asignadas, asignar buscando cliente o mascota, terminar asignaciones e historial (RN-021 a RN-027, DT-047). Tablas `diets`, `diet_versions`, `diet_assignments`.
 - **Catálogo (VP-04, VP-05, VP-06, RN-013, RN-014, RN-030, RN-031)** en `/catalogo`: búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. Tabla `products` preparada para proveedores y revisión (`supplier_id`, `status`). 12 productos de prueba con `npm run db:seed` (DT-052).
 - **Gestión del catálogo (VA-02)** en `/admin/catalogo`: crear, editar, imagen (bucket `products`) y borrar.
-- **Carrito (VP-07) y pre-checkout (VP-08)** en `/carrito`: sin sesión, guardado en el navegador; precio y stock siempre del servidor; para continuar pide ingresar. El pago no existe todavía (DT-053).
+- **Carrito (VP-07) y checkout (VP-08)** en `/carrito`: sin sesión, guardado en el navegador; precio y stock siempre del servidor. Con sesión se elige una dirección de Capital y se confirma la compra (DT-053, DT-055).
+- **Pedidos, parte 1 (RN-060 a RN-068, VU-02, VU-07 simulada, VU-10)**: direcciones validadas con Georef, costo de envío editable en `/admin/configuracion/envio`, pedido con reserva de stock de 30 minutos, pago de prueba en `/pedidos/[id]/pagar`, resultado y seguimiento en `/pedidos/[id]`, historial en `/pedidos`. Tablas `orders`, `order_items`, `order_status_changes`, `shop_settings` (DT-055).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
-- Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito), `contenido`, `apariencia`.
-- `npm test`: 203 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
+- `npm test`: 240 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
-- Que Sergio pruebe en pantalla: menú, catálogo (filtros, detalle, agregar al carrito), carrito, gestión del catálogo (crear producto con imagen), contenido (FAQ, quiénes somos, términos) y landing.
-- Lo que sigue depende de definiciones: pedidos y pagos (preguntas 9 y 12), búsquedas guardadas (sección 3 y preguntas 10 y 11), VN-04 (alcance de búsqueda de clientes).
-- Sin definir todavía, para conversar: contacto (VP-03: ¿formulario, email, WhatsApp?), dashboard del admin (VA-01: ¿qué indicadores?), lista de deseos (VU-05: ¿cómo se vinculan dietas y productos?), reseñas (VU-06, necesita pedidos).
+- Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
+- Pedidos, parte 2: gestión de pedidos del admin (VA-04) con filtros y avance de estados.
+- Parte 3: reclamos (RN-066). Parte 4: contacto (RN-080 a RN-083). Parte 5: dashboard (RN-090, RN-091). Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
+- Esperan definición: preguntas 11 a 18 (lista de deseos, reseñas, búsquedas guardadas, aviso de cambio de dieta) y VN-04.
 
 ## Versión avanzada (decidido dejar para después)
 - Emails: avisar al postulante (RN-045), cambios de dieta (RN-028), y soporte para cuentas suspendidas (RN-046).
