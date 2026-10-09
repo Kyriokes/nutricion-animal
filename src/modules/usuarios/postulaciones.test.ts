@@ -4,6 +4,7 @@ import {
   approveApplication,
   rejectApplication,
   submitApplication,
+  unseenDecisions,
   type Application,
   type ApplicationData,
 } from "./postulaciones";
@@ -154,16 +155,35 @@ describe("usuarios/postulaciones: decidir", () => {
     expect(result).toMatchObject({ ok: true, roles: ["customer", "supplier"] });
   });
 
-  it("rechazar deja la postulación como rechazada", () => {
+  it("RN-044: rechazar guarda la nota corta del motivo", () => {
     const result = rejectApplication({
       application: pending,
       decider: admin,
+      note: "  Falta la matrícula vigente ",
       now: NOW,
     });
     expect(result).toMatchObject({
       ok: true,
-      application: { status: "rejected", decidedBy: ADMIN_ID },
+      application: {
+        status: "rejected",
+        decidedBy: ADMIN_ID,
+        decisionNote: "Falta la matrícula vigente",
+      },
     });
+  });
+
+  it("RN-044: rechazar exige una nota corta (1 a 200 caracteres)", () => {
+    for (const note of ["", "   ", "a".repeat(201)]) {
+      expect(
+        rejectApplication({ application: pending, decider: admin, note, now: NOW }),
+      ).toEqual({ ok: false, error: "invalid_note" });
+    }
+  });
+
+  it("RN-045: las decisiones sin leer son las decididas sin seenAt", () => {
+    const approved: Application = { ...pending, id: "a", status: "approved", decidedAt: NOW };
+    const seen: Application = { ...approved, id: "b", seenAt: NOW };
+    expect(unseenDecisions([pending, approved, seen]).map((a) => a.id)).toEqual(["a"]);
   });
 
   it("un cliente o un nutricionista no pueden decidir", () => {
@@ -178,7 +198,7 @@ describe("usuarios/postulaciones: decidir", () => {
         }),
       ).toEqual({ ok: false, error: "not_allowed" });
       expect(
-        rejectApplication({ application: pending, decider, now: NOW }),
+        rejectApplication({ application: pending, decider, note: "Motivo", now: NOW }),
       ).toEqual({ ok: false, error: "not_allowed" });
     }
   });
@@ -194,7 +214,7 @@ describe("usuarios/postulaciones: decidir", () => {
       }),
     ).toEqual({ ok: false, error: "self_decision" });
     expect(
-      rejectApplication({ application: pending, decider: own, now: NOW }),
+      rejectApplication({ application: pending, decider: own, note: "Motivo", now: NOW }),
     ).toEqual({ ok: false, error: "self_decision" });
 
     const ownAdmin = { id: USER_ID, roles: ["admin" as const] };
@@ -220,7 +240,7 @@ describe("usuarios/postulaciones: decidir", () => {
         }),
       ).toEqual({ ok: false, error: "already_decided" });
       expect(
-        rejectApplication({ application: decided, decider: admin, now: NOW }),
+        rejectApplication({ application: decided, decider: admin, note: "Motivo", now: NOW }),
       ).toEqual({ ok: false, error: "already_decided" });
     }
   });

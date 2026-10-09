@@ -62,6 +62,10 @@ export const applications = pgTable(
     decidedBy: uuid("decided_by").references(() => users.id, {
       onDelete: "set null",
     }),
+    // RN-044: motivo del rechazo, visible para el postulante.
+    decisionNote: text("decision_note"),
+    // RN-045: cuándo el postulante marcó el resultado como leído.
+    seenAt: timestamp("seen_at", { withTimezone: true }),
   },
   (t) => [
     check("applications_kind_valid", sql`${t.kind} in ('nutritionist', 'supplier')`),

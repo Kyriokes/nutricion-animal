@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { ApplicationKind } from "@/modules/usuarios/postulaciones";
 import {
+  markDecisionsSeenAction,
   submitApplicationAction,
   updateNameAction,
   type ActionResult,
@@ -59,6 +60,25 @@ export function NameForm({ name }: { name: string }) {
       </div>
       <Message result={result} />
     </form>
+  );
+}
+
+// RN-045: marcar como leídos los resultados de las postulaciones.
+export function MarkSeenButton() {
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={pending}
+        onClick={() => start(async () => setResult(await markDecisionsSeenAction()))}
+      >
+        Entendido
+      </Button>
+      {result && !result.ok && <Message result={result} />}
+    </div>
   );
 }
 

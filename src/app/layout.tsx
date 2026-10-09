@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { AccountNotice } from "@/components/account-notice";
 import { PaletteStyle } from "@/components/palette-style";
 import { SignInError } from "@/components/sign-in-error";
 import { SiteHeader } from "@/components/site-header";
@@ -42,6 +43,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           <Suspense fallback={null}>
             <SignInError />
+          </Suspense>
+          <Suspense fallback={null}>
+            <AccountNotice />
           </Suspense>
           {children}
         </ThemeProvider>

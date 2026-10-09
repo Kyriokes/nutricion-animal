@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   ApplicationDataSchema,
@@ -29,7 +29,38 @@ function toApplication(row: ApplicationRow): Application | null {
     submittedAt: row.submittedAt,
     ...(row.decidedAt ? { decidedAt: row.decidedAt } : {}),
     ...(row.decidedBy ? { decidedBy: row.decidedBy } : {}),
+    ...(row.decisionNote ? { decisionNote: row.decisionNote } : {}),
+    ...(row.seenAt ? { seenAt: row.seenAt } : {}),
   };
+}
+
+// RN-045: el postulante marca como leídos los resultados de sus postulaciones.
+export async function markDecisionsSeen(userId: string) {
+  await db
+    .update(applications)
+    .set({ seenAt: new Date() })
+    .where(
+      and(
+        eq(applications.userId, userId),
+        ne(applications.status, "pending"),
+        isNull(applications.seenAt),
+      ),
+    );
+}
+
+// RN-045: cantidad de resultados sin leer, para el aviso del encabezado.
+export async function countUnseenDecisions(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(applications)
+    .where(
+      and(
+        eq(applications.userId, userId),
+        ne(applications.status, "pending"),
+        isNull(applications.seenAt),
+      ),
+    );
+  return row?.n ?? 0;
 }
 
 const onlyValid = (rows: ApplicationRow[]) =>
@@ -170,6 +201,8 @@ export const listRecentlyDecidedApplications = () => listWithUser(false, 20);
 export async function decideApplicationInDb(input: {
   applicationId: string;
   decision: "approve" | "reject";
+  // RN-044: obligatoria al rechazar.
+  note?: string;
   decider: Actor;
 }): Promise<{ ok: true } | { ok: false; error: ApplicationError | "not_found" }> {
   return db.transaction(async (tx) => {
@@ -202,7 +235,12 @@ export async function decideApplicationInDb(input: {
       decided = r.application;
       newRoles = r.roles;
     } else {
-      const r = rejectApplication({ application, decider: input.decider, now });
+      const r = rejectApplication({
+        application,
+        decider: input.decider,
+        note: input.note ?? "",
+        now,
+      });
       if (!r.ok) return r;
       decided = r.application;
     }
@@ -213,6 +251,7 @@ export async function decideApplicationInDb(input: {
         status: decided.status,
         decidedAt: now,
         decidedBy: input.decider.id,
+        decisionNote: decided.decisionNote ?? null,
       })
       .where(
         and(

@@ -2,7 +2,11 @@
 
 import { refresh } from "next/cache";
 import { ApplicationDataSchema } from "@/modules/usuarios/postulaciones";
-import { createApplication, updateUserName } from "@/modules/usuarios/repositorio";
+import {
+  createApplication,
+  markDecisionsSeen,
+  updateUserName,
+} from "@/modules/usuarios/repositorio";
 import { ProfileUpdateSchema } from "@/modules/usuarios/schema";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 
@@ -24,6 +28,19 @@ export async function updateNameAction(input: unknown): Promise<ActionResult> {
   }
   try {
     await updateUserName(actor.id, parsed.data.name);
+  } catch {
+    return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+// RN-045: el postulante marca como leídos los resultados de sus postulaciones.
+export async function markDecisionsSeenAction(): Promise<ActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  try {
+    await markDecisionsSeen(actor.id);
   } catch {
     return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
   }

@@ -99,6 +99,7 @@ async function Content() {
                 {user.name} · {KIND_LABELS[application.data.kind]} ·{" "}
                 {STATUS_LABELS[application.status]}
                 {application.decidedAt && ` · ${dateFormat.format(application.decidedAt)}`}
+                {application.decisionNote && ` · Motivo: ${application.decisionNote}`}
               </li>
             ))}
           </ul>

@@ -34,7 +34,13 @@ export const ApplicationSchema = z.object({
   submittedAt: z.date(),
   decidedAt: z.date().optional(),
   decidedBy: z.uuid().optional(),
+  // RN-044: motivo del rechazo, que ve el postulante.
+  decisionNote: z.string().optional(),
+  // RN-045: cuándo el postulante marcó como leído el resultado.
+  seenAt: z.date().optional(),
 });
+
+export const DecisionNoteSchema = z.string().trim().min(1).max(200);
 
 export type ApplicationData = z.infer<typeof ApplicationDataSchema>;
 export type Application = z.infer<typeof ApplicationSchema>;
@@ -46,6 +52,7 @@ export type ApplicationError =
   | "already_pending"
   | "not_allowed"
   | "self_decision"
+  | "invalid_note"
   | "already_decided";
 
 type Result<T> = BaseResult<T, ApplicationError>;
@@ -168,10 +175,24 @@ export function approveApplication(input: {
 }
 
 // Rechazar no cambia los roles. El usuario puede volver a postularse.
+// RN-044: exige una nota corta con el motivo, que ve el postulante.
 export function rejectApplication(input: {
   application: Application;
   decider: Actor;
+  note: string;
   now: Date;
 }): Result<{ application: Application }> {
-  return decide("rejected", input);
+  const result = decide("rejected", input);
+  if (!result.ok) return result;
+  const note = DecisionNoteSchema.safeParse(input.note);
+  if (!note.success) return { ok: false, error: "invalid_note" };
+  return {
+    ok: true,
+    application: { ...result.application, decisionNote: note.data },
+  };
+}
+
+// RN-045: resultados que el postulante todavía no marcó como leídos.
+export function unseenDecisions(applications: readonly Application[]) {
+  return applications.filter((a) => a.status !== "pending" && !a.seenAt);
 }

@@ -5,13 +5,14 @@ import { LoginDialog } from "@/components/login-dialog";
 import {
   APPLICATION_KINDS,
   applicationOptions,
+  unseenDecisions,
   type Application,
   type ApplicationKind,
 } from "@/modules/usuarios/postulaciones";
 import { listOwnApplications } from "@/modules/usuarios/repositorio";
 import { ROLE_LABELS } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
-import { ApplicationForm, NameForm } from "./profile-forms";
+import { ApplicationForm, MarkSeenButton, NameForm } from "./profile-forms";
 
 const KIND_LABELS: Record<ApplicationKind, string> = {
   nutritionist: "Nutricionista",
@@ -42,9 +43,29 @@ async function Profile() {
 
   const applications = await listOwnApplications(user.id);
   const options = applicationOptions(user.roles, applications);
+  const unseen = unseenDecisions(applications);
 
   return (
     <div className="flex flex-col gap-8">
+      {unseen.length > 0 && (
+        <section
+          role="status"
+          className="flex flex-col gap-2 rounded-lg border bg-accent p-4 text-accent-foreground"
+        >
+          <h2 className="font-medium">Novedades de tus postulaciones</h2>
+          <ul className="flex flex-col gap-1 text-sm">
+            {unseen.map((a) => (
+              <li key={a.id}>
+                {a.status === "approved"
+                  ? `Tu postulación como ${KIND_LABELS[a.data.kind].toLowerCase()} fue aprobada.`
+                  : `Tu postulación como ${KIND_LABELS[a.data.kind].toLowerCase()} fue rechazada.`}
+                {a.decisionNote && ` Motivo: ${a.decisionNote}`}
+              </li>
+            ))}
+          </ul>
+          <MarkSeenButton />
+        </section>
+      )}
       <section className="flex items-center gap-4">
         {user.photoUrl && (
           <Image src={user.photoUrl} alt="" width={64} height={64} className="rounded-full" />
@@ -72,7 +93,8 @@ async function Profile() {
           const text = {
             pending: `Tu postulación como ${KIND_LABELS[kind].toLowerCase()} está en revisión.`,
             has_role: `Ya sos ${KIND_LABELS[kind].toLowerCase()}.`,
-            blocked: "Tu cuenta no puede postularse.",
+            // RN-046: el aviso general ya indica contactar a soporte.
+            blocked: "Tu cuenta está suspendida: no podés postularte.",
           }[option];
           return (
             <p key={kind} className="text-sm text-muted-foreground">
@@ -87,6 +109,7 @@ async function Profile() {
               <li key={a.id}>
                 {KIND_LABELS[a.data.kind]} — {STATUS_LABELS[a.status]} (
                 {dateFormat.format(a.decidedAt ?? a.submittedAt)})
+                {a.decisionNote && ` — Motivo: ${a.decisionNote}`}
               </li>
             ))}
           </ul>

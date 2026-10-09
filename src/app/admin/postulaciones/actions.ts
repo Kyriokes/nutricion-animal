@@ -10,11 +10,13 @@ export type DecideResult = { ok: true } | { ok: false; message: string };
 const DecisionSchema = z.object({
   applicationId: z.uuid(),
   decision: z.enum(["approve", "reject"]),
+  note: z.string().optional(),
 });
 
 const ERRORS: Record<string, string> = {
   not_allowed: "No tenés permiso para decidir postulaciones.",
   self_decision: "No podés decidir tu propia postulación.",
+  invalid_note: "Escribí un motivo corto (hasta 200 caracteres).",
   already_decided: "Esa postulación ya fue decidida.",
   not_found: "La postulación no existe.",
 };
