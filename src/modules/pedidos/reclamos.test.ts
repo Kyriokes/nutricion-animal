@@ -31,6 +31,13 @@ describe("pedidos/reclamos (RN-066): cuándo se puede abrir un reclamo", () => {
     });
   });
 
+  it("un recibido sin fecha de recepción registrada no se puede reclamar (caso seguro)", () => {
+    expect(canOpenClaim({ status: "received", receivedAt: null, claims: 0 }, now)).toEqual({
+      ok: false,
+      error: "window_closed",
+    });
+  });
+
   it("no en pedidos sin pagar, rechazados o cancelados", () => {
     for (const status of ["pending_payment", "rejected", "cancelled"] as const) {
       expect(canOpenClaim({ status, receivedAt: null, claims: 0 }, now)).toEqual({ ok: false, error: "not_allowed" });

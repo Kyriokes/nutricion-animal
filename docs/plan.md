@@ -23,7 +23,7 @@
 - **Reclamos (RN-066)**: el cliente los abre desde el detalle de su pedido; el admin los gestiona en `/admin/reclamos` (abre en los sin resolver) y los ve en el detalle del pedido (DT-057, detalles a confirmar).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 259 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 262 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
@@ -66,6 +66,10 @@ Quedan (menores):
 - La landing cachea los destacados por horas: puede mostrar disponible un producto que se agotó (el carrito y el checkout sí validan).
 - `/pedidos/[id]/pagar` redirige dentro de `<Suspense>` (redirección del lado del cliente, no un 307).
 - Tests automáticos con base de datos para pedidos (dueño, devolución de stock, vencimiento); hoy se prueban con pruebas de humo temporales.
+
+## Pendientes de la revisión de gestión de pedidos y reclamos (2026-10-09)
+Arreglados: página fuera de rango en las listas de pedidos y reclamos, enlace a reclamos solo para quien los gestiona, aviso al llegar al tope de reclamos, mensaje de permiso al abrir un reclamo.
+Espera decisión de Sergio: un pedido **pagado y después cancelado** (por el cliente o el admin) devuelve el stock pero no deja registrado que hay que devolver el dinero, y no admite reclamos.
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.

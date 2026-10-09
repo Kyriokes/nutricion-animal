@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { pageWithin } from "@/lib/paginas";
 import { products } from "@/modules/catalogo/tables";
 import type { Address } from "@/modules/usuarios/direcciones";
 import { getAddress } from "@/modules/usuarios/repositorio";
@@ -263,30 +264,29 @@ export function cancelOrderByCustomer(customerId: string, orderId: string) {
 export const ORDERS_PAGE_SIZE = 10;
 
 // VU-02: pedidos del cliente, los más nuevos primero.
-export async function listCustomerOrders(customerId: string, page: number) {
+export async function listCustomerOrders(customerId: string, requestedPage: number) {
   await tryExpireOverdue(customerId);
   const where = eq(orders.customerId, customerId);
-  const [rows, [{ total }]] = await Promise.all([
-    db
-      .select({
-        id: orders.id,
-        status: orders.status,
-        total: orders.total,
-        createdAt: orders.createdAt,
-        items: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0)::int from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
-      })
-      .from(orders)
-      .where(where)
-      .orderBy(desc(orders.createdAt), desc(orders.id))
-      .limit(ORDERS_PAGE_SIZE)
-      .offset((page - 1) * ORDERS_PAGE_SIZE),
-    db.select({ total: count() }).from(orders).where(where),
-  ]);
+  const [{ total }] = await db.select({ total: count() }).from(orders).where(where);
+  const { page, pages } = pageWithin(requestedPage, total, ORDERS_PAGE_SIZE);
+  const rows = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      total: orders.total,
+      createdAt: orders.createdAt,
+      items: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0)::int from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
+    })
+    .from(orders)
+    .where(where)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(ORDERS_PAGE_SIZE)
+    .offset((page - 1) * ORDERS_PAGE_SIZE);
   return {
     orders: rows.map((r) => ({ ...r, status: r.status as OrderStatus })),
     total,
     page,
-    pages: Math.max(1, Math.ceil(total / ORDERS_PAGE_SIZE)),
+    pages,
   };
 }
 
@@ -354,32 +354,31 @@ export const ADMIN_ORDERS_PAGE_SIZE = 20;
 
 // VA-04, RN-061, RN-090: todos los pedidos, los más nuevos primero, filtrados
 // por estado (null = todos).
-export async function listAllOrders(statuses: readonly OrderStatus[] | null, page: number) {
+export async function listAllOrders(statuses: readonly OrderStatus[] | null, requestedPage: number) {
   await tryExpireOverdue();
   const where = statuses ? inArray(orders.status, [...statuses]) : undefined;
-  const [rows, [{ total }]] = await Promise.all([
-    db
-      .select({
-        id: orders.id,
-        status: orders.status,
-        total: orders.total,
-        createdAt: orders.createdAt,
-        customerName: users.name,
-        customerEmail: users.email,
-      })
-      .from(orders)
-      .innerJoin(users, eq(users.id, orders.customerId))
-      .where(where)
-      .orderBy(desc(orders.createdAt), desc(orders.id))
-      .limit(ADMIN_ORDERS_PAGE_SIZE)
-      .offset((page - 1) * ADMIN_ORDERS_PAGE_SIZE),
-    db.select({ total: count() }).from(orders).where(where),
-  ]);
+  const [{ total }] = await db.select({ total: count() }).from(orders).where(where);
+  const { page, pages } = pageWithin(requestedPage, total, ADMIN_ORDERS_PAGE_SIZE);
+  const rows = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      total: orders.total,
+      createdAt: orders.createdAt,
+      customerName: users.name,
+      customerEmail: users.email,
+    })
+    .from(orders)
+    .innerJoin(users, eq(users.id, orders.customerId))
+    .where(where)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(ADMIN_ORDERS_PAGE_SIZE)
+    .offset((page - 1) * ADMIN_ORDERS_PAGE_SIZE);
   return {
     orders: rows.map((r) => ({ ...r, status: r.status as OrderStatus })),
     total,
     page,
-    pages: Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE)),
+    pages,
   };
 }
 
@@ -431,32 +430,31 @@ export async function listOrderClaims(orderId: string) {
 export const CLAIMS_PAGE_SIZE = 20;
 
 // RN-066, RN-090: reclamos para el admin, los más nuevos primero.
-export async function listClaims(statuses: readonly ClaimStatus[] | null, page: number) {
+export async function listClaims(statuses: readonly ClaimStatus[] | null, requestedPage: number) {
   const where = statuses ? inArray(claims.status, [...statuses]) : undefined;
-  const [rows, [{ total }]] = await Promise.all([
-    db
-      .select({
-        id: claims.id,
-        orderId: claims.orderId,
-        status: claims.status,
-        description: claims.description,
-        createdAt: claims.createdAt,
-        customerName: users.name,
-      })
-      .from(claims)
-      .innerJoin(orders, eq(orders.id, claims.orderId))
-      .innerJoin(users, eq(users.id, orders.customerId))
-      .where(where)
-      .orderBy(desc(claims.createdAt), desc(claims.id))
-      .limit(CLAIMS_PAGE_SIZE)
-      .offset((page - 1) * CLAIMS_PAGE_SIZE),
-    db.select({ total: count() }).from(claims).where(where),
-  ]);
+  const [{ total }] = await db.select({ total: count() }).from(claims).where(where);
+  const { page, pages } = pageWithin(requestedPage, total, CLAIMS_PAGE_SIZE);
+  const rows = await db
+    .select({
+      id: claims.id,
+      orderId: claims.orderId,
+      status: claims.status,
+      description: claims.description,
+      createdAt: claims.createdAt,
+      customerName: users.name,
+    })
+    .from(claims)
+    .innerJoin(orders, eq(orders.id, claims.orderId))
+    .innerJoin(users, eq(users.id, orders.customerId))
+    .where(where)
+    .orderBy(desc(claims.createdAt), desc(claims.id))
+    .limit(CLAIMS_PAGE_SIZE)
+    .offset((page - 1) * CLAIMS_PAGE_SIZE);
   return {
     claims: rows.map((r) => ({ ...r, status: r.status as ClaimStatus })),
     total,
     page,
-    pages: Math.max(1, Math.ceil(total / CLAIMS_PAGE_SIZE)),
+    pages,
   };
 }
 

@@ -73,8 +73,9 @@ const CLAIM_ERRORS: Record<OpenClaimError | "not_found", string> = {
 // RN-066: el cliente abre un reclamo sobre su pedido.
 export async function openClaimAction(orderId: unknown, input: unknown): Promise<OrderActionResult> {
   const actor = await getCurrentActor();
-  if (!actor || !hasPermission(actor.roles, "claim.open")) {
-    return { ok: false, message: "Tenés que ingresar para hacer esto." };
+  if (!actor) return { ok: false, message: "Tenés que ingresar para hacer esto." };
+  if (!hasPermission(actor.roles, "claim.open")) {
+    return { ok: false, message: "Tu cuenta no puede abrir reclamos." };
   }
   const order = z.uuid().safeParse(orderId);
   const claim = ClaimInputSchema.safeParse(input);

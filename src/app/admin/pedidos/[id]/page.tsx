@@ -64,7 +64,11 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       {claims.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-medium">Reclamos</h2>
-          <ClaimList claims={claims} hrefFor={(id) => `/admin/reclamos/${id}`} />
+          {/* El enlace solo sirve a quien gestiona reclamos. */}
+          <ClaimList
+            claims={claims}
+            hrefFor={hasPermission(actor.roles, "claim.manage") ? (id) => `/admin/reclamos/${id}` : undefined}
+          />
         </section>
       )}
     </div>

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modules/pedidos/presentacion";
-import { canOpenClaim } from "@/modules/pedidos/reclamos";
+import { canOpenClaim, MAX_CLAIMS_PER_ORDER } from "@/modules/pedidos/reclamos";
 import { getCustomerOrder, listOrderClaims } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
@@ -78,6 +78,11 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <h2 className="text-lg font-medium">Reclamos</h2>
           <ClaimList claims={claims} />
           {claimable && <ClaimForm orderId={order.id} />}
+          {claims.length >= MAX_CLAIMS_PER_ORDER && (
+            <p className="text-sm text-muted-foreground">
+              Recibimos tus reclamos. Llegaste al máximo de {MAX_CLAIMS_PER_ORDER} para este pedido.
+            </p>
+          )}
         </section>
       )}
     </div>
