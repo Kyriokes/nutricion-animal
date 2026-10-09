@@ -22,6 +22,16 @@ async function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
+      {hasPermission(user.roles, "pet.register") && (
+        <Link href="/mascotas" className="text-sm underline-offset-4 hover:underline">
+          Mis mascotas
+        </Link>
+      )}
+      {hasPermission(user.roles, "diet.manage") && (
+        <Link href="/dietas" className="text-sm underline-offset-4 hover:underline">
+          Mis dietas
+        </Link>
+      )}
       {hasPermission(user.roles, "nutritionist.search") && (
         <Link href="/nutricionistas" className="text-sm underline-offset-4 hover:underline">
           Nutricionistas

@@ -78,6 +78,17 @@ describe("dietas/asignaciones: asignar", () => {
     expect(assignDiet({ ...input, assignments: [ended] }).ok).toBe(true);
   });
 
+  it("RN-001: el admin puede actuar sobre cualquier dieta", () => {
+    const result = assignDiet({
+      ...base,
+      id: "a1",
+      assignments: [],
+      petId: "pet-1",
+      actor: { id: "admin-1", roles: ["admin"] },
+    });
+    expect(result.ok).toBe(true);
+  });
+
   it("RN-021: otro nutricionista no puede asignar una dieta ajena", () => {
     const result = assignDiet({
       ...base,

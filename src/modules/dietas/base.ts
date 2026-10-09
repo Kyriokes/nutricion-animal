@@ -17,13 +17,16 @@ export type DietError =
 
 // RN-021: cada nutricionista maneja solo sus propias dietas. Además hace falta
 // el permiso: un usuario sin roles no puede actuar aunque sea el dueño.
+// RN-001: el admin es omnipotente y puede actuar sobre cualquier dieta.
 export function authorize(
   actor: Actor,
   diet: Diet,
   permission: Permission,
 ): "not_allowed" | "not_owner" | null {
   if (!hasPermission(actor.roles, permission)) return "not_allowed";
-  if (actor.id !== diet.nutritionistId) return "not_owner";
+  if (actor.id !== diet.nutritionistId && !actor.roles.includes("admin")) {
+    return "not_owner";
+  }
   return null;
 }
 
