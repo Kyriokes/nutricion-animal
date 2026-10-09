@@ -68,10 +68,13 @@ function QuantityInput({
 export function CartView({
   shippingCost,
   addresses,
+  blockedReason,
 }: {
   shippingCost: number;
   // null: sin sesión.
   addresses: CheckoutAddress[] | null;
+  // Con sesión pero sin poder comprar (permiso o pago no disponible).
+  blockedReason: string | null;
 }) {
   const cart = useCart();
   const [products, setProducts] = useState<CartProduct[] | null>(null);
@@ -165,7 +168,11 @@ export function CartView({
         <p className="text-lg">
           Total: <span className="font-semibold">{formatPrice(grandTotal)}</span>
         </p>
-        {addresses ? (
+        {addresses && blockedReason ? (
+          <p role="status" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+            {blockedReason}
+          </p>
+        ) : addresses ? (
           <CheckoutPanel
             lines={cart}
             total={grandTotal}

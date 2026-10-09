@@ -21,7 +21,7 @@
 - **Pedidos, parte 1 (RN-060 a RN-068, VU-02, VU-07 simulada, VU-10)**: direcciones validadas con Georef, costo de envío editable en `/admin/configuracion/envio`, pedido con reserva de stock de 30 minutos, pago de prueba en `/pedidos/[id]/pagar`, resultado y seguimiento en `/pedidos/[id]`, historial en `/pedidos`. Tablas `orders`, `order_items`, `order_status_changes`, `shop_settings` (DT-055).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 240 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 242 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
@@ -58,6 +58,13 @@ Quedan (menores):
 - `scripts/seed-catalogo.mjs`: validar `DATABASE_URL` y usar una transacción.
 - Restricciones en la base: `weight_value > 0`, unidades válidas; `listAllProducts` corta en 500 sin avisar.
 - El comentario de la landing contradice DT-049.
+
+## Pendientes de la revisión de pedidos, parte 1 (2026-10-09)
+Arreglados: orden de bloqueo del stock (deadlocks), vencer reservas fuera del render, pago simulado apagado en producción (`PAYMENTS_SIMULATED`), permisos en detalle y pago del pedido, aviso en el carrito a quien no puede comprar, mensaje para más de 50 productos distintos.
+Quedan (menores):
+- La landing cachea los destacados por horas: puede mostrar disponible un producto que se agotó (el carrito y el checkout sí validan).
+- `/pedidos/[id]/pagar` redirige dentro de `<Suspense>` (redirección del lado del cliente, no un 307).
+- Tests automáticos con base de datos para pedidos (dueño, devolución de stock, vencimiento); hoy se prueban con pruebas de humo temporales.
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.

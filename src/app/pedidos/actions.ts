@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
 import { cancelOrderByCustomer, simulatePayment, type TransitionError } from "@/modules/pedidos/repositorio";
 import { isSuspended } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
@@ -21,6 +22,7 @@ async function customerId(): Promise<string | null> {
 
 // VU-07 (simulada): aprobar o rechazar el pago de prueba de un pedido propio.
 export async function simulatePaymentAction(orderId: unknown, approved: unknown): Promise<OrderActionResult> {
+  if (!simulatedPaymentsEnabled()) return { ok: false, message: "El pago en línea todavía no está disponible." };
   const id = await customerId();
   if (!id) return { ok: false, message: "Tenés que ingresar para hacer esto." };
   const input = z.object({ orderId: z.uuid(), approved: z.boolean() }).safeParse({ orderId, approved });

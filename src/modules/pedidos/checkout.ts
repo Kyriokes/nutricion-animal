@@ -2,6 +2,8 @@ import { z } from "zod";
 import { addToCart, MAX_QUANTITY, priceCart, type CartLine } from "./carrito";
 import { isInDeliveryZone, type ZoneCheckable } from "./envio";
 
+export const MAX_ORDER_LINES = 50;
+
 // VP-08: lo que manda el navegador al confirmar la compra. Solo qué y
 // cuánto, la dirección elegida y el total que vio el cliente; los precios se
 // toman siempre de la base. Productos repetidos se unen.
@@ -10,7 +12,7 @@ export const CheckoutInputSchema = z.object({
   lines: z
     .array(z.object({ productId: z.uuid(), quantity: z.int().min(1).max(MAX_QUANTITY) }))
     .min(1)
-    .max(50)
+    .max(MAX_ORDER_LINES)
     .transform((lines) => lines.reduce<CartLine[]>((cart, l) => addToCart(cart, l.productId, l.quantity), [])),
   expectedTotal: z.number().nonnegative().max(1e10),
 });

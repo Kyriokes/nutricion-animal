@@ -35,8 +35,29 @@ export async function saveShippingCost(cost: number, userId: string) {
     });
 }
 
+// Bloquea, en orden de id, los productos de estos pedidos. Toda transacción
+// que toca stock toma sus productos de una sola vez y en el mismo orden (igual
+// que createOrder): así dos transacciones no pueden esperarse en círculo
+// (deadlock).
+async function lockProductsOf(tx: Tx, orderIds: readonly string[]) {
+  if (orderIds.length === 0) return;
+  await tx.execute(sql`
+    select p.id from ${products} p
+    where p.id in (
+      select oi.product_id from ${orderItems} oi
+      where oi.order_id in (${sql.join(
+        orderIds.map((id) => sql`${id}`),
+        sql`, `,
+      )})
+    )
+    order by p.id
+    for update
+  `);
+}
+
 // Aplica un cambio de estado ya validado sobre un pedido bloqueado: lo
 // registra en el historial y, si corresponde, devuelve el stock (RN-064).
+// Si devuelve stock, quien llama ya bloqueó los productos (lockProductsOf).
 async function applyTransition(
   tx: Tx,
   orderId: string,
@@ -54,7 +75,7 @@ async function applyTransition(
     // sentencia. Los productos borrados (product_id nulo) se saltean.
     await tx.execute(sql`
       update ${products} p
-      set stock = p.stock + oi.quantity, updated_at = now()
+      set stock = p.stock + oi.quantity
       from ${orderItems} oi
       where oi.order_id = ${orderId} and oi.product_id = p.id
     `);
@@ -63,19 +84,37 @@ async function applyTransition(
 }
 
 // RN-064: cancela los pedidos cuya reserva venció sin pago y devuelve su
-// stock. Se llama al crear pedidos y al leerlos, así no hace falta un
-// proceso programado. Los pedidos que otro está cambiando se saltean.
-async function expireOverdue(tx: Tx) {
-  const overdue = await tx
-    .select({ id: orders.id })
-    .from(orders)
-    .where(and(eq(orders.status, "pending_payment"), lte(orders.reservedUntil, sql`now()`)))
-    .for("update", { skipLocked: true });
-  for (const o of overdue) await applyTransition(tx, o.id, "cancelled", "system", null);
+// stock. Se llama al crear pedidos (todos) y al leerlos (solo los de ese
+// cliente), así no hace falta un proceso programado. Los pedidos que otro
+// está cambiando se saltean.
+export async function expireOverdueOrders(customerId?: string) {
+  await db.transaction(async (tx) => {
+    const overdue = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.status, "pending_payment"),
+          lte(orders.reservedUntil, sql`now()`),
+          customerId ? eq(orders.customerId, customerId) : undefined,
+        ),
+      )
+      .for("update", { skipLocked: true });
+    await lockProductsOf(
+      tx,
+      overdue.map((o) => o.id),
+    );
+    for (const o of overdue) await applyTransition(tx, o.id, "cancelled", "system", null);
+  });
 }
 
-export async function expireOverdueOrders() {
-  await db.transaction((tx) => expireOverdue(tx));
+// Al leer, vencer reservas es un extra: si falla, se muestra igual lo que hay.
+async function tryExpireOverdue(customerId: string) {
+  try {
+    await expireOverdueOrders(customerId);
+  } catch {
+    // Se reintenta en la próxima lectura o compra.
+  }
 }
 
 export type CreateOrderResult =
@@ -89,9 +128,16 @@ export async function createOrder(customerId: string, input: CheckoutInput): Pro
   const address = await getAddress(customerId, input.addressId);
   if (!address) return { ok: false, error: "address_not_found" };
   const shippingCost = await getShippingCost();
+  // Primero se liberan las reservas vencidas, en su propia transacción: así
+  // esta solo bloquea sus productos, de una vez y en orden. Si falla, la
+  // compra sigue con el stock que haya.
+  try {
+    await expireOverdueOrders();
+  } catch {
+    // Se reintenta en la próxima compra.
+  }
 
   return db.transaction(async (tx) => {
-    await expireOverdue(tx);
     const available = await tx
       .select({ id: products.id, name: products.name, price: products.price, stock: products.stock })
       .from(products)
@@ -147,7 +193,7 @@ export async function createOrder(customerId: string, input: CheckoutInput): Pro
     for (const i of plan.items) {
       await tx
         .update(products)
-        .set({ stock: sql`${products.stock} - ${i.quantity}`, updatedAt: sql`now()` })
+        .set({ stock: sql`${products.stock} - ${i.quantity}` })
         .where(eq(products.id, i.productId));
     }
     await tx
@@ -179,10 +225,12 @@ async function transitionOrder(
     }
     const status = order.status as OrderStatus;
     if (isReservationExpired({ status, reservedUntil: order.reservedUntil }, new Date())) {
+      await lockProductsOf(tx, [orderId]);
       await applyTransition(tx, orderId, "cancelled", "system", null);
       return { ok: false as const, error: "expired" as const };
     }
     if (!canTransition(status, to, actor)) return { ok: false as const, error: "invalid_transition" as const };
+    if (releasesStock(to)) await lockProductsOf(tx, [orderId]);
     await applyTransition(tx, orderId, to, actor, opts.by, opts.paymentRef ? { paymentRef: opts.paymentRef } : {});
     return { ok: true as const };
   });
@@ -207,7 +255,7 @@ export const ORDERS_PAGE_SIZE = 10;
 
 // VU-02: pedidos del cliente, los más nuevos primero.
 export async function listCustomerOrders(customerId: string, page: number) {
-  await expireOverdueOrders();
+  await tryExpireOverdue(customerId);
   const where = eq(orders.customerId, customerId);
   const [rows, [{ total }]] = await Promise.all([
     db
@@ -235,7 +283,7 @@ export async function listCustomerOrders(customerId: string, page: number) {
 
 // VU-10, VU-02: un pedido del cliente con sus productos y su seguimiento.
 export async function getCustomerOrder(customerId: string, orderId: string) {
-  await expireOverdueOrders();
+  await tryExpireOverdue(customerId);
   const [order] = await db
     .select()
     .from(orders)

@@ -147,6 +147,7 @@ Copiá `.env.example` a `.env.local` y completalo. `.env.local` nunca se sube al
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys (`sb_publishable_…`) | Sí |
 | `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys (`sb_secret_…`) | **No**, solo servidor |
 | `DATABASE_URL` | Supabase → Connect → Session pooler (puerto 5432), con la contraseña de la base | **No**, solo servidor |
+| `PAYMENTS_SIMULATED` | Opcional. `true` activa el pago de prueba en producción (en desarrollo siempre está activo) | **No**, solo servidor |
 
 ### 3. Configurar el ingreso con Google
 

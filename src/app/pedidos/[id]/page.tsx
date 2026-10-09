@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modules/pedidos/presentacion";
 import { getCustomerOrder } from "@/modules/pedidos/repositorio";
+import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { CancelOrderButton } from "../order-buttons";
 import { OrderSummary } from "../order-summary";
@@ -28,7 +29,10 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const actor = await getCurrentActor();
   const id = z.uuid().safeParse((await params).id);
-  const order = actor && id.success ? await getCustomerOrder(actor.id, id.data) : null;
+  const order =
+    actor && hasPermission(actor.roles, "order.view_own") && id.success
+      ? await getCustomerOrder(actor.id, id.data)
+      : null;
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   const result = resultMessage(order.status);
 

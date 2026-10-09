@@ -4,7 +4,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
 import { formatPrice } from "@/modules/catalogo/presentacion";
+import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
 import { orderNumber } from "@/modules/pedidos/presentacion";
+import { hasPermission } from "@/modules/usuarios/roles";
 import { getCustomerOrder } from "@/modules/pedidos/repositorio";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { SimulatedPaymentButtons } from "../../order-buttons";
@@ -21,7 +23,10 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const actor = await getCurrentActor();
   const id = z.uuid().safeParse((await params).id);
-  const order = actor && id.success ? await getCustomerOrder(actor.id, id.data) : null;
+  const order =
+    actor && hasPermission(actor.roles, "order.view_own") && id.success
+      ? await getCustomerOrder(actor.id, id.data)
+      : null;
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   // Ya pagado, rechazado o cancelado: se ve el resultado.
   if (order.status !== "pending_payment") redirect(`/pedidos/${order.id}`);
@@ -34,10 +39,18 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       </p>
       <OrderSummary order={order} />
       <section className="flex flex-col gap-3 rounded-lg border border-dashed p-4">
-        <p role="status" className="w-fit rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
-          Pago de prueba: no se cobra nada.
-        </p>
-        <SimulatedPaymentButtons orderId={order.id} />
+        {simulatedPaymentsEnabled() ? (
+          <>
+            <p role="status" className="w-fit rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+              Pago de prueba: no se cobra nada.
+            </p>
+            <SimulatedPaymentButtons orderId={order.id} />
+          </>
+        ) : (
+          <p role="status" className="text-sm">
+            El pago en línea todavía no está disponible.
+          </p>
+        )}
       </section>
       <Link href={`/pedidos/${order.id}`} className="text-sm underline underline-offset-4">
         Ver el pedido

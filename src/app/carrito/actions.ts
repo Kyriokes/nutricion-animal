@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { getCatalogProductsByIds } from "@/modules/catalogo/repositorio";
-import { CheckoutInputSchema, type CheckoutError } from "@/modules/pedidos/checkout";
+import { CheckoutInputSchema, MAX_ORDER_LINES, type CheckoutError } from "@/modules/pedidos/checkout";
+import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
 import { createOrder } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
@@ -43,7 +44,12 @@ export async function createOrderAction(input: unknown): Promise<CheckoutActionR
   const actor = await getCurrentActor();
   if (!actor) return { ok: false, message: "Tenés que ingresar para comprar." };
   if (!hasPermission(actor.roles, "order.create")) return { ok: false, message: "Tu cuenta no puede hacer compras." };
+  // Sin forma de pagar, el pedido solo bloquearía stock (DT-055).
+  if (!simulatedPaymentsEnabled()) return { ok: false, message: "El pago en línea todavía no está disponible." };
   const parsed = CheckoutInputSchema.safeParse(input);
+  if (!parsed.success && parsed.error.issues.some((i) => i.path[0] === "lines" && i.code === "too_big")) {
+    return { ok: false, message: `Podés comprar hasta ${MAX_ORDER_LINES} productos distintos por pedido.` };
+  }
   if (!parsed.success) return { ok: false, message: "Revisá el carrito y la dirección." };
   try {
     const r = await createOrder(actor.id, parsed.data);
