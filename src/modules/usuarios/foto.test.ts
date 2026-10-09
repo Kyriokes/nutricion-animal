@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PHOTO_BYTES, avatarPathFromUrl, validatePhoto } from "./foto";
+import { MAX_PHOTO_BYTES, avatarPathFromUrl, ownedStoragePath, validatePhoto } from "./foto";
 
 const JPEG = [0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0];
 const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0];
@@ -37,6 +37,14 @@ describe("usuarios/foto (RN-016)", () => {
     expect(avatarPathFromUrl("https://lh3.googleusercontent.com/a/x", base, "u-1")).toBeNull();
     expect(avatarPathFromUrl(`${base}/storage/v1/object/public/otro/u-1/abc.jpg`, base, "u-1")).toBeNull();
     expect(avatarPathFromUrl(null, base, "u-1")).toBeNull();
+  });
+
+  it("sirve para cualquier bucket y carpeta (imágenes de productos)", () => {
+    const base = "https://xilzwjudufoplgqpzxkx.supabase.co";
+    const prefix = `${base}/storage/v1/object/public`;
+    expect(ownedStoragePath(`${prefix}/products/p-1/x.webp`, base, "products", "p-1")).toBe("p-1/x.webp");
+    expect(ownedStoragePath(`${prefix}/products/p-2/x.webp`, base, "products", "p-1")).toBeNull();
+    expect(ownedStoragePath(`${prefix}/avatars/p-1/x.webp`, base, "products", "p-1")).toBeNull();
   });
 
   it("nunca devuelve una foto de la carpeta de otro usuario", () => {
