@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
-    "db:seed": "node --env-file=.env.local scripts/seed-catalogo.mjs"
+    "db:seed": "node --env-file=.env.local scripts/seed-catalogo.mjs",
+    "storage:setup": "node --env-file=.env.local scripts/setup-storage.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

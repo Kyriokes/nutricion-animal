@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
         hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://invalid.local").hostname,
         pathname: "/storage/v1/object/public/avatars/**",
       },
+      // Imágenes de productos del catálogo.
+      {
+        protocol: "https",
+        hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://invalid.local").hostname,
+        pathname: "/storage/v1/object/public/products/**",
+      },
     ],
   },
   experimental: {

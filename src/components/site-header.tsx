@@ -42,9 +42,14 @@ async function UserArea() {
 export function SiteHeader() {
   return (
     <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
-      <Link href="/" className="font-semibold">
-        Nutrición animal
-      </Link>
+      <nav className="flex items-center gap-4">
+        <Link href="/" className="font-semibold">
+          Nutrición animal
+        </Link>
+        <Link href="/catalogo" className="text-sm underline-offset-4 hover:underline">
+          Catálogo
+        </Link>
+      </nav>
       <div className="flex items-center gap-2">
         <ThemeToggle />
         <Suspense fallback={<div className="h-9 w-24" aria-hidden />}>
