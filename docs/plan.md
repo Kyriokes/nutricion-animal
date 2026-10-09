@@ -28,6 +28,9 @@
 - Formulario completo de proveedor (hoy solo el nombre del negocio).
 - Editar una dirección (hoy se borra y se carga de nuevo).
 
+## Esperando a Sergio
+- VN-04: alcance de la búsqueda de clientes para asignar dietas (Ley 25.326). Lo consulta antes de definirlo; mientras tanto la pantalla muestra un aviso de funcionamiento provisorio.
+
 ## Pendientes de la revisión final de perfil, mascotas y dietas (2026-10-08)
 Arreglados: aprobar ya no desbloquea a un usuario (RN-024); el editor desactualizado ya no mueve mascotas (RN-026); borrar dietas nunca asignadas (RN-021).
 Quedan (menores):
@@ -38,7 +41,6 @@ Quedan (menores):
 - Largos máximos en los esquemas (descripción y notas de dieta, alimentos, listas de la mascota, dirección y matrícula).
 - Sugerencias de especies: hoy muestran texto libre de otros usuarios; exigir que se repita o usar lista cerrada.
 - El admin al clonar una dieta ajena queda como dueño de la copia.
-- Qué puede hacer un usuario bloqueado: hoy sube foto y carga direcciones.
 - Si la base falla al leer la sesión, las acciones terminan en la pantalla de error en vez de un mensaje.
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
