@@ -3,11 +3,13 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { ApplicationKind } from "@/modules/usuarios/postulaciones";
+import { describeAddressZone, type ZoneCheckable } from "@/modules/pedidos/envio";
 import { formatAddress, type Address } from "@/modules/usuarios/direcciones";
 import {
   addAddressAction,
   deleteAddressAction,
   markDecisionsSeenAction,
+  verifyAddressAction,
   saveProfessionalProfileAction,
   uploadPhotoAction,
   submitApplicationAction,
@@ -177,7 +179,7 @@ export function AddressesSection({
   addresses,
   max,
 }: {
-  addresses: (Address & { id: string })[];
+  addresses: (Address & ZoneCheckable & { id: string })[];
   max: number;
 }) {
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -189,19 +191,40 @@ export function AddressesSection({
         <p className="text-sm text-muted-foreground">Todavía no cargaste direcciones.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {addresses.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
-              <span>{formatAddress(a)}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={pending}
-                onClick={() => start(async () => setResult(await deleteAddressAction(a.id)))}
-              >
-                Eliminar
-              </Button>
-            </li>
-          ))}
+          {addresses.map((a) => {
+            // RN-068: si está en la zona de entrega, según Georef.
+            const zone = describeAddressZone(a);
+            return (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
+                <div className="flex flex-col">
+                  <span>{formatAddress(a)}</span>
+                  <span className={zone.ok ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
+                    {zone.text}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {zone.canVerify && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() => start(async () => setResult(await verifyAddressAction(a.id)))}
+                    >
+                      Verificar
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={pending}
+                    onClick={() => start(async () => setResult(await deleteAddressAction(a.id)))}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -234,6 +257,9 @@ export function AddressesSection({
               />
             </label>
           ))}
+          <p className="col-span-full text-xs text-muted-foreground">
+            Por ahora solo enviamos dentro de Capital: escribí &quot;CABA&quot; como ciudad.
+          </p>
           <div className="col-span-full">
             <Button type="submit" disabled={pending}>
               {pending ? "Guardando…" : "Agregar dirección"}

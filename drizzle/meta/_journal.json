@@ -85,6 +85,13 @@
       "when": 1791540416648,
       "tag": "0011_productos_pendientes_por_defecto",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791555850805,
+      "tag": "0012_direcciones_georef",
+      "breakpoints": true
     }
   ]
 }

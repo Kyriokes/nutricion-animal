@@ -18,6 +18,7 @@ import {
 } from "./perfil-profesional";
 import { RoleSchema, type Actor, type Role } from "./roles";
 import { canAddAddress, type Address } from "./direcciones";
+import type { AddressVerification, AddressVerificationStatus } from "./georef";
 import { addresses, applications, nutritionistProfiles, users } from "./tables";
 
 type ApplicationRow = typeof applications.$inferSelect;
@@ -372,14 +373,50 @@ export async function listAddresses(userId: string) {
     .from(addresses)
     .where(eq(addresses.userId, userId))
     .orderBy(desc(addresses.createdAt));
-  return rows.map((r) => ({
+  return rows.map(toStoredAddress);
+}
+
+export type StoredAddress = ReturnType<typeof toStoredAddress>;
+
+function toStoredAddress(r: typeof addresses.$inferSelect) {
+  return {
     id: r.id,
     city: r.city,
     street: r.street,
     number: r.number,
     ...(r.floor ? { floor: r.floor } : {}),
     ...(r.apartment ? { apartment: r.apartment } : {}),
-  }));
+    verification: r.verification as AddressVerificationStatus,
+    provinceId: r.provinceId,
+    georefLabel: r.georefLabel,
+  };
+}
+
+// Una dirección propia; null si no existe o es de otro usuario.
+export async function getAddress(userId: string, addressId: string) {
+  const [row] = await db
+    .select()
+    .from(addresses)
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
+  return row ? toStoredAddress(row) : null;
+}
+
+const verificationColumns = (v: AddressVerification) => ({
+  verification: v.status,
+  provinceId: v.status === "verified" ? v.provinceId : null,
+  georefLabel: v.status === "verified" ? v.label : null,
+});
+
+// RN-068: guarda el resultado de volver a validar una dirección propia.
+export async function updateAddressVerification(
+  userId: string,
+  addressId: string,
+  v: AddressVerification,
+) {
+  await db
+    .update(addresses)
+    .set(verificationColumns(v))
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
 }
 
 // RN-017: agrega una dirección (ya validada con AddressSchema) si no se
@@ -387,6 +424,7 @@ export async function listAddresses(userId: string) {
 export async function addAddress(
   userId: string,
   address: Address,
+  verification: AddressVerification,
 ): Promise<{ ok: true } | { ok: false; error: "too_many" }> {
   return db.transaction(async (tx) => {
     // Bloquea al usuario para que dos altas simultáneas no pasen el máximo.
@@ -403,6 +441,7 @@ export async function addAddress(
       number: address.number,
       floor: address.floor ?? null,
       apartment: address.apartment ?? null,
+      ...verificationColumns(verification),
     });
     return { ok: true as const };
   });

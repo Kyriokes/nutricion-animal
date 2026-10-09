@@ -63,8 +63,26 @@ Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricioni
 ### 2.6 Pedidos (transversal)
 - **RN-060** El Cliente puede ver sus propios pedidos.
 - **RN-061** El Administrador puede ver todos los pedidos.
-- **RN-062** Cada pedido tiene un estado que ambos pueden consultar: pedido, preparado, en camino, entregado, etcétera (la lista completa se define aparte).
+- **RN-062** Cada pedido tiene un estado que ambos pueden consultar. El carrito no es un pedido: el pedido se crea cuando el Cliente confirma la compra.
+
+  ```
+  pago a confirmar → pagado → en preparación → en envío → recibido
+          ↓            ↓            ↓
+      rechazado     cancelado    cancelado
+  ```
+  - **Pago a confirmar:** el pedido existe y se espera el resultado del pago.
+  - **Rechazado:** el pago fue rechazado. Estado final.
+  - **Cancelado:** el Cliente canceló antes del envío, o el pago no llegó a tiempo (RN-064). Estado final.
+  - **Recibido:** estado final del recorrido. Los problemas posteriores van por reclamo (RN-066).
 - **RN-063** Más adelante: integración con Google Maps y con servicios de envío tipo PedidosYa o Rappi. Queda fuera de la primera versión.
+- **RN-064** Al crear el pedido se reserva el stock de sus productos por un tiempo límite (30 minutos). Si el pago se aprueba, la reserva pasa a descuento definitivo; si se rechaza o vence el tiempo, se libera y el pedido queda rechazado o cancelado.
+- **RN-065** Quién cambia cada estado:
+  - La pasarela de pago informa "pagado" o "rechazado".
+  - El Administrador marca "en preparación", "en envío" y "recibido" (primera versión: no hay integración con repartidores).
+  - El Cliente puede cancelar su pedido solo antes de "en envío".
+- **RN-066** Reclamos: un problema con un pedido no es un estado del pedido sino un reclamo asociado a él, con su propio estado (abierto, en revisión, resuelto) y una resolución al cerrarse (reembolso, reenvío o sin cambios). El pedido conserva su estado. El Cliente puede abrir reclamos desde que el pedido está "pagado" (por ejemplo, si nunca llegó) y hasta 48 horas después de que quedó "recibido"; un pedido puede tener más de un reclamo. Los resuelve el Administrador.
+- **RN-067** Pago: solo Mercado Pago (Checkout Pro), sin transferencia. El Cliente paga en la página de Mercado Pago, así que el sistema nunca recibe datos de tarjeta (DT-004). Durante el desarrollo se usa su modo de prueba.
+- **RN-068** Envío (primera versión, simulado): solo se entrega en la Ciudad de Buenos Aires, con un costo fijo por pedido que el Administrador puede cambiar desde Configuración (VA-08). Reparte "Mensajería Mandrake", un repartidor ficticio. Las direcciones fuera de la Ciudad no se pueden elegir en el checkout. Para saberlo, las direcciones se validan con Georef (API pública del Gobierno argentino, gratuita y sin cuenta); si Georef no responde, se acepta la ciudad escrita como "CABA", "Capital Federal" o "Ciudad de Buenos Aires".
 
 ### 2.7 Apariencia (Administrador, VA-08)
 - **RN-070** El Administrador define dos paletas de colores, una para el modo claro y otra para el oscuro. Cada paleta asigna un color a cada categoría: fondo, texto, primario, secundario, acento, error, éxito y advertencia. La lista de categorías puede crecer según lo que necesite el diseño.
@@ -73,6 +91,21 @@ Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricioni
 - **RN-073** Por defecto el sitio sigue el modo claro u oscuro del sistema del usuario. Un botón permite elegir claro, oscuro o sistema, y la elección se recuerda en su navegador.
 - **RN-075** En cada categoría, el Administrador puede restaurar el color a su valor base y, si el color no contrasta lo suficiente (RN-072), pedir que el sistema lo aclare u oscurezca lo mínimo necesario para cumplir el mínimo, conservando su tono.
 - **RN-074** Existe una paleta base en el código. Se usa si la base de datos no responde o tarda, cuando una paleta guardada no tiene alguna categoría, y para "restaurar valores por defecto".
+
+### 2.8 Contacto
+- **RN-080** Hay un formulario de contacto con nombre, email, motivo y mensaje. Los mensajes se guardan y el Administrador los lee desde su panel. **[A DEFINIR]** Cómo se responde: en la primera versión hay un lugar reservado sin lógica.
+- **RN-081** Junto al formulario se muestran un email y un enlace de WhatsApp de contacto (datos de prueba en la primera versión).
+- **RN-082** El mismo módulo de contacto tiene dos vistas: la página de contacto (VP-03) y la de cuenta sin acceso (RN-046), donde el usuario bloqueado puede escribir a soporte.
+- **RN-083** Más adelante: unificar formulario, email y WhatsApp en una sola bandeja de entrada (herramientas tipo Chatwoot o Zendesk). En la primera versión queda solo un lugar reservado, sin lógica.
+
+### 2.9 Dashboard del Administrador (VA-01)
+- **RN-090** El dashboard reúne las listas de trabajo del Administrador. Todas son paginadas, muestran todo el histórico y abren con un filtro por defecto que se puede cambiar o quitar:
+  - **Ventas:** filtradas por el día de hoy.
+  - **Pedidos:** filtrados por pendientes (los que no están en un estado final).
+  - **Reclamos:** filtrados por abiertos.
+  - **Postulaciones:** filtradas por pendientes.
+  - **Productos:** ordenados por stock de menor a mayor, para ver primero los que no hay.
+- **RN-091** Además muestra los productos más vendidos y las búsquedas más frecuentes (RN-051).
 
 ---
 
@@ -198,7 +231,7 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - **RN-045** El resultado (aprobada o rechazada) se informa dentro de la aplicación: el postulante ve un aviso hasta que lo marca como leído. Los emails quedan para una versión avanzada.
 - Formulario de proveedor: en la primera versión solo el nombre del negocio; el resto, en una versión avanzada.
 - El Administrador es omnipotente (RN-001): puede dar cualquier rol directamente, sin postulación.
-- **RN-046** Un usuario bloqueado (sin roles) solo ve una pantalla estilo "página no encontrada" que le indica que contacte a soporte (soporte: versión avanzada). No ve nada más del sitio ni puede hacer ninguna acción, salvo cerrar sesión. No ve la nota del administrador.
+- **RN-046** Un usuario bloqueado (sin roles) solo ve una pantalla estilo "página no encontrada" que le indica que contacte a soporte, con el formulario de contacto (RN-082). No ve nada más del sitio ni puede hacer ninguna otra acción, salvo cerrar sesión. No ve la nota del administrador.
 
 **Perfil del nutricionista (pregunta 3):**
 - Públicamente visible: nombre, foto, dirección, número de contacto.
@@ -253,7 +286,7 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 
 10. **[A DEFINIR]** Búsquedas: ¿se guardan también las de usuarios sin sesión? ¿Por cuánto tiempo se conservan?
 11. **[A DEFINIR]** Datos personales: revisar qué exige la normativa argentina de protección de datos personales antes de guardar búsquedas asociadas a usuarios.
-12. **[A DEFINIR]** Primera versión: ¿qué entra de pagos y envíos (costo de envío, quién reparte)?
+12. Resuelta: pagos con Mercado Pago (RN-067) y envío simulado en la Ciudad con costo fijo (RN-068).
 13. **[A DEFINIR]** Cuando exista el Proveedor real, ¿un producto puede publicarse sin aprobación mientras el rol Auditor no exista?
 
 ---
@@ -265,3 +298,4 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - v0.3: lista inicial de vistas por rol (VP, VU, VN, VA), vistas sugeridas para revisar y tres preguntas nuevas.
 - v0.4: ingreso con Google (RN-003), pedidos y estados (RN-060 a RN-063), vistas nuevas (buscar nutricionistas, perfil del nutricionista, asignar dieta, mi perfil profesional), término único "dieta", DT-004 sobre tarjetas, preguntas abiertas reordenadas.
 - v0.5: se resuelve parte de 4.5 (dieta en detalle de mascota, resultado del pedido, páginas de error, gestión de usuarios y roles, estadísticas dentro de Reportes). Nuevo flujo de registro con elección de rol y aceptación de nutricionistas por un administrador (RN-024).
+- v0.6: estados del pedido, reserva de stock, reclamos, pago y envío simulado (RN-062, RN-064 a RN-068); contacto (RN-080 a RN-083, RN-046); dashboard del Administrador (RN-090, RN-091).

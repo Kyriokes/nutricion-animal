@@ -5,12 +5,15 @@ import { ApplicationDataSchema } from "@/modules/usuarios/postulaciones";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AddressSchema, MAX_ADDRESSES } from "@/modules/usuarios/direcciones";
+import { verifyAddress } from "@/modules/usuarios/georef";
 import { AVATARS_BUCKET, avatarPathFromUrl, validatePhoto } from "@/modules/usuarios/foto";
 import { planProfessionalProfileUpdate } from "@/modules/usuarios/perfil-profesional";
 import {
   addAddress,
   createApplication,
   deleteAddress,
+  getAddress,
+  updateAddressVerification,
   markDecisionsSeen,
   saveProfessionalProfile,
   updateUserName,
@@ -123,12 +126,34 @@ export async function addAddressAction(input: unknown): Promise<ActionResult> {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dirección inválida." };
   }
   try {
-    const result = await addAddress(actor.id, parsed.data);
+    // RN-068: se valida con Georef antes de guardar. Se guarda igual aunque
+    // no se encuentre: el perfil muestra el resultado y el checkout decide.
+    const verification = await verifyAddress(parsed.data);
+    const result = await addAddress(actor.id, parsed.data, verification);
     if (!result.ok) {
       return { ok: false, message: `Podés guardar hasta ${MAX_ADDRESSES} direcciones.` };
     }
   } catch {
     return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+// RN-068: volver a validar con Georef una dirección propia (por ejemplo, las
+// cargadas antes de la validación o cuando Georef no respondió).
+export async function verifyAddressAction(addressId: unknown): Promise<ActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  if (isSuspended(actor.roles)) return SUSPENDED;
+  const id = z.uuid().safeParse(addressId);
+  if (!id.success) return { ok: false, message: "Dirección inválida." };
+  try {
+    const address = await getAddress(actor.id, id.data);
+    if (!address) return { ok: false, message: "Dirección inválida." };
+    await updateAddressVerification(actor.id, id.data, await verifyAddress(address));
+  } catch {
+    return { ok: false, message: "No se pudo verificar. Probá de nuevo." };
   }
   refresh();
   return { ok: true };

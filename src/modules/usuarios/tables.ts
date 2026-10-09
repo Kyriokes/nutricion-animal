@@ -107,9 +107,20 @@ export const addresses = pgTable(
     number: text("number").notNull(),
     floor: text("floor"),
     apartment: text("apartment"),
+    // RN-068: resultado de validarla con Georef. Las direcciones anteriores
+    // a la validación quedan "unverified" hasta que el usuario las verifique.
+    verification: text("verification").notNull().default("unverified"),
+    provinceId: text("province_id"),
+    georefLabel: text("georef_label"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("addresses_user_idx").on(t.userId)],
+  (t) => [
+    index("addresses_user_idx").on(t.userId),
+    check(
+      "addresses_verification_valid",
+      sql`${t.verification} in ('verified', 'not_found', 'unverified')`,
+    ),
+  ],
 ).enableRLS();
