@@ -1,4 +1,5 @@
 import { and, arrayContains, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import { NutritionalInfoSchema, normalizeTag, type Product } from "./schema";
 import { products } from "./tables";
@@ -76,6 +77,23 @@ export async function listCatalog(filters: CatalogFilters) {
     db.select({ total: count() }).from(products).where(where),
   ]);
   return { items: rows.map(toProduct), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+export const CATALOG_TAG = "catalog";
+
+// VP-01: productos destacados de la landing (con stock). Se cachea por horas y
+// se renueva al cambiar el catálogo (updateTag(CATALOG_TAG) en VA-02).
+export async function getFeaturedProducts(limit = 4): Promise<StoredProduct[]> {
+  "use cache";
+  cacheTag(CATALOG_TAG);
+  cacheLife("hours");
+  const rows = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.status, "approved"), sql`${products.stock} > 0`))
+    .orderBy(desc(products.updatedAt))
+    .limit(limit);
+  return rows.map(toProduct);
 }
 
 // VP-05: un producto del catálogo público (solo si está aprobado).

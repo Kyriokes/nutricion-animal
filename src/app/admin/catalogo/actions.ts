@@ -1,11 +1,12 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseProductForm } from "@/modules/catalogo/formulario";
 import {
+  CATALOG_TAG,
   createProduct,
   deleteProduct,
   getProduct,
@@ -50,6 +51,7 @@ export async function saveProductAction(productId: string | null, input: unknown
   } catch {
     return SAVE_FAILED;
   }
+  updateTag(CATALOG_TAG);
   if (createdId) redirect(`/admin/catalogo/${createdId}`);
   refresh();
   return { ok: true };
@@ -85,6 +87,7 @@ export async function uploadProductImageAction(productId: string, formData: Form
   }
   const previous = ownedStoragePath(product.image, process.env.NEXT_PUBLIC_SUPABASE_URL!, BUCKET, product.id);
   if (previous) await storage.remove([previous]);
+  updateTag(CATALOG_TAG);
   refresh();
   return { ok: true };
 }
@@ -102,5 +105,6 @@ export async function deleteProductAction(productId: unknown): Promise<CatalogAc
   }
   const image = ownedStoragePath(product.image, process.env.NEXT_PUBLIC_SUPABASE_URL!, BUCKET, product.id);
   if (image) await createSupabaseAdminClient().storage.from(BUCKET).remove([image]);
+  updateTag(CATALOG_TAG);
   redirect("/admin/catalogo");
 }
