@@ -166,6 +166,8 @@ export function approveApplication(input: {
 }): Result<{ application: Application; roles: Role[] }> {
   const result = decide("approved", input);
   if (!result.ok) return result;
+  // RN-024: un usuario bloqueado sigue bloqueado; aprobar le daría roles.
+  if (input.applicantRoles.length === 0) return { ok: false, error: "blocked" };
   const granted = ROLE_BY_KIND[input.application.data.kind];
   return {
     ok: true,

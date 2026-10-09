@@ -167,7 +167,7 @@ export async function createApplication(
 
 export type ApplicationWithUser = {
   application: Application;
-  user: { name: string; email: string; photoUrl: string | null };
+  user: { name: string; email: string; photoUrl: string | null; suspended: boolean };
 };
 
 async function listWithUser(pending: boolean, limit: number) {
@@ -177,6 +177,7 @@ async function listWithUser(pending: boolean, limit: number) {
       name: users.name,
       email: users.email,
       photoUrl: users.photoUrl,
+      roles: users.roles,
     })
     .from(applications)
     .innerJoin(users, eq(users.id, applications.userId))
@@ -192,7 +193,18 @@ async function listWithUser(pending: boolean, limit: number) {
   return rows.flatMap((r): ApplicationWithUser[] => {
     const application = toApplication(r.application);
     return application
-      ? [{ application, user: { name: r.name, email: r.email, photoUrl: r.photoUrl } }]
+      ? [
+          {
+            application,
+            user: {
+              name: r.name,
+              email: r.email,
+              photoUrl: r.photoUrl,
+              // RN-024: un usuario sin roles está bloqueado; no se lo aprueba.
+              suspended: knownRoles(r.roles).length === 0,
+            },
+          },
+        ]
       : [];
   });
 }

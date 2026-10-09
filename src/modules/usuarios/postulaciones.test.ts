@@ -132,6 +132,19 @@ describe("usuarios/postulaciones: decidir", () => {
     });
   });
 
+  it("RN-024: aprobar no desbloquea a un usuario bloqueado (sin roles)", () => {
+    for (const decider of [admin, auditor]) {
+      expect(
+        approveApplication({
+          application: pending,
+          applicantRoles: [],
+          decider,
+          now: NOW,
+        }),
+      ).toEqual({ ok: false, error: "blocked" });
+    }
+  });
+
   it("RN-043: el auditor también puede aprobar", () => {
     const result = approveApplication({
       application: pending,

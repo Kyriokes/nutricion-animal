@@ -73,6 +73,11 @@ async function Content() {
             <div>
               <p className="font-medium">
                 {user.name} · {KIND_LABELS[application.data.kind]}
+                {user.suspended && (
+                  <span className="ml-2 rounded bg-warning px-1.5 py-0.5 text-xs text-warning-foreground">
+                    Cuenta suspendida
+                  </span>
+                )}
               </p>
               <p className="text-sm text-muted-foreground">
                 {user.email} · enviada el {dateFormat.format(application.submittedAt)}
