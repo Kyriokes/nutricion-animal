@@ -2,9 +2,13 @@
 
 import { refresh } from "next/cache";
 import { ApplicationDataSchema } from "@/modules/usuarios/postulaciones";
+import { z } from "zod";
+import { AddressSchema, MAX_ADDRESSES } from "@/modules/usuarios/direcciones";
 import { planProfessionalProfileUpdate } from "@/modules/usuarios/perfil-profesional";
 import {
+  addAddress,
   createApplication,
+  deleteAddress,
   markDecisionsSeen,
   saveProfessionalProfile,
   updateUserName,
@@ -55,6 +59,41 @@ export async function saveProfessionalProfileAction(input: unknown): Promise<Act
     await saveProfessionalProfile(actor.id, plan.profile);
   } catch {
     return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+// RN-017: agregar una dirección de entrega.
+export async function addAddressAction(input: unknown): Promise<ActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  const parsed = AddressSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Dirección inválida." };
+  }
+  try {
+    const result = await addAddress(actor.id, parsed.data);
+    if (!result.ok) {
+      return { ok: false, message: `Podés guardar hasta ${MAX_ADDRESSES} direcciones.` };
+    }
+  } catch {
+    return { ok: false, message: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+// RN-017: borrar una dirección propia.
+export async function deleteAddressAction(addressId: unknown): Promise<ActionResult> {
+  const actor = await getCurrentActor();
+  if (!actor) return NOT_SIGNED_IN;
+  const id = z.uuid().safeParse(addressId);
+  if (!id.success) return { ok: false, message: "Dirección inválida." };
+  try {
+    await deleteAddress(actor.id, id.data);
+  } catch {
+    return { ok: false, message: "No se pudo borrar. Probá de nuevo." };
   }
   refresh();
   return { ok: true };

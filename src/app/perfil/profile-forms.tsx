@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { ApplicationKind } from "@/modules/usuarios/postulaciones";
+import { formatAddress, type Address } from "@/modules/usuarios/direcciones";
 import {
+  addAddressAction,
+  deleteAddressAction,
   markDecisionsSeenAction,
   saveProfessionalProfileAction,
   submitApplicationAction,
@@ -110,6 +113,88 @@ export function ProfessionalProfileForm({
       </div>
       <Message result={result} />
     </form>
+  );
+}
+
+const ADDRESS_FIELDS = [
+  { name: "city", label: "Ciudad", placeholder: "CABA", required: true },
+  { name: "street", label: "Calle", placeholder: "Av. Corrientes", required: true },
+  { name: "number", label: "Altura", placeholder: "1234", required: true },
+  { name: "floor", label: "Piso (opcional)", placeholder: "4", required: false },
+  { name: "apartment", label: "Depto. (opcional)", placeholder: "B", required: false },
+] as const;
+
+// RN-017: direcciones de entrega, como en un delivery de comida.
+export function AddressesSection({
+  addresses,
+  max,
+}: {
+  addresses: (Address & { id: string })[];
+  max: number;
+}) {
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [pending, start] = useTransition();
+
+  return (
+    <div className="flex flex-col gap-3">
+      {addresses.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Todavía no cargaste direcciones.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {addresses.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
+              <span>{formatAddress(a)}</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => start(async () => setResult(await deleteAddressAction(a.id)))}
+              >
+                Eliminar
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {addresses.length < max && (
+        <form
+          className="grid grid-cols-2 gap-2 sm:grid-cols-[2fr_2fr_1fr_1fr_1fr]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formEl = e.currentTarget;
+            const form = new FormData(formEl);
+            const data = Object.fromEntries(
+              ADDRESS_FIELDS.map((f) => [f.name, String(form.get(f.name) ?? "")]),
+            );
+            start(async () => {
+              const r = await addAddressAction(data);
+              setResult(r);
+              if (r.ok) formEl.reset();
+            });
+          }}
+        >
+          {ADDRESS_FIELDS.map((f) => (
+            <label key={f.name} className="flex flex-col gap-1 text-sm">
+              {f.label}
+              <input
+                name={f.name}
+                required={f.required}
+                className={inputClass}
+                placeholder={f.placeholder}
+                maxLength={f.name === "street" ? 120 : f.name === "city" ? 80 : 10}
+              />
+            </label>
+          ))}
+          <div className="col-span-full">
+            <Button type="submit" disabled={pending}>
+              {pending ? "Guardando…" : "Agregar dirección"}
+            </Button>
+          </div>
+        </form>
+      )}
+      <Message result={result} />
+    </div>
   );
 }
 

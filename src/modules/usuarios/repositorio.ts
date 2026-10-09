@@ -17,7 +17,8 @@ import {
   type PublicProfile,
 } from "./perfil-profesional";
 import { RoleSchema, type Actor, type Role } from "./roles";
-import { applications, nutritionistProfiles, users } from "./tables";
+import { canAddAddress, type Address } from "./direcciones";
+import { addresses, applications, nutritionistProfiles, users } from "./tables";
 
 type ApplicationRow = typeof applications.$inferSelect;
 
@@ -350,4 +351,55 @@ export async function getPublicNutritionist(
       ),
     );
   return row ? toPublicProfile(row) : null;
+}
+
+// RN-017: direcciones del usuario, las más nuevas primero.
+export async function listAddresses(userId: string) {
+  const rows = await db
+    .select()
+    .from(addresses)
+    .where(eq(addresses.userId, userId))
+    .orderBy(desc(addresses.createdAt));
+  return rows.map((r) => ({
+    id: r.id,
+    city: r.city,
+    street: r.street,
+    number: r.number,
+    ...(r.floor ? { floor: r.floor } : {}),
+    ...(r.apartment ? { apartment: r.apartment } : {}),
+  }));
+}
+
+// RN-017: agrega una dirección (ya validada con AddressSchema) si no se
+// superó el máximo. La cuenta y el insert van en una transacción.
+export async function addAddress(
+  userId: string,
+  address: Address,
+): Promise<{ ok: true } | { ok: false; error: "too_many" }> {
+  return db.transaction(async (tx) => {
+    // Bloquea al usuario para que dos altas simultáneas no pasen el máximo.
+    await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+    const [{ n }] = await tx
+      .select({ n: count() })
+      .from(addresses)
+      .where(eq(addresses.userId, userId));
+    if (!canAddAddress(n)) return { ok: false as const, error: "too_many" as const };
+    await tx.insert(addresses).values({
+      userId,
+      city: address.city,
+      street: address.street,
+      number: address.number,
+      floor: address.floor ?? null,
+      apartment: address.apartment ?? null,
+    });
+    return { ok: true as const };
+  });
+}
+
+// RN-017: borra una dirección propia. El filtro por usuario impide borrar
+// direcciones de otros aunque se mande otro id.
+export async function deleteAddress(userId: string, addressId: string) {
+  await db
+    .delete(addresses)
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
 }

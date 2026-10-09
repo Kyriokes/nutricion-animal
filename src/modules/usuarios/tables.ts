@@ -93,3 +93,23 @@ export const nutritionistProfiles = pgTable("nutritionist_profiles", {
     .notNull()
     .defaultNow(),
 }).enableRLS();
+
+// RN-017: direcciones de entrega del usuario (VU-01).
+export const addresses = pgTable(
+  "addresses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    city: text("city").notNull(),
+    street: text("street").notNull(),
+    number: text("number").notNull(),
+    floor: text("floor"),
+    apartment: text("apartment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("addresses_user_idx").on(t.userId)],
+).enableRLS();

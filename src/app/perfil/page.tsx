@@ -9,13 +9,16 @@ import {
   type Application,
   type ApplicationKind,
 } from "@/modules/usuarios/postulaciones";
+import { MAX_ADDRESSES } from "@/modules/usuarios/direcciones";
 import {
   getProfessionalProfile,
+  listAddresses,
   listOwnApplications,
 } from "@/modules/usuarios/repositorio";
 import { ROLE_LABELS } from "@/modules/usuarios/roles";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 import {
+  AddressesSection,
   ApplicationForm,
   MarkSeenButton,
   NameForm,
@@ -91,6 +94,11 @@ async function Profile() {
 
       <section className="max-w-md">
         <NameForm name={user.name} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-medium">Mis direcciones</h2>
+        <AddressesSection addresses={await listAddresses(user.id)} max={MAX_ADDRESSES} />
       </section>
 
       {user.roles.includes("nutritionist") && (
