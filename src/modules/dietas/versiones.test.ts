@@ -6,6 +6,7 @@ import {
   editVersion,
   planEdit,
   publishVersion,
+  renameDiet,
 } from "./versiones";
 import {
   NOW,
@@ -85,6 +86,21 @@ describe("dietas/versiones: crear y clonar", () => {
       now: NOW,
     });
     expect(result).toEqual({ ok: false, error: "not_owner" });
+  });
+});
+
+describe("dietas/versiones: renombrar", () => {
+  it("DT-025: el dueño renombra sin crear versión", () => {
+    expect(renameDiet({ diet, name: "  Proteica II ", actor: owner })).toEqual({
+      ok: true,
+      diet: { ...diet, name: "Proteica II" },
+    });
+  });
+
+  it("rechaza nombres vacíos o largos, y a quien no es el dueño", () => {
+    expect(renameDiet({ diet, name: "  ", actor: owner })).toEqual({ ok: false, error: "invalid_name" });
+    expect(renameDiet({ diet, name: "a".repeat(81), actor: owner })).toEqual({ ok: false, error: "invalid_name" });
+    expect(renameDiet({ diet, name: "Otra", actor: otherNutritionist })).toEqual({ ok: false, error: "not_owner" });
   });
 });
 

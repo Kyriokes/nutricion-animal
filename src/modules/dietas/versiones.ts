@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Result } from "@/lib/result";
 import { hasPermission, type Actor } from "@/modules/usuarios/roles";
 import { activeAssignments, isVersionFrozen } from "./asignaciones";
@@ -58,6 +59,22 @@ export function cloneDiet(input: {
     content: structuredClone(input.sourceVersion.content),
     now: input.now,
   });
+}
+
+export const DietNameSchema = z.string().trim().min(1).max(80);
+
+// DT-025: el nombre vive en la dieta y no se versiona; renombrar no afecta a
+// las mascotas asignadas.
+export function renameDiet(input: {
+  diet: Diet;
+  name: string;
+  actor: Actor;
+}): Result<{ diet: Diet }, DietError | "invalid_name"> {
+  const denied = authorize(input.actor, input.diet, "diet.manage");
+  if (denied) return { ok: false, error: denied };
+  const name = DietNameSchema.safeParse(input.name);
+  if (!name.success) return { ok: false, error: "invalid_name" };
+  return { ok: true, diet: { ...input.diet, name: name.data } };
 }
 
 // RN-025: una versión que nunca se asignó se edita en el lugar.

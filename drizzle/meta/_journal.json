@@ -43,6 +43,20 @@
       "when": 1791506360784,
       "tag": "0005_direcciones",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791506857717,
+      "tag": "0006_mascotas",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791506907061,
+      "tag": "0007_dietas",
+      "breakpoints": true
     }
   ]
 }
