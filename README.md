@@ -2,7 +2,7 @@
 
 Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus mascotas), **nutricionistas animales** y **proveedores** de alimentos. El cliente compra alimentos y ve la dieta que un nutricionista le asignó a cada mascota.
 
-> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones, el catálogo con búsqueda, el carrito y la apariencia y el contenido administrables. Los pedidos y los pagos vienen después.
+> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones, el catálogo con búsqueda, el carrito, la compra con reserva de stock, los reclamos, el contacto y el panel del admin. El pago todavía es simulado: Mercado Pago viene después.
 
 ---
 
@@ -12,6 +12,7 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 - [Stack](#stack)
 - [Arquitectura](#arquitectura)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Despliegue](#despliegue)
 - [Comandos](#comandos)
 - [Pruebas](#pruebas)
 - [Seguridad](#seguridad)
@@ -26,7 +27,8 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 |---|---|---|
 | Inicio | Presentación y productos destacados. | `/` |
 | Catálogo | Búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. | `/catalogo` |
-| Carrito | Funciona sin sesión; precios y stock siempre actualizados desde el servidor. Para continuar pide ingresar. | `/carrito` |
+| Carrito y compra | Funciona sin sesión; precios y stock siempre del servidor. Con sesión se elige una dirección de Capital (validada con Georef) y se confirma: el stock queda reservado 30 minutos. | `/carrito` |
+| Pedidos | Pago simulado (hasta integrar Mercado Pago), resultado, seguimiento, cancelación antes del envío y reclamos. | `/pedidos` |
 | Ingreso | Ingreso con Google (sin contraseñas). El primer ingreso crea la cuenta como Cliente. | modal "Ingresar" |
 | Perfil | Nombre, foto (JPG/PNG/WebP hasta 1 MB), direcciones de entrega, postulación a nutricionista o proveedor y aviso del resultado. | `/perfil` |
 | Mascotas | Alta y edición con alergias, alimentos no permitidos y de necesidad. El detalle muestra la **dieta actual** asignada. | `/mascotas` |
@@ -37,6 +39,10 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 | Apariencia | Paleta clara y oscura editable, importable desde coolors.co, con control de contraste (WCAG AA). | `/admin/configuracion/apariencia` |
 | Gestión del catálogo | El admin crea y edita productos, con imagen. | `/admin/catalogo` |
 | Contenido | El admin edita las preguntas frecuentes, quiénes somos y términos. | `/admin/contenido` |
+| Contacto | Formulario (también para cuentas suspendidas), email y WhatsApp. El admin lee los mensajes. | `/contacto`, `/admin/mensajes` |
+| Dashboard | Pendientes de atender, ventas de hoy y lo más vendido. | `/admin` |
+| Ventas y pedidos | Ventas por día o mes; pedidos filtrados por estado, con avance paso a paso; reclamos y reembolsos. | `/admin/ventas`, `/admin/pedidos`, `/admin/reclamos` |
+| Envío | Costo fijo editable (envío simulado, solo Capital). | `/admin/configuracion/envio` |
 
 **Roles:** Cliente, Nutricionista, Proveedor, Auditor y Administrador. Un usuario puede tener varios roles a la vez. Una cuenta sin roles queda suspendida: solo ve una pantalla que la manda a soporte.
 
@@ -192,6 +198,17 @@ Desde ahí, el resto de los roles se asigna desde `/admin/usuarios`.
 
 ---
 
+## Despliegue
+
+El sitio se publica en [Vercel](https://vercel.com) desde la rama `main` de GitHub: cada push despliega solo. Ojo: el plan gratuito de Vercel no permite uso comercial (sirve para mostrar el proyecto).
+
+- **Región:** `vercel.json` fija São Paulo (`gru1`), al lado de la base de Supabase.
+- **Base de datos:** en Vercel, `DATABASE_URL` usa el **transaction pooler** de Supabase (puerto `6543`), pensado para servidores que levantan y bajan instancias. En local se puede seguir usando el session pooler (puerto `5432`). Las migraciones se aplican desde la computadora con `npm run db:migrate`, no en el deploy.
+- **Variables de entorno en Vercel:** las mismas de `.env.local` (con el `DATABASE_URL` del transaction pooler). Para una demo con el pago de prueba, `PAYMENTS_SIMULATED=true`.
+- **Supabase Auth:** agregar la URL de Vercel en Authentication → URL Configuration (Site URL y Redirect URLs, con `/auth/callback`). Google no necesita cambios: vuelve siempre a Supabase.
+
+---
+
 ## Comandos
 
 | Comando | Qué hace |
@@ -257,9 +274,11 @@ Convenciones: código en inglés y textos en español. Los commits citan la regl
 - [x] Catálogo de productos y búsqueda
 - [x] Carrito
 - [x] Páginas de contenido editables (FAQ, quiénes somos, términos)
-- [ ] Pedidos y estados
+- [x] Pedidos, estados, reserva de stock y reclamos
+- [x] Contacto y dashboard del admin
+- [ ] Despliegue en Vercel
 - [ ] Publicación de productos por proveedores y revisión del auditor
-- [ ] Pagos y envíos (webhooks)
+- [ ] Pagos con Mercado Pago (webhooks)
 - [ ] Estadísticas de búsquedas
 - [ ] Notificaciones por email
 - [ ] Chatbot con IA y carrito asistido
