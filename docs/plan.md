@@ -23,13 +23,15 @@
 - **Reclamos (RN-066)**: el cliente los abre desde el detalle de su pedido; el admin los gestiona en `/admin/reclamos` (abre en los sin resolver) y los ve en el detalle del pedido (DT-057); cancelar un pedido pagado abre un reembolso pendiente (RN-069, DT-058).
 - **Contacto (VP-03, RN-080 a RN-083)**: formulario en `/contacto` (enlace en el pie) y en la pantalla de cuenta suspendida; email y WhatsApp de prueba; bandeja del admin en `/admin/mensajes` (DT-059). Responder desde el panel: [A DEFINIR].
 - **Dashboard (VA-01, RN-090, RN-091)** en `/admin`: tarjetas de pendientes, ventas de hoy, lo más vendido; búsquedas frecuentes reservado (pregunta 17). **Ventas** en `/admin/ventas` con filtro por día (por defecto hoy), mes o todo. Catálogo del admin paginado y ordenado por stock (DT-060).
+- **Publicado en Vercel**: https://nutricion-animal.vercel.app (región São Paulo, transaction pooler, DT-061). Local y publicado comparten la base y el ingreso de Supabase: un pedido de prueba en local aparece en el publicado. Las migraciones se aplican antes de pushear el código que las usa.
+- **Pagos con Mercado Pago (RN-067)**, Checkout Pro en modo de prueba: cobro con vencimiento igual a la reserva, vuelta al pedido, aviso automático con firma verificada y reembolso pendiente si se paga un pedido cancelado (DT-062).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 279 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 292 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
-- Parte 6: Mercado Pago (RN-067; Sergio crea la cuenta de desarrollador).
+- Probar en el sitio publicado una compra con la cuenta de prueba de comprador de Mercado Pago (aprobada y rechazada) y que el aviso automático marque el pedido.
 - Esperan definición: preguntas 11 a 18 (lista de deseos, reseñas, búsquedas guardadas, aviso de cambio de dieta) y VN-04.
 
 ## Versión avanzada (decidido dejar para después)
@@ -78,6 +80,11 @@ Arreglados: freno al abuso del contacto (tope por cuenta con el email de la cuen
 Quedan (aceptados):
 - Abrir un mensaje lo marca leído durante la carga de la página (los enlaces no adelantan la página con prefetch). No hay "marcar como no leído".
 - El filtro de ventas es un formulario GET clásico: recarga la página entera (funciona sin JavaScript).
+
+## Para cuando haya clientes reales
+- Un segundo proyecto de Supabase solo para desarrollo, para no mezclar datos de prueba con reales.
+- Credenciales productivas de Mercado Pago y webhook en "Modo productivo".
+- Vercel: el plan gratuito no permite uso comercial.
 
 ## Pendientes técnicos (de la revisión del 2026-10-08)
 - Antes de desplegar: timeouts y tamaño del pool de Postgres en `src/lib/db.ts`, y decidir session vs transaction pooler para Vercel.

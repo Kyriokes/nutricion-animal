@@ -7,6 +7,7 @@ import {
   canOpenClaim,
   claimStatusesFor,
   ClaimInputSchema,
+  lateRefundDescription,
   MAX_CLAIMS_PER_ORDER,
   needsRefundClaim,
   REFUND_CLAIM_DESCRIPTION,
@@ -112,6 +113,14 @@ describe("pedidos/reclamos: reembolso al cancelar un pedido pagado (RN-066, deci
   it("explica el reclamo automático", () => {
     expect(REFUND_CLAIM_DESCRIPTION).toBe(
       "Reembolso pendiente: el pedido se canceló después de pagado. Generado automáticamente.",
+    );
+  });
+});
+
+describe("pedidos/reclamos: pago aprobado de un pedido ya cancelado (RN-069)", () => {
+  it("explica el reembolso e incluye la referencia del pago", () => {
+    expect(lateRefundDescription("1234567")).toBe(
+      "Reembolso pendiente: se recibió el pago 1234567 de un pedido ya cancelado. Generado automáticamente.",
     );
   });
 });

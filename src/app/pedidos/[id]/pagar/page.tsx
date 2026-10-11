@@ -4,12 +4,12 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
 import { formatPrice } from "@/modules/catalogo/presentacion";
-import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
+import { paymentMode } from "@/modules/pedidos/mercadopago";
 import { orderNumber } from "@/modules/pedidos/presentacion";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCustomerOrder } from "@/modules/pedidos/repositorio";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
-import { SimulatedPaymentButtons } from "../../order-buttons";
+import { MercadoPagoButton, SimulatedPaymentButtons } from "../../order-buttons";
 import { OrderSummary } from "@/components/order-summary";
 
 const time = new Intl.DateTimeFormat("es-AR", {
@@ -17,8 +17,8 @@ const time = new Intl.DateTimeFormat("es-AR", {
   timeZone: "America/Argentina/Buenos_Aires",
 });
 
-// VU-07 (simulada): pagar el pedido. En la parte 6 se reemplaza por Mercado
-// Pago (RN-067); mientras tanto, dos botones de prueba.
+// VU-07: pagar el pedido con Mercado Pago (RN-067). Sin Mercado Pago
+// configurado, en desarrollo, quedan los botones de pago de prueba.
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const actor = await getCurrentActor();
@@ -30,6 +30,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   // Ya pagado, rechazado o cancelado: se ve el resultado.
   if (order.status !== "pending_payment") redirect(`/pedidos/${order.id}`);
+  const mode = paymentMode();
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +40,12 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       </p>
       <OrderSummary order={order} />
       <section className="flex flex-col gap-3 rounded-lg border border-dashed p-4">
-        {simulatedPaymentsEnabled() ? (
+        {mode === "mercadopago" ? (
+          <>
+            <p className="text-sm">Vas a pagar en Mercado Pago y después volvés acá.</p>
+            <MercadoPagoButton orderId={order.id} />
+          </>
+        ) : mode === "simulated" ? (
           <>
             <p role="status" className="w-fit rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
               Pago de prueba: no se cobra nada.

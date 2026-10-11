@@ -96,3 +96,10 @@ export const REFUND_CLAIM_DESCRIPTION =
 export function needsRefundClaim(from: OrderStatus, to: OrderStatus): boolean {
   return to === "cancelled" && (from === "paid" || from === "preparing");
 }
+
+// RN-069: Mercado Pago aprobó un pago de un pedido que ya estaba cancelado
+// (por ejemplo, venció la reserva). La referencia del pago va en el texto:
+// identifica qué devolver y evita duplicar el reclamo si el aviso se repite.
+export function lateRefundDescription(paymentRef: string): string {
+  return `Reembolso pendiente: se recibió el pago ${paymentRef} de un pedido ya cancelado. Generado automáticamente.`;
+}

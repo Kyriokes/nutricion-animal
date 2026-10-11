@@ -2,7 +2,7 @@
 
 Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus mascotas), **nutricionistas animales** y **proveedores** de alimentos. El cliente compra alimentos y ve la dieta que un nutricionista le asignó a cada mascota.
 
-> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones, el catálogo con búsqueda, el carrito, la compra con reserva de stock, los reclamos, el contacto y el panel del admin. El pago todavía es simulado: Mercado Pago viene después.
+> Proyecto en desarrollo. Ya funcionan el ingreso con Google, los roles y permisos, el perfil, las mascotas, las dietas con versiones, el catálogo con búsqueda, el carrito, la compra con reserva de stock, los reclamos, el contacto y el panel del admin. El pago es con Mercado Pago (Checkout Pro, en modo de prueba).
 
 ---
 
@@ -28,7 +28,7 @@ Ecommerce de comida natural para mascotas que conecta a **clientes** (con sus ma
 | Inicio | Presentación y productos destacados. | `/` |
 | Catálogo | Búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. | `/catalogo` |
 | Carrito y compra | Funciona sin sesión; precios y stock siempre del servidor. Con sesión se elige una dirección de Capital (validada con Georef) y se confirma: el stock queda reservado 30 minutos. | `/carrito` |
-| Pedidos | Pago simulado (hasta integrar Mercado Pago), resultado, seguimiento, cancelación antes del envío y reclamos. | `/pedidos` |
+| Pedidos | Pago con Mercado Pago, resultado, seguimiento, cancelación antes del envío y reclamos. | `/pedidos` |
 | Ingreso | Ingreso con Google (sin contraseñas). El primer ingreso crea la cuenta como Cliente. | modal "Ingresar" |
 | Perfil | Nombre, foto (JPG/PNG/WebP hasta 1 MB), direcciones de entrega, postulación a nutricionista o proveedor y aviso del resultado. | `/perfil` |
 | Mascotas | Alta y edición con alergias, alimentos no permitidos y de necesidad. El detalle muestra la **dieta actual** asignada. | `/mascotas` |
@@ -153,7 +153,9 @@ Copiá `.env.example` a `.env.local` y completalo. `.env.local` nunca se sube al
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys (`sb_publishable_…`) | Sí |
 | `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys (`sb_secret_…`) | **No**, solo servidor |
 | `DATABASE_URL` | Supabase → Connect → Session pooler (puerto 5432), con la contraseña de la base | **No**, solo servidor |
-| `PAYMENTS_SIMULATED` | Opcional. `true` activa el pago de prueba en producción (en desarrollo siempre está activo) | **No**, solo servidor |
+| `MERCADOPAGO_ACCESS_TOKEN` | Mercado Pago Developers → tu aplicación → Credenciales (de prueba: empieza con `TEST-`). Sin él, se usa el pago de prueba | **No**, solo servidor |
+| `MERCADOPAGO_WEBHOOK_SECRET` | Mercado Pago Developers → tu aplicación → Webhooks → clave secreta | **No**, solo servidor |
+| `PAYMENTS_SIMULATED` | Opcional, solo sin Mercado Pago: `true` activa el pago de prueba en producción (en desarrollo siempre está activo) | **No**, solo servidor |
 
 ### 3. Configurar el ingreso con Google
 
@@ -204,7 +206,8 @@ El sitio se publica en [Vercel](https://vercel.com) desde la rama `main` de GitH
 
 - **Región:** `vercel.json` fija São Paulo (`gru1`), al lado de la base de Supabase.
 - **Base de datos:** en Vercel, `DATABASE_URL` usa el **transaction pooler** de Supabase (puerto `6543`), pensado para servidores que levantan y bajan instancias. En local se puede seguir usando el session pooler (puerto `5432`). Las migraciones se aplican desde la computadora con `npm run db:migrate`, no en el deploy.
-- **Variables de entorno en Vercel:** las mismas de `.env.local` (con el `DATABASE_URL` del transaction pooler). Para una demo con el pago de prueba, `PAYMENTS_SIMULATED=true`.
+- **Variables de entorno en Vercel:** las mismas de `.env.local` (con el `DATABASE_URL` del transaction pooler), incluidas las de Mercado Pago.
+- **Mercado Pago:** en Webhooks, la URL de notificación es `https://<tu-sitio>/api/mercadopago/webhook`, con el evento Pagos. Los avisos solo llegan al sitio publicado; en local el pago se aplica cuando el cliente vuelve.
 - **Supabase Auth:** agregar la URL de Vercel en Authentication → URL Configuration (Site URL y Redirect URLs, con `/auth/callback`). Google no necesita cambios: vuelve siempre a Supabase.
 
 ---
@@ -276,9 +279,9 @@ Convenciones: código en inglés y textos en español. Los commits citan la regl
 - [x] Páginas de contenido editables (FAQ, quiénes somos, términos)
 - [x] Pedidos, estados, reserva de stock y reclamos
 - [x] Contacto y dashboard del admin
-- [ ] Despliegue en Vercel
+- [x] Despliegue en Vercel
 - [ ] Publicación de productos por proveedores y revisión del auditor
-- [ ] Pagos con Mercado Pago (webhooks)
+- [x] Pagos con Mercado Pago (webhooks), en modo de prueba
 - [ ] Estadísticas de búsquedas
 - [ ] Notificaciones por email
 - [ ] Chatbot con IA y carrito asistido

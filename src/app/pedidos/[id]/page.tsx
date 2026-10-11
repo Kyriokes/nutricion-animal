@@ -6,7 +6,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modules/pedidos/presentacion";
 import { canOpenClaim, MAX_CLAIMS_PER_ORDER } from "@/modules/pedidos/reclamos";
-import { getCustomerOrder, listOrderClaims } from "@/modules/pedidos/repositorio";
+import { paymentMode } from "@/modules/pedidos/mercadopago";
+import { getPayment } from "@/modules/pedidos/mercadopago-api";
+import { getCustomerOrder, listOrderClaims, processPayment } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { ClaimList } from "@/components/claim-list";
@@ -27,15 +29,35 @@ const TONE_CLASSES: Record<Tone, string> = {
 };
 
 // VU-10: resultado del pedido, y VU-02: su detalle y seguimiento (RN-062).
-async function Content({ params }: { params: Promise<{ id: string }> }) {
+async function Content({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await connection();
   const actor = await getCurrentActor();
   const id = z.uuid().safeParse((await params).id);
-  const order =
-    actor && hasPermission(actor.roles, "order.view_own") && id.success
-      ? await getCustomerOrder(actor.id, id.data)
-      : null;
+  const canView = actor && hasPermission(actor.roles, "order.view_own") && id.success;
+  let order = canView ? await getCustomerOrder(actor.id, id.data) : null;
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
+
+  // RN-067: el cliente vuelve de Mercado Pago con el id del pago en la URL.
+  // No se le cree a la URL: se consulta el pago y se aplica (si el aviso
+  // automático ya lo hizo, no cambia nada). Si falla, lo resuelve el aviso.
+  const paymentId = z.string().regex(/^\d+$/).safeParse((await searchParams).payment_id);
+  if (canView && paymentId.success && order.status === "pending_payment" && paymentMode() === "mercadopago") {
+    try {
+      const payment = await getPayment(paymentId.data);
+      if (payment.external_reference === order.id) {
+        await processPayment(payment);
+        order = (await getCustomerOrder(actor.id, id.data)) ?? order;
+      }
+    } catch {
+      // Se reintenta con el aviso de Mercado Pago o al volver a entrar.
+    }
+  }
   const result = resultMessage(order.status);
   const claims = await listOrderClaims(order.id);
   // El tope cuenta solo los que abrió el cliente (no el reembolso automático).
@@ -91,14 +113,14 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-export default function OrderPage({ params }: PageProps<"/pedidos/[id]">) {
+export default function OrderPage({ params, searchParams }: PageProps<"/pedidos/[id]">) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <Link href="/pedidos" className="text-sm underline-offset-4 hover:underline">
         ← Mis pedidos
       </Link>
       <Suspense fallback={<p className="text-muted-foreground">Cargando…</p>}>
-        <Content params={params} />
+        <Content params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );

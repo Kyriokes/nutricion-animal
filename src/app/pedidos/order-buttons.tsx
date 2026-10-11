@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { cancelOrderAction, openClaimAction, simulatePaymentAction } from "./actions";
+import { cancelOrderAction, openClaimAction, simulatePaymentAction, startMercadoPagoPaymentAction } from "./actions";
 
 // VU-07 (simulada): botones del pago de prueba. Después de responder, se ve
 // el resultado del pedido (VU-10).
@@ -27,6 +27,36 @@ export function SimulatedPaymentButtons({ orderId }: { orderId: string }) {
           Simular pago rechazado
         </Button>
       </div>
+      {message && (
+        <p role="alert" className="text-sm text-destructive">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// VU-07, RN-067: ir a pagar a Mercado Pago. El navegador sale del sitio y
+// vuelve al pedido cuando termina.
+export function MercadoPagoButton({ orderId }: { orderId: string }) {
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        className="w-fit"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setMessage(null);
+            const r = await startMercadoPagoPaymentAction(orderId);
+            if (r.ok) window.location.assign(r.url);
+            else setMessage(r.message);
+          })
+        }
+      >
+        {pending ? "Conectando con Mercado Pago…" : "Pagar con Mercado Pago"}
+      </Button>
       {message && (
         <p role="alert" className="text-sm text-destructive">
           {message}

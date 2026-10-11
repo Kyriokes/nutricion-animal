@@ -6,6 +6,7 @@ import type { Address } from "@/modules/usuarios/direcciones";
 import { getAddress } from "@/modules/usuarios/repositorio";
 import { users } from "@/modules/usuarios/tables";
 import { planOrder, type CheckoutError, type CheckoutInput } from "./checkout";
+import { interpretPayment, type Payment, type PaymentAction } from "./mercadopago";
 import { CARRIER, DEFAULT_SHIPPING_COST } from "./envio";
 import {
   canTransition,
@@ -19,6 +20,7 @@ import {
   canChangeClaim,
   canOpenClaim,
   type ClaimStatus,
+  lateRefundDescription,
   needsRefundClaim,
   REFUND_CLAIM_DESCRIPTION,
   type OpenClaimError,
@@ -514,5 +516,45 @@ export async function changeClaim(
       )
       .where(eq(claims.id, claimId));
     return { ok: true as const };
+  });
+}
+
+// RN-067: aplica al pedido el resultado de un pago consultado a Mercado Pago
+// (desde el aviso automático o desde la vuelta del cliente). Bloquea el
+// pedido para que el aviso y la vuelta, si llegan a la vez, no se pisen; si
+// se repite, no cambia nada.
+export async function processPayment(payment: Payment): Promise<PaymentAction["action"] | "not_found"> {
+  const orderId = payment.external_reference ?? "";
+  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return "not_found";
+  return db.transaction(async (tx) => {
+    const [order] = await tx
+      .select({ status: orders.status, total: orders.total })
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .for("update");
+    if (!order) return "not_found" as const;
+    const result = interpretPayment(payment, { id: orderId, status: order.status as OrderStatus, total: order.total });
+    switch (result.action) {
+      case "paid":
+        await applyTransition(tx, orderId, "paid", "gateway", null, { paymentRef: result.paymentRef });
+        break;
+      case "rejected":
+        await lockProductsOf(tx, [orderId]);
+        await applyTransition(tx, orderId, "rejected", "gateway", null);
+        break;
+      case "refund_needed": {
+        const description = lateRefundDescription(result.paymentRef);
+        const [existing] = await tx
+          .select({ id: claims.id })
+          .from(claims)
+          .where(and(eq(claims.orderId, orderId), eq(claims.description, description)));
+        if (!existing) await tx.insert(claims).values({ orderId, description, origin: "system" });
+        break;
+      }
+      case "mismatch":
+        console.warn(`Pago ${payment.id} no coincide con el pedido ${orderId}: se ignora.`);
+        break;
+    }
+    return result.action;
   });
 }

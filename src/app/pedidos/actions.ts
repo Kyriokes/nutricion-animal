@@ -2,9 +2,12 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
+import { siteUrl } from "@/lib/sitio";
+import { buildPreference, paymentMode } from "@/modules/pedidos/mercadopago";
+import { createPreference } from "@/modules/pedidos/mercadopago-api";
 import {
   cancelOrderByCustomer,
+  getCustomerOrder,
   openClaim,
   simulatePayment,
   type TransitionError,
@@ -33,7 +36,8 @@ async function customerId(): Promise<string | null> {
 
 // VU-07 (simulada): aprobar o rechazar el pago de prueba de un pedido propio.
 export async function simulatePaymentAction(orderId: unknown, approved: unknown): Promise<OrderActionResult> {
-  if (!simulatedPaymentsEnabled()) return { ok: false, message: "El pago en línea todavía no está disponible." };
+  // El pago de prueba solo existe sin Mercado Pago configurado.
+  if (paymentMode() !== "simulated") return { ok: false, message: "El pago de prueba no está disponible." };
   const id = await customerId();
   if (!id) return { ok: false, message: "Tenés que ingresar para hacer esto." };
   const input = z.object({ orderId: z.uuid(), approved: z.boolean() }).safeParse({ orderId, approved });
@@ -45,6 +49,29 @@ export async function simulatePaymentAction(orderId: unknown, approved: unknown)
     return { ok: false, message: "No se pudo registrar el pago. Probá de nuevo." };
   }
   return { ok: true };
+}
+
+// VU-07, RN-067: arma el cobro en Mercado Pago de un pedido propio que
+// espera el pago y devuelve la dirección de pago, a la que va el navegador.
+export async function startMercadoPagoPaymentAction(
+  orderId: unknown,
+): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  if (paymentMode() !== "mercadopago") return { ok: false, message: "El pago en línea no está disponible." };
+  const id = await customerId();
+  if (!id) return { ok: false, message: "Tenés que ingresar para hacer esto." };
+  const order = z.uuid().safeParse(orderId);
+  if (!order.success) return { ok: false, message: "Datos inválidos." };
+  try {
+    const detail = await getCustomerOrder(id, order.data);
+    if (!detail) return { ok: false, message: ERRORS.not_found };
+    if (detail.status !== "pending_payment" || detail.reservedUntil <= new Date()) {
+      return { ok: false, message: ERRORS.expired };
+    }
+    const url = await createPreference(buildPreference(detail, await siteUrl()));
+    return { ok: true, url };
+  } catch {
+    return { ok: false, message: "No pudimos conectar con Mercado Pago. Probá de nuevo." };
+  }
 }
 
 // RN-065: el cliente cancela su pedido antes del envío.

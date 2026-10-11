@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { isInDeliveryZone } from "@/modules/pedidos/envio";
-import { simulatedPaymentsEnabled } from "@/modules/pedidos/pago";
+import { paymentMode } from "@/modules/pedidos/mercadopago";
 import { getShippingCost } from "@/modules/pedidos/repositorio";
 import { formatAddress } from "@/modules/usuarios/direcciones";
 import { listAddresses } from "@/modules/usuarios/repositorio";
@@ -26,7 +26,7 @@ async function Content() {
     ? null
     : !hasPermission(actor.roles, "order.create")
       ? "Tu cuenta no puede hacer compras."
-      : !simulatedPaymentsEnabled()
+      : paymentMode() === "unavailable"
         ? "El pago en línea todavía no está disponible."
         : null;
   return <CartView shippingCost={shippingCost} addresses={addresses} blockedReason={blockedReason} />;
