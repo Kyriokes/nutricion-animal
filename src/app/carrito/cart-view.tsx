@@ -9,7 +9,7 @@ import { LoginDialog } from "@/components/login-dialog";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/modules/catalogo/presentacion";
 import { MAX_QUANTITY, priceCart, setQuantity } from "@/modules/pedidos/carrito";
-import { getCartProductsAction } from "./actions";
+import { getCartPetNotesAction, getCartProductsAction, type CartPetNotes } from "./actions";
 import { CheckoutPanel, type CheckoutAddress } from "./checkout-panel";
 
 type CartProduct = NonNullable<Awaited<ReturnType<typeof getCartProductsAction>>>[number];
@@ -63,6 +63,10 @@ function QuantityInput({
   );
 }
 
+// "Puppy", "Puppy y Rene", "Puppy, Rene y Toby".
+const joinNames = (names: readonly string[]) =>
+  names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+
 // VP-07: carrito. VP-08: para continuar hay que ingresar; con sesión se
 // elige la dirección y se confirma la compra (RN-062, RN-068).
 export function CartView({
@@ -82,7 +86,21 @@ export function CartView({
   // Se incrementa para volver a pedir precios y stock (por ejemplo, si al
   // confirmar cambiaron).
   const [reload, setReload] = useState(0);
+  // RN-039: para qué mascotas encaja cada producto y advertencias (con sesión).
+  const [notes, setNotes] = useState<CartPetNotes | null>(null);
   const ids = cart.map((l) => l.productId).join(",");
+  const signedIn = addresses !== null;
+
+  useEffect(() => {
+    if (!signedIn || !ids) return;
+    let cancelled = false;
+    getCartPetNotesAction(ids.split(",")).then((r) => {
+      if (!cancelled) setNotes(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ids, signedIn]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +160,14 @@ export function CartView({
                 )}
                 {p && <p className="text-sm text-muted-foreground">{p.brand} · {formatPrice(p.price)} c/u</p>}
                 {line.issue && <p className="text-sm text-destructive">{ISSUES[line.issue]}</p>}
+                {notes?.[line.productId]?.fitsPets.length ? (
+                  <p className="text-sm text-success">Para {joinNames(notes[line.productId].fitsPets)}</p>
+                ) : null}
+                {notes?.[line.productId]?.warnings.map((w) => (
+                  <p key={w} className="text-sm text-destructive">
+                    ⚠ {w}
+                  </p>
+                ))}
               </div>
               {p && p.stock > 0 && (
                 <QuantityInput
@@ -178,6 +204,9 @@ export function CartView({
             total={grandTotal}
             addresses={addresses}
             blocked={lines.some((l) => l.issue)}
+            needsAllergyAck={Object.entries(notes ?? {}).some(
+              ([id, n]) => cart.some((l) => l.productId === id) && n.warnings.length > 0,
+            )}
             onStale={() => setReload((n) => n + 1)}
           />
         ) : (

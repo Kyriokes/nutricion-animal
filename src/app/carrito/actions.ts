@@ -1,7 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { getCatalogProductsByIds } from "@/modules/catalogo/repositorio";
+import { annotateForPets } from "@/modules/catalogo/mascota";
+import { getCatalogProductsByIds, getProductFoods } from "@/modules/catalogo/repositorio";
+import { listPetProfiles } from "@/modules/mascotas/repositorio";
 import { CheckoutInputSchema, MAX_ORDER_LINES, type CheckoutError } from "@/modules/pedidos/checkout";
 import { paymentMode } from "@/modules/pedidos/mercadopago";
 import { createOrder } from "@/modules/pedidos/repositorio";
@@ -23,6 +25,35 @@ export async function getCartProductsAction(ids: unknown) {
       stock: p.stock,
       image: p.image ?? null,
     }));
+  } catch {
+    return null;
+  }
+}
+
+export type CartPetNotes = Record<string, { fitsPets: string[]; warnings: string[] }>;
+
+// RN-039: para cada producto del carrito, para qué mascotas del cliente
+// encaja y qué advertencias hay.
+async function cartPetNotes(userId: string, productIds: readonly string[]): Promise<CartPetNotes> {
+  const [products, foods, pets] = await Promise.all([
+    getCatalogProductsByIds(productIds),
+    getProductFoods(productIds),
+    listPetProfiles(userId),
+  ]);
+  const petInfo = pets.map((p) => ({ name: p.pet.name, species: p.pet.species, profile: p.profile }));
+  return Object.fromEntries(
+    products.map((p) => [p.id, annotateForPets({ petTypes: p.petTypes, foods: foods.get(p.id)! }, petInfo)]),
+  );
+}
+
+// RN-039: notas por mascota del carrito. Sin sesión, ninguna.
+export async function getCartPetNotesAction(ids: unknown): Promise<CartPetNotes | null> {
+  const parsed = z.array(z.uuid()).max(100).safeParse(ids);
+  if (!parsed.success) return null;
+  const actor = await getCurrentActor();
+  if (!actor) return null;
+  try {
+    return await cartPetNotes(actor.id, parsed.data);
   } catch {
     return null;
   }
@@ -52,6 +83,11 @@ export async function createOrderAction(input: unknown): Promise<CheckoutActionR
   }
   if (!parsed.success) return { ok: false, message: "Revisá el carrito y la dirección." };
   try {
+    // RN-039: si hay advertencias de alergias, hay que confirmar que se vieron.
+    const notes = await cartPetNotes(actor.id, parsed.data.lines.map((l) => l.productId));
+    if (Object.values(notes).some((n) => n.warnings.length > 0) && !parsed.data.allergyWarningsAcknowledged) {
+      return { ok: false, message: "Marcá que revisaste las advertencias de alergias para confirmar la compra." };
+    }
     const r = await createOrder(actor.id, parsed.data);
     return r.ok ? r : { ok: false, ...CHECKOUT_ERRORS[r.error] };
   } catch {

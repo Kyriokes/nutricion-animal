@@ -15,6 +15,8 @@ export const CheckoutInputSchema = z.object({
     .max(MAX_ORDER_LINES)
     .transform((lines) => lines.reduce<CartLine[]>((cart, l) => addToCart(cart, l.productId, l.quantity), [])),
   expectedTotal: z.number().nonnegative().max(1e10),
+  // RN-039: el cliente marcó "Revisé las advertencias de alergias".
+  allergyWarningsAcknowledged: z.boolean().optional(),
 });
 
 export type CheckoutInput = z.infer<typeof CheckoutInputSchema>;

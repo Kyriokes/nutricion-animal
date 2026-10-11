@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeBlock, evaluateForPet, rankForPet, type PetProfile, type ProductFoods } from "./mascota";
+import { annotateForPets, describeBlock, evaluateForPet, rankForPet, type PetProfile, type ProductFoods } from "./mascota";
 
 const f = (id: string) => ({ id, name: id[0].toUpperCase() + id.slice(1) });
 
@@ -72,5 +72,40 @@ describe("catalogo/mascota: advertencia (RN-037)", () => {
     expect(describeBlock({ food: "Uva", reason: "forbidden", how: "may_contain" }, "Rene")).toBe(
       "Puede contener uva, que Rene no tiene permitido.",
     );
+  });
+});
+
+describe("catalogo/mascota: carrito con varias mascotas (RN-039)", () => {
+  const rene: PetProfile = { name: "Rene", allergies: [f("leche")], forbidden: [], required: [], dietFoods: [f("pollo")] };
+  const pets = [
+    { name: "Puppy", species: "perro", profile: puppy },
+    { name: "Rene", species: "Gato", profile: rene },
+  ];
+
+  it("dice para qué mascotas encaja (de su especie y con alimentos de su dieta o de necesidad)", () => {
+    expect(annotateForPets({ petTypes: ["perro", "gato"], foods: product(["carne"]) }, pets).fitsPets).toEqual(["Puppy"]);
+    expect(annotateForPets({ petTypes: ["gato"], foods: product(["pollo"]) }, pets).fitsPets).toEqual(["Rene"]);
+    // Si encaja con varias mascotas, las nombra a todas.
+    expect(
+      annotateForPets({ petTypes: ["perro", "gato"], foods: product(["carne", "arroz"]) }, [
+        ...pets,
+        { name: "Toby", species: "perro", profile: { ...puppy, name: "Toby", allergies: [] } },
+      ]).fitsPets,
+    ).toEqual(["Puppy", "Toby"]);
+    expect(annotateForPets({ petTypes: ["gato"], foods: product(["carne"]) }, pets).fitsPets).toEqual([]);
+  });
+
+  it("advierte solo por las mascotas de la especie del producto", () => {
+    // Snack para perros con leche: no avisa por Rene (gata).
+    expect(annotateForPets({ petTypes: ["perro"], foods: product(["leche"]) }, pets).warnings).toEqual([]);
+    expect(annotateForPets({ petTypes: ["perro", "gato"], foods: product(["leche"]) }, pets).warnings).toEqual([
+      "Contiene leche, alérgeno de Rene.",
+    ]);
+  });
+
+  it("una mascota de la especie que no puede comerlo no figura como \"encaja\"", () => {
+    const r = annotateForPets({ petTypes: ["perro"], foods: product(["carne", "pollo"]) }, pets);
+    expect(r.fitsPets).toEqual([]);
+    expect(r.warnings).toEqual(["Contiene pollo, alérgeno de Puppy."]);
   });
 });

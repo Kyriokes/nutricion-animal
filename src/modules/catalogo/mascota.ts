@@ -77,3 +77,24 @@ export function describeBlock(b: Block, petName: string): string {
     ? `${verb} ${food}, alérgeno de ${petName}.`
     : `${verb} ${food}, que ${petName} no tiene permitido.`;
 }
+
+// RN-039 (solución provisoria): cómo encaja un producto del carrito con las
+// mascotas del cliente. Solo cuentan las mascotas de la especie del producto:
+// un snack para perros con leche no avisa por la gata alérgica a la leche.
+// "Encaja" si aporta alimentos de su dieta o de necesidad y no tiene nada que
+// no pueda comer.
+export function annotateForPets(
+  product: { petTypes: readonly string[]; foods: ProductFoods },
+  pets: readonly { name: string; species: string; profile: PetProfile }[],
+): { fitsPets: string[]; warnings: string[] } {
+  const species = new Set(product.petTypes.map((t) => t.trim().toLowerCase()));
+  const fitsPets: string[] = [];
+  const warnings: string[] = [];
+  for (const pet of pets) {
+    if (!species.has(pet.species.trim().toLowerCase())) continue;
+    const e = evaluateForPet(product.foods, pet.profile);
+    if (e.blocked.length > 0) warnings.push(...e.blocked.map((b) => describeBlock(b, pet.name)));
+    else if (e.dietFoods.length + e.requiredFoods.length > 0) fitsPets.push(pet.name);
+  }
+  return { fitsPets, warnings };
+}

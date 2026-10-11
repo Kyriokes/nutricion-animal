@@ -18,18 +18,22 @@ export function CheckoutPanel({
   total,
   addresses,
   blocked,
+  needsAllergyAck,
   onStale,
 }: {
   lines: readonly CartLine[];
   total: number;
   addresses: readonly CheckoutAddress[];
   blocked: boolean;
+  // RN-039: hay advertencias de alergias en el carrito.
+  needsAllergyAck: boolean;
   onStale: () => void;
 }) {
   const router = useRouter();
   const usable = addresses.filter((a) => a.inZone);
   const [addressId, setAddressId] = useState(usable[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
+  const [ack, setAck] = useState(false);
   const [pending, start] = useTransition();
 
   if (usable.length === 0) {
@@ -51,7 +55,12 @@ export function CheckoutPanel({
         e.preventDefault();
         setMessage(null);
         start(async () => {
-          const r = await createOrderAction({ addressId, lines, expectedTotal: total });
+          const r = await createOrderAction({
+            addressId,
+            lines,
+            expectedTotal: total,
+            allergyWarningsAcknowledged: needsAllergyAck && ack,
+          });
           if (r.ok) {
             // RN-064: el stock ya está reservado; el carrito se vacía.
             writeCart([]);
@@ -84,6 +93,12 @@ export function CheckoutPanel({
         <p role="alert" className="text-sm text-destructive">
           Hay productos sin stock suficiente: quitalos o ajustá la cantidad para continuar.
         </p>
+      )}
+      {needsAllergyAck && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" required checked={ack} onChange={(e) => setAck(e.target.checked)} />
+          Revisé las advertencias de alergias
+        </label>
       )}
       <Button type="submit" disabled={pending || blocked}>
         {pending ? "Confirmando…" : "Confirmar compra"}
