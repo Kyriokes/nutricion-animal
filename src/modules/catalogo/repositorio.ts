@@ -62,7 +62,7 @@ export type CatalogFilters = { q?: string; species?: string; dietType?: string; 
 
 // VP-04, RN-013 y RN-014: catálogo público (solo aprobados), con búsqueda por
 // texto y filtros por especie y tipo de dieta. Se filtra en la base (DT-002).
-export async function listCatalog(filters: CatalogFilters) {
+function catalogWhere(filters: CatalogFilters) {
   const conditions: SQL[] = [eq(products.status, "approved")];
   const q = filters.q?.trim();
   if (q) {
@@ -73,7 +73,11 @@ export async function listCatalog(filters: CatalogFilters) {
   }
   if (filters.species) conditions.push(arrayContains(products.petTypes, [normalizeTag(filters.species)]));
   if (filters.dietType) conditions.push(arrayContains(products.dietTypes, [normalizeTag(filters.dietType)]));
-  const where = and(...conditions);
+  return and(...conditions);
+}
+
+export async function listCatalog(filters: CatalogFilters) {
+  const where = catalogWhere(filters);
   const page = Math.max(1, filters.page ?? 1);
 
   const [rows, [{ total }]] = await Promise.all([
@@ -251,4 +255,38 @@ export async function saveProductComposition(
     if (c.traces.length) await tx.insert(productTraces).values(c.traces.map((foodId) => ({ productId, foodId })));
     return { ok: true as const };
   });
+}
+
+// RN-037: con el filtro por mascota se ordena por cómo encaja cada producto,
+// así que se traen todos los que pasan los filtros (el catálogo es chico) y
+// se ordenan y paginan después. Tope de seguridad: 500.
+export async function listCatalogForPet(filters: Omit<CatalogFilters, "page">): Promise<StoredProduct[]> {
+  const rows = await db.select().from(products).where(catalogWhere(filters)).orderBy(asc(products.name)).limit(500);
+  return rows.map(toProduct);
+}
+
+// RN-037: composición y "puede contener" de varios productos, por producto.
+export async function getProductFoods(
+  productIds: readonly string[],
+): Promise<Map<string, { ingredients: Food[]; traces: Food[] }>> {
+  const result = new Map<string, { ingredients: Food[]; traces: Food[] }>();
+  for (const id of productIds) result.set(id, { ingredients: [], traces: [] });
+  if (productIds.length === 0) return result;
+  const ids = [...productIds];
+  const [ingredients, traces] = await Promise.all([
+    db
+      .select({ productId: productIngredients.productId, id: foods.id, name: foods.name })
+      .from(productIngredients)
+      .innerJoin(foods, eq(foods.id, productIngredients.foodId))
+      .where(inArray(productIngredients.productId, ids))
+      .orderBy(asc(productIngredients.position)),
+    db
+      .select({ productId: productTraces.productId, id: foods.id, name: foods.name })
+      .from(productTraces)
+      .innerJoin(foods, eq(foods.id, productTraces.foodId))
+      .where(inArray(productTraces.productId, ids)),
+  ]);
+  for (const r of ingredients) result.get(r.productId)?.ingredients.push({ id: r.id, name: r.name });
+  for (const r of traces) result.get(r.productId)?.traces.push({ id: r.id, name: r.name });
+  return result;
 }

@@ -2,6 +2,8 @@ import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import type { Food } from "@/modules/alimentos/repositorio";
 import { foods } from "@/modules/alimentos/tables";
+import type { PetProfile } from "@/modules/catalogo/mascota";
+import { listActiveDietsForPet } from "@/modules/dietas/repositorio";
 import type { Pet } from "./schema";
 import { petFoods, pets } from "./tables";
 
@@ -122,3 +124,30 @@ export async function listKnownSpecies(): Promise<string[]> {
     .limit(30);
   return rows.map((r) => r.species);
 }
+
+// RN-037: las mascotas de un cliente con lo que el catálogo necesita para
+// recomendar: sus listas de alimentos y los nombres y alimentos de sus dietas
+// activas. Los alimentos de una dieta sin id de la lista (versiones viejas)
+// no cuentan.
+export async function listPetProfiles(ownerId: string) {
+  const petsList = await listPetsByOwner(ownerId);
+  return Promise.all(
+    petsList.map(async (pet) => {
+      const diets = await listActiveDietsForPet(pet.id);
+      const dietFoods = new Map<string, Food>();
+      for (const d of diets) {
+        for (const f of d.content.foods) if (f.foodId) dietFoods.set(f.foodId, { id: f.foodId, name: f.name });
+      }
+      const profile: PetProfile = {
+        name: pet.name,
+        allergies: pet.allergies,
+        forbidden: pet.forbiddenFoods,
+        required: pet.requiredFoods,
+        dietFoods: [...dietFoods.values()],
+      };
+      return { pet, dietNames: diets.map((d) => d.dietName), profile };
+    }),
+  );
+}
+
+export type PetWithProfile = Awaited<ReturnType<typeof listPetProfiles>>[number];

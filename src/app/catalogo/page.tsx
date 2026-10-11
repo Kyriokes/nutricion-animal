@@ -1,12 +1,21 @@
 import Link from "next/link";
-import { Pager } from "@/components/pager";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
-import { ProductCard } from "@/components/product-card";
+import { Pager } from "@/components/pager";
+import { PetProductCard, ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
-import { listCatalog, listCatalogFacets, type CatalogFilters } from "@/modules/catalogo/repositorio";
-import { listPetsByOwner } from "@/modules/mascotas/repositorio";
+import { pageWithin } from "@/lib/paginas";
+import { rankForPet } from "@/modules/catalogo/mascota";
+import {
+  getProductFoods,
+  listCatalog,
+  listCatalogFacets,
+  listCatalogForPet,
+  PAGE_SIZE,
+  type CatalogFilters,
+} from "@/modules/catalogo/repositorio";
+import { listPetProfiles, type PetWithProfile } from "@/modules/mascotas/repositorio";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
 // Filtros que llegan en la URL; lo inválido se ignora.
@@ -14,6 +23,8 @@ const FiltersSchema = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   especie: z.string().trim().max(40).optional().catch(undefined),
   dieta: z.string().trim().max(40).optional().catch(undefined),
+  // RN-037: id de una mascota propia.
+  mascota: z.uuid().optional().catch(undefined),
   pagina: z.coerce.number().int().min(1).max(1000).optional().catch(undefined),
 });
 
@@ -27,46 +38,53 @@ function hrefWith(params: Record<string, string | undefined>) {
   return qs ? `/catalogo?${qs}` : "/catalogo";
 }
 
-// RN-013: atajos para filtrar por las especies de las mascotas del usuario.
-async function MyPetsShortcuts({ current }: { current?: string }) {
-  // Lee la sesión: siempre en el momento del pedido (DT-036).
-  await connection();
-  const user = await getCurrentUser();
-  if (!user) return null;
-  const species = [...new Set((await listPetsByOwner(user.id)).map((p) => p.species.toLowerCase()))];
-  if (species.length === 0) return null;
+// "Dieta: Mantenimiento", "2 dietas" o "sin dieta asignada".
+const dietLabel = (names: readonly string[]) =>
+  names.length === 0 ? "sin dieta asignada" : names.length === 1 ? `Dieta: ${names[0]}` : `${names.length} dietas`;
+
+// RN-013, RN-037: un atajo por mascota, con su nombre y su dieta. Tocar el
+// que está elegido lo quita.
+function MyPetsShortcuts({ pets, current }: { pets: PetWithProfile[]; current?: string }) {
+  if (pets.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className="text-muted-foreground">Para tus mascotas:</span>
-      {species.map((s) => (
+      {pets.map(({ pet, dietNames }) => (
         <Link
-          key={s}
-          href={hrefWith({ especie: s })}
-          className={`rounded-full border px-2.5 py-0.5 ${current === s ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          key={pet.id}
+          href={current === pet.id ? "/catalogo" : hrefWith({ mascota: pet.id })}
+          aria-current={current === pet.id ? "true" : undefined}
+          className={`rounded-full border px-2.5 py-0.5 ${current === pet.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
         >
-          {s}
+          {pet.name} · {dietLabel(dietNames)}
         </Link>
       ))}
     </div>
   );
 }
 
-// VP-04: catálogo con búsqueda (VP-06) y filtros por especie y dieta.
+// VP-04: catálogo con búsqueda (VP-06), filtros por especie y dieta, y por
+// mascota (RN-037). Con sesión se leen las mascotas del usuario (DT-036).
 async function Catalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams;
+  const one = (k: string) => (typeof raw[k] === "string" ? raw[k] : undefined);
   const f = FiltersSchema.parse({
-    q: typeof raw.q === "string" ? raw.q : undefined,
-    especie: typeof raw.especie === "string" ? raw.especie : undefined,
-    dieta: typeof raw.dieta === "string" ? raw.dieta : undefined,
-    pagina: typeof raw.pagina === "string" ? raw.pagina : undefined,
+    q: one("q"),
+    especie: one("especie"),
+    dieta: one("dieta"),
+    mascota: one("mascota"),
+    pagina: one("pagina"),
   });
-  const filters: CatalogFilters = { q: f.q, species: f.especie, dietType: f.dieta, page: f.pagina };
-  const [result, facets] = await Promise.all([listCatalog(filters), listCatalogFacets()]);
-  const current = { q: f.q, especie: f.especie, dieta: f.dieta };
+  await connection();
+  const user = await getCurrentUser();
+  const [myPets, facets] = await Promise.all([user ? listPetProfiles(user.id) : [], listCatalogFacets()]);
+  // Solo una mascota propia; cualquier otro id se ignora.
+  const selected = myPets.find((p) => p.pet.id === f.mascota);
 
   return (
     <div className="flex flex-col gap-6">
       <form action="/catalogo" className="flex flex-wrap items-end gap-2" role="search">
+        {selected && <input type="hidden" name="mascota" value={selected.pet.id} />}
         <label className="flex min-w-56 flex-1 flex-col gap-1 text-sm">
           Buscar
           <input
@@ -77,36 +95,54 @@ async function Catalog({ searchParams }: { searchParams: Promise<Record<string, 
             className={selectClass}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Mascota
-          <select name="especie" defaultValue={f.especie ?? ""} className={selectClass}>
-            <option value="">Todas</option>
-            {facets.species.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
+        {!selected && (
+          <label className="flex flex-col gap-1 text-sm">
+            Especie
+            <select name="especie" defaultValue={f.especie ?? ""} className={selectClass}>
+              <option value="">Todas</option>
+              {facets.species.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="flex flex-col gap-1 text-sm">
           Tipo de dieta
           <select name="dieta" defaultValue={f.dieta ?? ""} className={selectClass}>
             <option value="">Todos</option>
             {facets.dietTypes.map((d) => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d} value={d}>
+                {d}
+              </option>
             ))}
           </select>
         </label>
         <Button type="submit">Buscar</Button>
-        {(f.q || f.especie || f.dieta) && (
+        {(f.q || f.especie || f.dieta || selected) && (
           <Link href="/catalogo" className="text-sm underline underline-offset-4">
             Limpiar
           </Link>
         )}
       </form>
 
-      <Suspense fallback={null}>
-        <MyPetsShortcuts current={f.especie?.toLowerCase()} />
-      </Suspense>
+      <MyPetsShortcuts pets={myPets} current={selected?.pet.id} />
 
+      {selected ? (
+        <PetResults selected={selected} q={f.q} dieta={f.dieta} page={f.pagina ?? 1} />
+      ) : (
+        <AllResults filters={{ q: f.q, species: f.especie, dietType: f.dieta, page: f.pagina }} />
+      )}
+    </div>
+  );
+}
+
+async function AllResults({ filters }: { filters: CatalogFilters }) {
+  const result = await listCatalog(filters);
+  const current = { q: filters.q, especie: filters.species, dieta: filters.dietType };
+  return (
+    <>
       {result.items.length === 0 ? (
         <p className="text-muted-foreground">No encontramos productos con esos filtros.</p>
       ) : (
@@ -123,9 +159,62 @@ async function Catalog({ searchParams }: { searchParams: Promise<Record<string, 
           </ul>
         </>
       )}
-
       <Pager page={result.page} pages={result.pages} hrefFor={(n) => hrefWith({ ...current, pagina: String(n) })} />
-    </div>
+    </>
+  );
+}
+
+// RN-037, RN-038: productos de la especie de la mascota, primero los que
+// aportan de su dieta y de sus alimentos de necesidad; los que no puede comer
+// aparecen tapados con la advertencia.
+async function PetResults({
+  selected,
+  q,
+  dieta,
+  page,
+}: {
+  selected: PetWithProfile;
+  q?: string;
+  dieta?: string;
+  page: number;
+}) {
+  const { pet, dietNames, profile } = selected;
+  const products = await listCatalogForPet({ q, species: pet.species, dietType: dieta });
+  const foods = await getProductFoods(products.map((p) => p.id));
+  const ranked = rankForPet(
+    products.map((product) => ({ product, foods: foods.get(product.id)! })),
+    profile,
+  );
+  const { page: current, pages } = pageWithin(page, ranked.length, PAGE_SIZE);
+  const items = ranked.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+
+  return (
+    <>
+      <section className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+        <p>
+          Productos para <strong>{pet.name}</strong> ({pet.species}) · {dietLabel(dietNames)}
+          {dietNames.length > 1 && `: ${dietNames.join(", ")}`} ·{" "}
+          <Link href={`/mascotas/${pet.id}`} className="underline underline-offset-4">
+            ver su ficha
+          </Link>
+        </p>
+        <p className="text-muted-foreground">
+          Es una ayuda para elegir: verificá siempre la etiqueta y consultá a su nutricionista.
+        </p>
+      </section>
+      {items.length === 0 ? (
+        <p className="text-muted-foreground">No encontramos productos para {pet.name} con esos filtros.</p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {items.map(({ product, evaluation }) => (
+            <li key={product.id} className="flex">
+              <PetProductCard product={product} pet={{ id: pet.id, name: pet.name }} evaluation={evaluation} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <Pager page={current} pages={pages} hrefFor={(n) => hrefWith({ q, dieta, mascota: pet.id, pagina: String(n) })} />
+    </>
   );
 }
 
