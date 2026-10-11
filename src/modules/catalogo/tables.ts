@@ -7,10 +7,12 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { foods } from "@/modules/alimentos/tables";
 import { users } from "@/modules/usuarios/tables";
 
 const tags = (name: string) => text(name).array().notNull().default(sql`'{}'::text[]`);
@@ -53,4 +55,39 @@ export const products = pgTable(
     index("products_diet_types_idx").using("gin", t.dietTypes),
     index("products_status_idx").on(t.status),
   ],
+).enableRLS();
+
+// RN-033: composición de cada producto, en el orden de la etiqueta (de mayor
+// a menor peso). Porcentaje optativo, salvo el del ingrediente principal.
+export const productIngredients = pgTable(
+  "product_ingredients",
+  {
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id),
+    position: integer("position").notNull(),
+    percentage: numeric("percentage", { precision: 5, scale: 2, mode: "number" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.productId, t.foodId] }),
+    check("product_ingredients_percentage_valid", sql`${t.percentage} is null or (${t.percentage} > 0 and ${t.percentage} <= 100)`),
+    index("product_ingredients_food_idx").on(t.foodId),
+  ],
+).enableRLS();
+
+// RN-034: alimentos que el producto "puede contener" (trazas).
+export const productTraces = pgTable(
+  "product_traces",
+  {
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id),
+  },
+  (t) => [primaryKey({ columns: [t.productId, t.foodId] }), index("product_traces_food_idx").on(t.foodId)],
 ).enableRLS();

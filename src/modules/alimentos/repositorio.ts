@@ -2,6 +2,7 @@ import { asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pageWithin } from "@/lib/paginas";
 import { findSimilarFoods, normalizeFoodName } from "./nombres";
+import { productIngredients, productTraces } from "@/modules/catalogo/tables";
 import { foodAliases, foods } from "./tables";
 
 export type Food = { id: string; name: string };
@@ -171,6 +172,30 @@ export async function removeFoodAlias(aliasId: string) {
   await db.delete(foodAliases).where(eq(foodAliases.id, aliasId));
 }
 
+// RN-033, RN-034: en productos. Si un producto ya tenía los dos, queda el que
+// sigue; un alimento que pasa a estar en la composición deja de figurar en
+// "puede contener".
+async function mergeProductReferences(tx: Tx, fromId: string, intoId: string) {
+  await tx.execute(sql`
+    delete from ${productIngredients} pi
+    where pi.food_id = ${fromId}
+      and exists (select 1 from ${productIngredients} o where o.product_id = pi.product_id and o.food_id = ${intoId})
+  `);
+  await tx.update(productIngredients).set({ foodId: intoId }).where(eq(productIngredients.foodId, fromId));
+  await tx.execute(sql`
+    delete from ${productTraces} pt
+    where pt.food_id = ${fromId}
+      and (exists (select 1 from ${productTraces} o where o.product_id = pt.product_id and o.food_id = ${intoId})
+        or exists (select 1 from ${productIngredients} o where o.product_id = pt.product_id and o.food_id = ${intoId}))
+  `);
+  await tx.update(productTraces).set({ foodId: intoId }).where(eq(productTraces.foodId, fromId));
+  await tx.execute(sql`
+    delete from ${productTraces} pt
+    where pt.food_id = ${intoId}
+      and exists (select 1 from ${productIngredients} o where o.product_id = pt.product_id and o.food_id = ${intoId})
+  `);
+}
+
 // RN-032: unir un duplicado a otro alimento. Sus sinónimos pasan al que
 // queda, su nombre queda como sinónimo y sus referencias se mueven.
 export async function mergeFoods(fromId: string, intoId: string): Promise<{ ok: true } | { ok: false; error: "not_found" | "same" }> {
@@ -182,6 +207,7 @@ export async function mergeFoods(fromId: string, intoId: string): Promise<{ ok: 
     if (!from || !both.some((f) => f.id === intoId)) return { ok: false as const, error: "not_found" as const };
     // Acá se mueven las referencias del que desaparece al que queda: cada
     // parte que use alimentos (productos, dietas, mascotas) suma la suya.
+    await mergeProductReferences(tx, fromId, intoId);
     await tx.update(foodAliases).set({ foodId: intoId }).where(eq(foodAliases.foodId, fromId));
     await tx.delete(foods).where(eq(foods.id, fromId));
     await tx.insert(foodAliases).values({ foodId: intoId, alias: from.name, normalized: from.normalized });

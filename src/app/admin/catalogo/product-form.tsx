@@ -15,14 +15,14 @@ const inputClass =
 export type ProductFormValues = Record<
   | "name" | "description" | "price" | "brand" | "weightValue" | "weightUnit"
   | "volumeValue" | "volumeUnit" | "stock" | "petTypes" | "dietTypes"
-  | "protein" | "fat" | "fiber" | "ash" | "moisture",
+  | "protein" | "fat" | "fiber" | "ash" | "moisture" | "kcal",
   string
 >;
 
 export const EMPTY_PRODUCT: ProductFormValues = {
   name: "", description: "", price: "", brand: "", weightValue: "", weightUnit: "kg",
   volumeValue: "", volumeUnit: "ml", stock: "0", petTypes: "", dietTypes: "",
-  protein: "", fat: "", fiber: "", ash: "", moisture: "",
+  protein: "", fat: "", fiber: "", ash: "", moisture: "", kcal: "",
 };
 
 function Message({ result }: { result: CatalogActionResult | null }) {
@@ -43,12 +43,14 @@ const MAIN = [
   field("stock", "Stock", { required: true, type: "number", min: 0, step: 1 }),
 ];
 
+// RN-035: como el análisis garantizado, cada 100 g.
 const NUTRIENTS = [
-  field("protein", "Proteína %"),
-  field("fat", "Grasa %"),
-  field("fiber", "Fibra %"),
+  field("protein", "Proteína mín. %"),
+  field("fat", "Grasa mín. %"),
+  field("fiber", "Fibra máx. %"),
+  field("moisture", "Humedad máx. %"),
   field("ash", "Cenizas %"),
-  field("moisture", "Humedad %"),
+  field("kcal", "Calorías kcal/kg"),
 ];
 
 // VA-02, RN-030: alta o edición de un producto. Solo presenta: la validación
@@ -111,7 +113,7 @@ export function ProductForm({ productId = null, initial = EMPTY_PRODUCT }: { pro
       </label>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Información nutricional (opcional)</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {NUTRIENTS.map((f) => (
             <label key={f.name} className="flex flex-col gap-1 text-sm">
               {f.label}

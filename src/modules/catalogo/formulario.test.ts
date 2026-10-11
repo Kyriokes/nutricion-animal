@@ -101,3 +101,19 @@ describe("catalogo/formulario (RN-030, sección 7: campos del producto)", () => 
     expect(parseProductForm({ ...base, protein: "120" })).toMatchObject({ ok: false });
   });
 });
+
+describe("catalogo/formulario: calorías (RN-035)", () => {
+  it("acepta las calorías en kcal/kg, con punto de miles", () => {
+    expect(parseProductForm({ ...base, kcal: "3.650" })).toMatchObject({
+      ok: true,
+      product: { nutritionalInfo: { kcalPerKg: 3650 } },
+    });
+  });
+
+  it("rechaza calorías fuera de rango con un mensaje propio", () => {
+    expect(parseProductForm({ ...base, kcal: "20.000" })).toEqual({
+      ok: false,
+      message: "Las calorías van entre 0 y 10.000 kcal/kg",
+    });
+  });
+});

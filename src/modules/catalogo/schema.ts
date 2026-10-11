@@ -10,13 +10,16 @@ const tagList = (max: number) =>
     .max(max)
     .transform((tags) => [...new Set(tags.map(normalizeTag))]);
 
-// Información nutricional de un producto (opcional), en porcentajes.
+// RN-035: información nutricional de un producto (opcional), cada 100 g, como
+// el análisis garantizado de los alimentos para mascotas: proteína y grasa
+// mínimas, fibra y humedad máximas, cenizas (en %) y calorías (kcal/kg).
 export const NutritionalInfoSchema = z.object({
   protein: z.number().min(0).max(100).optional(),
   fat: z.number().min(0).max(100).optional(),
   fiber: z.number().min(0).max(100).optional(),
   ash: z.number().min(0).max(100).optional(),
   moisture: z.number().min(0).max(100).optional(),
+  kcalPerKg: z.number().min(0).max(10_000).optional(),
   notes: z.string().max(500).optional(),
 });
 

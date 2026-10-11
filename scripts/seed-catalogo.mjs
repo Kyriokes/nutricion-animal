@@ -17,7 +17,38 @@ const products = [
   ["Croquetas para cachorros", "Pollo y huevo para el crecimiento. Croqueta chica.", 21500, "NutriCan", 3, "kg", null, 0, ["perro"], ["cachorros"], { protein: 30, fat: 18, fiber: 3 }],
 ];
 
+// RN-033 a RN-035: composición (de mayor a menor, porcentaje del principal),
+// "puede contener" y calorías (kcal/kg) de cada producto de prueba.
+const details = {
+  "Croquetas naturales de pollo": [[["Pollo", 45], ["Arroz integral", 25], ["Zanahoria", 5]], [], 3600],
+  "Croquetas de cordero hipoalergénicas": [[["Cordero", 50], ["Batata", 30], ["Arveja"]], [], 3500],
+  "Alimento crudo BARF de vaca": [[["Carne vacuna", 70], ["Hígado vacuno", 10], ["Zapallo"], ["Zanahoria"]], [], 1500],
+  "Alimento crudo BARF de pollo para gatos": [[["Pollo", 75], ["Corazón de pollo", 10], ["Hígado de pollo", 5]], [], 1400],
+  "Croquetas para gatos adultos de pescado": [[["Pescado de mar", 40], ["Arroz", 30], ["Huevo"]], ["Pollo"], 3700],
+  "Croquetas light para perros": [[["Pollo", 35], ["Arroz integral", 30], ["Avena"], ["Zanahoria"]], [], 3200],
+  "Paté de pavo para gatos": [[["Pavo", 60], ["Zapallo", 10]], [], 900],
+  "Guiso de ternera para perros": [[["Carne vacuna", 40], ["Papa"], ["Zanahoria"], ["Arveja"]], ["Leche"], 1000],
+  "Caldo de huesos": [[["Hueso vacuno", 90]], [], 150],
+  "Snacks de hígado deshidratado": [[["Hígado vacuno", 100]], [], 3800],
+  "Mezcla de semillas para conejos": [[["Heno", 50], ["Avena", 25], ["Semillas de girasol"]], [], 2900],
+  "Croquetas para cachorros": [[["Pollo", 40], ["Arroz", 25], ["Huevo", 15]], ["Leche"], 3900],
+};
+
+// Misma regla que normalizeFoodName (src/modules/alimentos/nombres.ts).
+const normalize = (name) =>
+  name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+
 const sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
+
+async function foodId(name) {
+  await sql`insert into foods (name, normalized) values (${name}, ${normalize(name)}) on conflict do nothing`;
+  const [row] = await sql`
+    select f.id from foods f where f.normalized = ${normalize(name)}
+    union all
+    select a.food_id from food_aliases a where a.normalized = ${normalize(name)}
+    limit 1`;
+  return row.id;
+}
 try {
   let created = 0;
   for (const [name, description, price, brand, weightValue, weightUnit, volume, stock, petTypes, dietTypes, nutrition] of products) {
@@ -32,6 +63,37 @@ try {
     created++;
   }
   console.log(`Productos de prueba: ${created} creados, ${products.length - created} ya existían.`);
+
+  // Composición y calorías: solo si el producto todavía no las tiene, así no
+  // se pisa lo que haya cargado el admin.
+  let detailed = 0;
+  for (const [name, [ingredients, traces, kcal]] of Object.entries(details)) {
+    const [product] = await sql`select id from products where name = ${name}`;
+    if (!product) continue;
+    await sql`
+      update products
+      set nutritional_info = coalesce(nutritional_info, '{}'::jsonb) || jsonb_build_object('kcalPerKg', ${kcal}::int)
+      where id = ${product.id} and not coalesce(nutritional_info ? 'kcalPerKg', false)`;
+    const [has] = await sql`select 1 from product_ingredients where product_id = ${product.id} limit 1`;
+    if (has) continue;
+    // Los alimentos se resuelven antes: el script usa una sola conexión, y la
+    // transacción la ocupa.
+    const ingredientIds = [];
+    for (const [food] of ingredients) ingredientIds.push(await foodId(food));
+    const traceIds = [];
+    for (const food of traces) traceIds.push(await foodId(food));
+    await sql.begin(async (tx) => {
+      for (const [position, [, percentage]] of ingredients.entries()) {
+        await tx`insert into product_ingredients (product_id, food_id, position, percentage)
+          values (${product.id}, ${ingredientIds[position]}, ${position}, ${percentage ?? null})`;
+      }
+      for (const id of traceIds) {
+        await tx`insert into product_traces (product_id, food_id) values (${product.id}, ${id})`;
+      }
+    });
+    detailed++;
+  }
+  console.log(`Composición cargada en ${detailed} productos.`);
 } finally {
   await sql.end({ timeout: 5 });
 }

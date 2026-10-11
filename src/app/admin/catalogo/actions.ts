@@ -4,12 +4,14 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { parseCompositionForm } from "@/modules/catalogo/composicion";
 import { parseProductForm } from "@/modules/catalogo/formulario";
 import {
   CATALOG_TAG,
   createProduct,
   deleteProduct,
   getProduct,
+  saveProductComposition,
   setProductImage,
   updateProduct,
 } from "@/modules/catalogo/repositorio";
@@ -107,4 +109,21 @@ export async function deleteProductAction(productId: unknown): Promise<CatalogAc
   if (image) await createSupabaseAdminClient().storage.from(BUCKET).remove([image]);
   updateTag(CATALOG_TAG);
   redirect("/admin/catalogo");
+}
+
+// RN-033, RN-034: guardar la composición y el "puede contener" de un producto.
+export async function saveCompositionAction(productId: unknown, input: unknown): Promise<CatalogActionResult> {
+  if (!(await canManage())) return NOT_ALLOWED;
+  const id = z.uuid().safeParse(productId);
+  if (!id.success) return NOT_FOUND;
+  const parsed = parseCompositionForm(input);
+  if (!parsed.ok) return parsed;
+  try {
+    const r = await saveProductComposition(id.data, parsed.composition);
+    if (!r.ok) return r.error === "not_found" ? NOT_FOUND : { ok: false, message: "Algún alimento ya no existe en la lista." };
+  } catch {
+    return SAVE_FAILED;
+  }
+  refresh();
+  return { ok: true };
 }

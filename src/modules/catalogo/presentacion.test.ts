@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeSize, formatPrice, stockLabel } from "./presentacion";
+import { describeSize, formatPrice, nutritionRows, stockLabel } from "./presentacion";
 
 // Intl usa espacios especiales (no separables) entre "$" y el número.
 const plain = (s: string) => s.replace(/\s/g, " ");
@@ -20,5 +20,23 @@ describe("catalogo/presentacion", () => {
     expect(stockLabel(0)).toBe("Sin stock");
     expect(stockLabel(3)).toBe("Últimas 3 unidades");
     expect(stockLabel(40)).toBe("En stock");
+  });
+});
+
+describe("catalogo/presentacion: información nutricional (RN-035)", () => {
+  it("como el análisis garantizado: mínimos, máximos y calorías", () => {
+    expect(nutritionRows({ protein: 26, fat: 14.5, fiber: 3, moisture: 10, ash: 7, kcalPerKg: 3650 })).toEqual([
+      ["Proteína (mín.)", "26 %"],
+      ["Grasa (mín.)", "14,5 %"],
+      ["Fibra (máx.)", "3 %"],
+      ["Humedad (máx.)", "10 %"],
+      ["Cenizas", "7 %"],
+      ["Calorías", "3.650 kcal/kg"],
+    ]);
+  });
+
+  it("solo lo que está cargado", () => {
+    expect(nutritionRows({ protein: 20 })).toEqual([["Proteína (mín.)", "20 %"]]);
+    expect(nutritionRows(undefined)).toEqual([]);
   });
 });

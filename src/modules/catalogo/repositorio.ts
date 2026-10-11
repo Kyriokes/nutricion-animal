@@ -3,7 +3,10 @@ import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import { pageWithin } from "@/lib/paginas";
 import { NutritionalInfoSchema, normalizeTag, type Product } from "./schema";
-import { products } from "./tables";
+import { foods } from "@/modules/alimentos/tables";
+import type { Food } from "@/modules/alimentos/repositorio";
+import type { Composition } from "./composicion";
+import { productIngredients, products, productTraces } from "./tables";
 
 export type StoredProduct = Product & {
   id: string;
@@ -187,4 +190,65 @@ export async function setProductImage(id: string, imageUrl: string | null) {
 
 export async function deleteProduct(id: string) {
   await db.delete(products).where(eq(products.id, id));
+}
+
+export type ProductComposition = {
+  ingredients: { food: Food; percentage?: number }[];
+  traces: Food[];
+};
+
+// RN-033, RN-034: composición y "puede contener" de un producto, con nombres.
+export async function getProductComposition(productId: string): Promise<ProductComposition> {
+  const [ingredients, traces] = await Promise.all([
+    db
+      .select({ id: foods.id, name: foods.name, percentage: productIngredients.percentage })
+      .from(productIngredients)
+      .innerJoin(foods, eq(foods.id, productIngredients.foodId))
+      .where(eq(productIngredients.productId, productId))
+      .orderBy(asc(productIngredients.position)),
+    db
+      .select({ id: foods.id, name: foods.name })
+      .from(productTraces)
+      .innerJoin(foods, eq(foods.id, productTraces.foodId))
+      .where(eq(productTraces.productId, productId))
+      .orderBy(asc(foods.name)),
+  ]);
+  return {
+    ingredients: ingredients.map(({ id, name, percentage }) => ({
+      food: { id, name },
+      ...(percentage != null ? { percentage } : {}),
+    })),
+    traces,
+  };
+}
+
+// RN-033, RN-034: reemplaza la composición de un producto (ya validada con
+// parseCompositionForm). Todo o nada, en una transacción.
+export async function saveProductComposition(
+  productId: string,
+  c: Composition,
+): Promise<{ ok: true } | { ok: false; error: "not_found" | "unknown_food" }> {
+  return db.transaction(async (tx) => {
+    const [product] = await tx.select({ id: products.id }).from(products).where(eq(products.id, productId)).for("update");
+    if (!product) return { ok: false as const, error: "not_found" as const };
+    const ids = [...c.ingredients.map((x) => x.foodId), ...c.traces];
+    if (ids.length) {
+      const found = await tx.select({ id: foods.id }).from(foods).where(inArray(foods.id, ids));
+      if (found.length !== new Set(ids).size) return { ok: false as const, error: "unknown_food" as const };
+    }
+    await tx.delete(productIngredients).where(eq(productIngredients.productId, productId));
+    await tx.delete(productTraces).where(eq(productTraces.productId, productId));
+    if (c.ingredients.length) {
+      await tx.insert(productIngredients).values(
+        c.ingredients.map((x, position) => ({
+          productId,
+          foodId: x.foodId,
+          position,
+          percentage: x.percentage ?? null,
+        })),
+      );
+    }
+    if (c.traces.length) await tx.insert(productTraces).values(c.traces.map((foodId) => ({ productId, foodId })));
+    return { ok: true as const };
+  });
 }

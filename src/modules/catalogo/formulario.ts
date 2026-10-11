@@ -25,7 +25,11 @@ export function parseProductForm(
   const weight = parseNumber(form.weightValue);
   const volume = parseNumber(form.volumeValue);
   const stock = parseNumber(form.stock);
-  const nutrientValues = NUTRIENTS.map((k) => [k, parseNumber(form[k])] as const);
+  const nutrientValues = [
+    ...NUTRIENTS.map((k) => [k, parseNumber(form[k])] as const),
+    // RN-035: calorías en kcal/kg (con punto de miles, como el precio).
+    ["kcalPerKg", parseNumber(form.kcal, true)] as const,
+  ];
 
   if (price === "invalid") return { ok: false, message: FORMAT_ERRORS.price };
   if (weight === "invalid") return { ok: false, message: FORMAT_ERRORS.weight };
@@ -55,7 +59,9 @@ export function parseProductForm(
     const issue = parsed.error.issues[0];
     const field = issue?.path[0];
     const message =
-      field === "nutritionalInfo"
+      field === "nutritionalInfo" && issue?.path[1] === "kcalPerKg"
+        ? "Las calorías van entre 0 y 10.000 kcal/kg"
+        : field === "nutritionalInfo"
         ? "Los valores nutricionales son porcentajes entre 0 y 100"
         : (issue?.message ?? "Datos inválidos");
     return { ok: false, message };

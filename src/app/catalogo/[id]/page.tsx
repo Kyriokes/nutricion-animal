@@ -4,16 +4,9 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { ProductImage } from "@/components/product-card";
-import { describeSize, formatPrice, stockLabel } from "@/modules/catalogo/presentacion";
-import { getCatalogProduct } from "@/modules/catalogo/repositorio";
-
-const NUTRIENT_LABELS = {
-  protein: "Proteína",
-  fat: "Grasa",
-  fiber: "Fibra",
-  ash: "Cenizas",
-  moisture: "Humedad",
-} as const;
+import { describeComposition } from "@/modules/catalogo/composicion";
+import { describeSize, formatPrice, nutritionRows, stockLabel } from "@/modules/catalogo/presentacion";
+import { getCatalogProduct, getProductComposition } from "@/modules/catalogo/repositorio";
 
 // VP-05: detalle del producto (solo productos aprobados).
 async function Detail({ params }: { params: Promise<{ id: string }> }) {
@@ -21,10 +14,8 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
   const product = id.success ? await getCatalogProduct(id.data) : null;
   if (!product) notFound();
 
-  const nutrients = Object.entries(NUTRIENT_LABELS).flatMap(([key, label]) => {
-    const value = product.nutritionalInfo?.[key as keyof typeof NUTRIENT_LABELS];
-    return value === undefined ? [] : [[label, `${String(value).replace(".", ",")} %`] as const];
-  });
+  const nutrients = nutritionRows(product.nutritionalInfo);
+  const composition = await getProductComposition(product.id);
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -51,9 +42,24 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
             </>
           )}
         </dl>
+        {composition.ingredients.length > 0 && (
+          <section className="flex flex-col gap-1 text-sm">
+            <h2 className="font-medium">Composición</h2>
+            <p>
+              {describeComposition(
+                composition.ingredients.map((x) => ({ name: x.food.name, percentage: x.percentage })),
+              )}
+            </p>
+            {composition.traces.length > 0 && (
+              <p className="text-muted-foreground">
+                Puede contener: {composition.traces.map((t) => t.name.toLowerCase()).join(", ")}.
+              </p>
+            )}
+          </section>
+        )}
         {nutrients.length > 0 && (
           <section className="flex flex-col gap-1">
-            <h2 className="font-medium">Información nutricional</h2>
+            <h2 className="font-medium">Información nutricional (cada 100 g)</h2>
             <table className="w-full max-w-xs text-sm">
               <tbody>
                 {nutrients.map(([label, value]) => (

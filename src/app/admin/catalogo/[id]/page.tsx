@@ -4,9 +4,10 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { NoAccess } from "@/components/no-access";
 import { ProductImage } from "@/components/product-card";
-import { getProduct, type StoredProduct } from "@/modules/catalogo/repositorio";
+import { getProduct, getProductComposition, type StoredProduct } from "@/modules/catalogo/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
+import { CompositionForm } from "../composition-form";
 import {
   DeleteProductButton,
   ProductForm,
@@ -35,6 +36,7 @@ function toFormValues(p: StoredProduct): ProductFormValues {
     fiber: decimal(n?.fiber),
     ash: decimal(n?.ash),
     moisture: decimal(n?.moisture),
+    kcal: n?.kcalPerKg === undefined ? "" : String(n.kcalPerKg),
   };
 }
 
@@ -46,6 +48,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await params).id);
   const product = id.success ? await getProduct(id.data) : null;
   if (!product) return <p className="text-muted-foreground">No encontramos ese producto.</p>;
+  const composition = await getProductComposition(product.id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -67,6 +70,10 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Datos</h2>
         <ProductForm key={product.id} productId={product.id} initial={toFormValues(product)} />
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-medium">Composición</h2>
+        <CompositionForm key={product.id} productId={product.id} initial={composition} />
       </section>
       <DeleteProductButton productId={product.id} />
     </div>
