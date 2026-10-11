@@ -73,6 +73,10 @@ type PreferenceOrder = {
 // - Excluye los medios no instantáneos (efectivo en Rapipago/Pago Fácil,
 //   cajeros): un pago que se acredita días después llegaría con la reserva
 //   vencida y el stock liberado.
+// - Modo binario: cada pago se resuelve en el momento, aprobado o rechazado.
+//   Sin él, Mercado Pago puede dejar un pago rechazado "en proceso" y
+//   reintentarlo horas después (deferred_retry), mucho más que los 30 minutos
+//   de la reserva. Puede bajar un poco la tasa de aprobación (DT-063).
 // - En el sitio publicado (https), vuelve solo al pedido y Mercado Pago avisa
 //   al webhook; en local no hay avisos (Mercado Pago no llega a localhost).
 const PREFERENCE_MARGIN_MS = 5 * 60_000;
@@ -98,6 +102,7 @@ export function buildPreference(order: PreferenceOrder, siteUrl: string) {
       },
     ],
     external_reference: order.id,
+    binary_mode: true,
     back_urls: { success: back, failure: back, pending: back },
     expires: true,
     expiration_date_to: new Date(order.reservedUntil.getTime() - PREFERENCE_MARGIN_MS).toISOString(),

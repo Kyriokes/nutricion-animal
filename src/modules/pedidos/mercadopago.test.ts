@@ -64,6 +64,10 @@ describe("pedidos/mercadopago: cobro de un pedido (RN-067)", () => {
     expect(p.external_reference).toBe(order.id);
   });
 
+  it("resuelve cada pago en el momento: aprobado o rechazado, sin \"en proceso\" (modo binario)", () => {
+    expect(buildPreference(order, "https://nutricion-animal.vercel.app").binary_mode).toBe(true);
+  });
+
   it("vence con la reserva y solo admite medios de pago instantáneos", () => {
     const p = buildPreference(order, "https://nutricion-animal.vercel.app");
     expect(p.expires).toBe(true);
