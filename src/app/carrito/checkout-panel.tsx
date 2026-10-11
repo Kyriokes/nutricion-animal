@@ -34,6 +34,9 @@ export function CheckoutPanel({
   const [addressId, setAddressId] = useState(usable[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [ack, setAck] = useState(false);
+  // El servidor pidió confirmar advertencias que la pantalla no llegó a cargar.
+  const [serverNeedsAck, setServerNeedsAck] = useState(false);
+  const showAck = needsAllergyAck || serverNeedsAck;
   const [pending, start] = useTransition();
 
   if (usable.length === 0) {
@@ -59,7 +62,7 @@ export function CheckoutPanel({
             addressId,
             lines,
             expectedTotal: total,
-            allergyWarningsAcknowledged: needsAllergyAck && ack,
+            allergyWarningsAcknowledged: showAck && ack,
           });
           if (r.ok) {
             // RN-064: el stock ya está reservado; el carrito se vacía.
@@ -68,6 +71,10 @@ export function CheckoutPanel({
             return;
           }
           setMessage(r.message);
+          if (r.needsAllergyAck) {
+            setServerNeedsAck(true);
+            onStale();
+          }
           if (r.stale) {
             onStale();
             router.refresh();
@@ -94,7 +101,7 @@ export function CheckoutPanel({
           Hay productos sin stock suficiente: quitalos o ajustá la cantidad para continuar.
         </p>
       )}
-      {needsAllergyAck && (
+      {showAck && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" required checked={ack} onChange={(e) => setAck(e.target.checked)} />
           Revisé las advertencias de alergias

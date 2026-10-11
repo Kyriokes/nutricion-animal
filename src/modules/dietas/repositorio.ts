@@ -247,8 +247,18 @@ export async function getDietDetail(dietId: string) {
 
 // RN-015, VU-04: dietas vigentes de una mascota, con la versión asignada.
 export async function listActiveDietsForPet(petId: string) {
+  return (await listActiveDietsForPets([petId])).get(petId) ?? [];
+}
+
+// Dietas activas de varias mascotas, en una sola consulta, por mascota. Una
+// versión con contenido mal formado se saltea (no rompe el catálogo ni la
+// compra de ese cliente).
+export async function listActiveDietsForPets(petIds: readonly string[]) {
+  const byPet = new Map<string, ActiveDiet[]>();
+  if (petIds.length === 0) return byPet;
   const rows = await db
     .select({
+      petId: dietAssignments.petId,
       assignmentId: dietAssignments.id,
       assignedAt: dietAssignments.assignedAt,
       dietName: diets.name,
@@ -262,19 +272,37 @@ export async function listActiveDietsForPet(petId: string) {
     .innerJoin(diets, eq(diets.id, dietVersions.dietId))
     // leftJoin: la cuenta del nutricionista puede no existir más (RN-047).
     .leftJoin(users, eq(users.id, diets.nutritionistId))
-    .where(and(eq(dietAssignments.petId, petId), isNull(dietAssignments.endedAt)))
+    .where(and(inArray(dietAssignments.petId, [...petIds]), isNull(dietAssignments.endedAt)))
     .orderBy(desc(dietAssignments.assignedAt));
-  return rows.map(({ nutritionistRoles, ...r }) => ({
-    ...r,
-    content: DietContentSchema.parse(r.content),
-    // RN-047: si quien la emitió ya no forma parte, se avisa en la dieta.
-    issuerActive: isIssuerActive(
-      nutritionistRoles
-        ? nutritionistRoles.filter((x): x is Role => RoleSchema.safeParse(x).success)
-        : null,
-    ),
-  }));
+  for (const { petId, nutritionistRoles, ...r } of rows) {
+    const content = DietContentSchema.safeParse(r.content);
+    if (!content.success) continue;
+    byPet.set(petId, [
+      ...(byPet.get(petId) ?? []),
+      {
+        ...r,
+        content: content.data,
+        // RN-047: si quien la emitió ya no forma parte, se avisa en la dieta.
+        issuerActive: isIssuerActive(
+          nutritionistRoles
+            ? nutritionistRoles.filter((x): x is Role => RoleSchema.safeParse(x).success)
+            : null,
+        ),
+      },
+    ]);
+  }
+  return byPet;
 }
+
+export type ActiveDiet = {
+  assignmentId: string;
+  assignedAt: Date;
+  dietName: string;
+  versionNumber: number;
+  content: DietContent;
+  nutritionistName: string | null;
+  issuerActive: boolean;
+};
 
 // VN-04: buscar clientes por nombre o email para elegir una de sus mascotas.
 // Por ahora cualquier nutricionista ve a todos (pregunta 5.1 pendiente).

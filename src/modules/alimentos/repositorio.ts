@@ -1,4 +1,4 @@
-import { asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pageWithin } from "@/lib/paginas";
 import { findSimilarFoods, normalizeFoodName } from "./nombres";
@@ -69,25 +69,45 @@ export async function findFoodByName(name: string, tx: Tx | typeof db = db): Pro
 export type AddFoodResult =
   | { status: "existing"; food: Food }
   | { status: "similar"; similar: Food[] }
-  | { status: "created"; food: Food };
+  | { status: "created"; food: Food }
+  | { status: "too_many" };
+
+// Tope de alimentos nuevos por día para quien no administra la lista: la
+// lista es compartida y la ven todos.
+export const MAX_NEW_FOODS_PER_DAY = 20;
 
 // RN-032: agregar un alimento. Si ya existe (por nombre o sinónimo), lo
 // devuelve. Si se parece a otros, los devuelve para avisar, salvo que se
-// confirme igual (`force`). La unicidad la garantiza la base.
-export async function addFood(name: string, userId: string, force = false): Promise<AddFoodResult> {
+// confirme igual (`force`). Se crea con el mismo bloqueo que usa el admin,
+// así no queda un alimento con el nombre de un sinónimo creado a la vez.
+export async function addFood(
+  name: string,
+  userId: string,
+  opts: { force?: boolean; limitPerDay?: number } = {},
+): Promise<AddFoodResult> {
   const existing = await findFoodByName(name);
   if (existing) return { status: "existing", food: existing };
-  if (!force) {
+  if (!opts.force) {
     const similar = findSimilarFoods(name, (await listAllFoods()).map((f) => ({ ...f, aliases: f.aliases.map((a) => a.alias) })));
     if (similar.length > 0) return { status: "similar", similar: similar.map(({ id, name }) => ({ id, name })) };
   }
-  const [created] = await db
-    .insert(foods)
-    .values({ name, normalized: normalizeFoodName(name), createdBy: userId })
-    .onConflictDoNothing()
-    .returning({ id: foods.id, name: foods.name });
-  // Otro lo creó en el mismo instante: se usa ese.
-  return created ? { status: "created", food: created } : { status: "existing", food: (await findFoodByName(name))! };
+  return db.transaction(async (tx) => {
+    await lockFoods(tx);
+    const again = await findFoodByName(name, tx);
+    if (again) return { status: "existing" as const, food: again };
+    if (opts.limitPerDay !== undefined) {
+      const [{ n }] = await tx
+        .select({ n: count() })
+        .from(foods)
+        .where(and(eq(foods.createdBy, userId), gt(foods.createdAt, sql`now() - interval '1 day'`)));
+      if (n >= opts.limitPerDay) return { status: "too_many" as const };
+    }
+    const [created] = await tx
+      .insert(foods)
+      .values({ name, normalized: normalizeFoodName(name), createdBy: userId })
+      .returning({ id: foods.id, name: foods.name });
+    return { status: "created" as const, food: created };
+  });
 }
 
 export const FOODS_PAGE_SIZE = 30;
@@ -207,6 +227,13 @@ async function mergePetAndDietReferences(tx: Tx, fromId: string, intoId: string)
       and exists (select 1 from ${petFoods} o where o.pet_id = pf.pet_id and o.kind = pf.kind and o.food_id = ${intoId})
   `);
   await tx.update(petFoods).set({ foodId: intoId }).where(eq(petFoods.foodId, fromId));
+  // Si el mismo alimento quedó como alérgeno o no permitido y también como de
+  // necesidad, gana la restricción (es lo seguro) y se quita "de necesidad".
+  await tx.execute(sql`
+    delete from ${petFoods} pf
+    where pf.food_id = ${intoId} and pf.kind = 'required'
+      and exists (select 1 from ${petFoods} o where o.pet_id = pf.pet_id and o.food_id = ${intoId} and o.kind <> 'required')
+  `);
   await tx.execute(sql`
     update ${dietVersions} dv
     set content = jsonb_set(dv.content, '{foods}', (

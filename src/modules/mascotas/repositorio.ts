@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import type { Food } from "@/modules/alimentos/repositorio";
 import { foods } from "@/modules/alimentos/tables";
 import type { PetProfile } from "@/modules/catalogo/mascota";
-import { listActiveDietsForPet } from "@/modules/dietas/repositorio";
+import { listActiveDietsForPets } from "@/modules/dietas/repositorio";
 import type { Pet } from "./schema";
 import { petFoods, pets } from "./tables";
 
@@ -100,6 +100,9 @@ export async function createPet(pet: Pet): Promise<string> {
 
 export async function updatePet(id: string, pet: Pet) {
   await db.transaction(async (tx) => {
+    // Bloquea la mascota: dos guardados a la vez (dos pestañas) no chocan al
+    // reemplazar sus listas.
+    await tx.select({ id: pets.id }).from(pets).where(eq(pets.id, id)).for("update");
     await tx.update(pets).set(columns(pet)).where(eq(pets.id, id));
     await saveFoodLists(tx, id, pet);
   });
@@ -131,9 +134,11 @@ export async function listKnownSpecies(): Promise<string[]> {
 // no cuentan.
 export async function listPetProfiles(ownerId: string) {
   const petsList = await listPetsByOwner(ownerId);
+  // Una sola consulta para las dietas de todas sus mascotas.
+  const dietsByPet = await listActiveDietsForPets(petsList.map((p) => p.id));
   return Promise.all(
     petsList.map(async (pet) => {
-      const diets = await listActiveDietsForPet(pet.id);
+      const diets = dietsByPet.get(pet.id) ?? [];
       const dietFoods = new Map<string, Food>();
       for (const d of diets) {
         for (const f of d.content.foods) if (f.foodId) dietFoods.set(f.foodId, { id: f.foodId, name: f.name });

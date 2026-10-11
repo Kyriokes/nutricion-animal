@@ -78,3 +78,11 @@ export function findSimilarFoods<T extends FoodCandidate>(name: string, foods: r
   const key = singularKey(name);
   return foods.filter((f) => [f.name, ...f.aliases].some((n) => looksAlike(key, singularKey(n))));
 }
+
+// Si dos nombres de alimentos se parecen (mismo criterio que el aviso al
+// agregar). Lo usa la detección de alérgenos para no depender solo del id:
+// un duplicado ("Pollos" además de "Pollo") no tiene que dejar pasar un
+// alérgeno.
+export function foodsLookAlike(a: string, b: string): boolean {
+  return looksAlike(singularKey(a), singularKey(b));
+}

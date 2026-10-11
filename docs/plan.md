@@ -89,7 +89,8 @@ Quedan (menores):
 - No cargar las variables de Mercado Pago en el entorno Preview de Vercel (las vistas previas tienen otra dirección).
 
 ## Pendiente de la tanda de alimentos
-- Después de publicar las partes 1 a 3: migración que borra las columnas de texto `allergies`, `forbidden_foods` y `required_foods` de `pets` (DT-066).
+- Después de publicar: migración que vuelve a copiar alergias y restricciones desde las columnas de texto (por si alguien las cargó entre la migración y el deploy), borra las columnas `allergies`, `forbidden_foods` y `required_foods` de `pets` (DT-066) y fija el `search_path` de `food_normalize()`.
+- Menores de la revisión: carrera entre guardar una dieta y unir alimentos (un `foodId` podría quedar huérfano hasta la próxima edición); diferencias menores de normalización JS/SQL fuera del castellano; lista cerrada de especies a mediano plazo; `listCatalogForPet` corta en 500.
 - Revisar en `/admin/alimentos` los alimentos convertidos (por ejemplo "pescado" en minúscula, o "Carne" y "Carne vacuna").
 
 ## Para cuando haya clientes reales

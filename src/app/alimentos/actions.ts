@@ -2,7 +2,13 @@
 
 import { z } from "zod";
 import { FoodNameSchema } from "@/modules/alimentos/nombres";
-import { addFood, searchFoods, type AddFoodResult, type Food } from "@/modules/alimentos/repositorio";
+import {
+  addFood,
+  MAX_NEW_FOODS_PER_DAY,
+  searchFoods,
+  type AddFoodResult,
+  type Food,
+} from "@/modules/alimentos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 
@@ -20,7 +26,7 @@ export async function searchFoodsAction(query: unknown): Promise<Food[]> {
   }
 }
 
-export type AddFoodActionResult = AddFoodResult | { status: "error"; message: string };
+export type AddFoodActionResult = Exclude<AddFoodResult, { status: "too_many" }> | { status: "error"; message: string };
 
 // RN-032: agregar un alimento a la lista. Si se parece a otros, los devuelve
 // para avisar; con `force`, lo agrega igual.
@@ -32,7 +38,15 @@ export async function addFoodAction(name: unknown, force: unknown): Promise<AddF
   const parsed = FoodNameSchema.safeParse(name);
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Nombre inválido." };
   try {
-    return await addFood(parsed.data, actor.id, force === true);
+    const r = await addFood(parsed.data, actor.id, {
+      force: force === true,
+      // Quien administra la lista no tiene tope.
+      ...(hasPermission(actor.roles, "food.manage") ? {} : { limitPerDay: MAX_NEW_FOODS_PER_DAY }),
+    });
+    if (r.status === "too_many") {
+      return { status: "error", message: "Llegaste al máximo de alimentos nuevos por hoy. Elegí uno de la lista." };
+    }
+    return r;
   } catch {
     return { status: "error", message: "No se pudo agregar. Probá de nuevo." };
   }

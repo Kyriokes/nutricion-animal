@@ -7,6 +7,7 @@ import { PetProductCard, ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { pageWithin } from "@/lib/paginas";
 import { rankForPet } from "@/modules/catalogo/mascota";
+import { normalizeTag } from "@/modules/catalogo/schema";
 import {
   getProductFoods,
   listCatalog,
@@ -130,7 +131,13 @@ async function Catalog({ searchParams }: { searchParams: Promise<Record<string, 
       <MyPetsShortcuts pets={myPets} current={selected?.pet.id} />
 
       {selected ? (
-        <PetResults selected={selected} q={f.q} dieta={f.dieta} page={f.pagina ?? 1} />
+        <PetResults
+          selected={selected}
+          q={f.q}
+          dieta={f.dieta}
+          page={f.pagina ?? 1}
+          knownSpecies={facets.species}
+        />
       ) : (
         <AllResults filters={{ q: f.q, species: f.especie, dietType: f.dieta, page: f.pagina }} />
       )}
@@ -172,11 +179,13 @@ async function PetResults({
   q,
   dieta,
   page,
+  knownSpecies,
 }: {
   selected: PetWithProfile;
   q?: string;
   dieta?: string;
   page: number;
+  knownSpecies: readonly string[];
 }) {
   const { pet, dietNames, profile } = selected;
   const products = await listCatalogForPet({ q, species: pet.species, dietType: dieta });
@@ -202,7 +211,15 @@ async function PetResults({
           Es una ayuda para elegir: verificá siempre la etiqueta y consultá a su nutricionista.
         </p>
       </section>
-      {items.length === 0 ? (
+      {items.length === 0 && !knownSpecies.includes(normalizeTag(pet.species)) ? (
+        <p role="note" className="text-sm">
+          La especie de {pet.name} (&quot;{pet.species}&quot;) no coincide con las del catálogo ({knownSpecies.join(", ")}).{" "}
+          <Link href={`/mascotas/${pet.id}`} className="underline underline-offset-4">
+            Corregila en su ficha
+          </Link>{" "}
+          para ver sus productos.
+        </p>
+      ) : items.length === 0 ? (
         <p className="text-muted-foreground">No encontramos productos para {pet.name} con esos filtros.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

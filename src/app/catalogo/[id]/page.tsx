@@ -7,14 +7,14 @@ import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { ProductImage } from "@/components/product-card";
 import { describeComposition } from "@/modules/catalogo/composicion";
 import { describeSize, formatPrice, nutritionRows, stockLabel } from "@/modules/catalogo/presentacion";
-import { describeBlock, evaluateForPet } from "@/modules/catalogo/mascota";
+import { annotateForPets, describeBlock, evaluateForPet } from "@/modules/catalogo/mascota";
 import {
   getCatalogProduct,
   getProductComposition,
   getProductFoods,
+  listCatalogFacets,
   type StoredProduct,
 } from "@/modules/catalogo/repositorio";
-import { normalizeTag } from "@/modules/catalogo/schema";
 import { listPetProfiles } from "@/modules/mascotas/repositorio";
 import { getCurrentUser } from "@/modules/usuarios/sesion";
 
@@ -27,32 +27,40 @@ async function Purchase({ product, petId }: { product: StoredProduct; petId?: st
   const user = await getCurrentUser();
   const add = <AddToCartButton productId={product.id} stock={product.stock} />;
   if (!user) return add;
-  const [pets, foods] = await Promise.all([listPetProfiles(user.id), getProductFoods([product.id])]);
+  const [pets, foods, facets] = await Promise.all([
+    listPetProfiles(user.id),
+    getProductFoods([product.id]),
+    listCatalogFacets(),
+  ]);
   const productFoods = foods.get(product.id)!;
-  const species = new Set(product.petTypes);
-  const evaluated = pets.map((p) => ({ ...p, evaluation: evaluateForPet(productFoods, p.profile) }));
 
-  const selected = evaluated.find((p) => p.pet.id === petId);
-  if (selected && selected.evaluation.blocked.length > 0) {
+  const selected = pets.find((p) => p.pet.id === petId);
+  const blocked = selected ? evaluateForPet(productFoods, selected.profile).blocked : [];
+  if (selected && blocked.length > 0) {
     return (
       <div role="alert" className="flex flex-col gap-1 rounded-lg border border-destructive p-3 text-sm">
         <span className="font-medium text-destructive">No disponible para {selected.pet.name}</span>
-        {selected.evaluation.blocked.map((b) => (
+        {blocked.map((b) => (
           <span key={`${b.food}-${b.how}`}>{describeBlock(b, selected.pet.name)}</span>
         ))}
       </div>
     );
   }
-  const warnings = evaluated.filter(
-    (p) => species.has(normalizeTag(p.pet.species)) && p.evaluation.blocked.length > 0,
+  // Mismo criterio que el carrito (RN-039): mascotas de la especie del
+  // producto o de una especie que no está en el catálogo, y composición no
+  // informada.
+  const { warnings } = annotateForPets(
+    { petTypes: product.petTypes, foods: productFoods },
+    pets.map((p) => ({ name: p.pet.name, species: p.pet.species, profile: p.profile })),
+    new Set(facets.species),
   );
   return (
     <div className="flex flex-col gap-3">
       {warnings.length > 0 && (
         <div role="note" className="flex flex-col gap-1 rounded-lg border border-warning p-3 text-sm">
-          {warnings.flatMap((p) =>
-            p.evaluation.blocked.map((b) => <span key={`${p.pet.id}-${b.food}-${b.how}`}>⚠ {describeBlock(b, p.pet.name)}</span>),
-          )}
+          {warnings.map((w) => (
+            <span key={w}>⚠ {w}</span>
+          ))}
         </div>
       )}
       {add}

@@ -41,13 +41,19 @@ const normalize = (name) =>
 const sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
 
 async function foodId(name) {
+  // Primero por nombre o sinónimo; solo si no existe, se crea.
+  const find = async () => {
+    const [row] = await sql`
+      select f.id from foods f where f.normalized = ${normalize(name)}
+      union all
+      select a.food_id from food_aliases a where a.normalized = ${normalize(name)}
+      limit 1`;
+    return row?.id;
+  };
+  const found = await find();
+  if (found) return found;
   await sql`insert into foods (name, normalized) values (${name}, ${normalize(name)}) on conflict do nothing`;
-  const [row] = await sql`
-    select f.id from foods f where f.normalized = ${normalize(name)}
-    union all
-    select a.food_id from food_aliases a where a.normalized = ${normalize(name)}
-    limit 1`;
-  return row.id;
+  return find();
 }
 try {
   let created = 0;

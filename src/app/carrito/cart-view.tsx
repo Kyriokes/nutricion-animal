@@ -100,7 +100,7 @@ export function CartView({
     return () => {
       cancelled = true;
     };
-  }, [ids, signedIn]);
+  }, [ids, signedIn, reload]);
 
   useEffect(() => {
     let cancelled = false;

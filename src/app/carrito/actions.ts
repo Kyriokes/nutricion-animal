@@ -1,8 +1,8 @@
 "use server";
 
 import { z } from "zod";
-import { annotateForPets } from "@/modules/catalogo/mascota";
-import { getCatalogProductsByIds, getProductFoods } from "@/modules/catalogo/repositorio";
+import { annotateForPets, cartNeedsAllergyAck } from "@/modules/catalogo/mascota";
+import { getCatalogProductsByIds, getProductFoods, listCatalogFacets } from "@/modules/catalogo/repositorio";
 import { listPetProfiles } from "@/modules/mascotas/repositorio";
 import { CheckoutInputSchema, MAX_ORDER_LINES, type CheckoutError } from "@/modules/pedidos/checkout";
 import { paymentMode } from "@/modules/pedidos/mercadopago";
@@ -35,14 +35,16 @@ export type CartPetNotes = Record<string, { fitsPets: string[]; warnings: string
 // RN-039: para cada producto del carrito, para qué mascotas del cliente
 // encaja y qué advertencias hay.
 async function cartPetNotes(userId: string, productIds: readonly string[]): Promise<CartPetNotes> {
-  const [products, foods, pets] = await Promise.all([
+  const [products, foods, pets, facets] = await Promise.all([
     getCatalogProductsByIds(productIds),
     getProductFoods(productIds),
     listPetProfiles(userId),
+    listCatalogFacets(),
   ]);
   const petInfo = pets.map((p) => ({ name: p.pet.name, species: p.pet.species, profile: p.profile }));
+  const known = new Set(facets.species);
   return Object.fromEntries(
-    products.map((p) => [p.id, annotateForPets({ petTypes: p.petTypes, foods: foods.get(p.id)! }, petInfo)]),
+    products.map((p) => [p.id, annotateForPets({ petTypes: p.petTypes, foods: foods.get(p.id)! }, petInfo, known)]),
   );
 }
 
@@ -59,7 +61,11 @@ export async function getCartPetNotesAction(ids: unknown): Promise<CartPetNotes 
   }
 }
 
-export type CheckoutActionResult = { ok: true; orderId: string } | { ok: false; message: string; stale?: boolean };
+// `needsAllergyAck`: hay advertencias de alergias y falta confirmarlas; la
+// pantalla muestra la casilla aunque no haya podido cargar las advertencias.
+export type CheckoutActionResult =
+  | { ok: true; orderId: string }
+  | { ok: false; message: string; stale?: boolean; needsAllergyAck?: boolean };
 
 const CHECKOUT_ERRORS: Record<CheckoutError | "address_not_found", { message: string; stale?: boolean }> = {
   empty: { message: "Tu carrito está vacío." },
@@ -85,8 +91,12 @@ export async function createOrderAction(input: unknown): Promise<CheckoutActionR
   try {
     // RN-039: si hay advertencias de alergias, hay que confirmar que se vieron.
     const notes = await cartPetNotes(actor.id, parsed.data.lines.map((l) => l.productId));
-    if (Object.values(notes).some((n) => n.warnings.length > 0) && !parsed.data.allergyWarningsAcknowledged) {
-      return { ok: false, message: "Marcá que revisaste las advertencias de alergias para confirmar la compra." };
+    if (cartNeedsAllergyAck(notes) && !parsed.data.allergyWarningsAcknowledged) {
+      return {
+        ok: false,
+        message: "Hay advertencias de alergias en el carrito: revisalas y marcá la casilla para confirmar.",
+        needsAllergyAck: true,
+      };
     }
     const r = await createOrder(actor.id, parsed.data);
     return r.ok ? r : { ok: false, ...CHECKOUT_ERRORS[r.error] };
