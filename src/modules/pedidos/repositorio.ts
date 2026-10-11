@@ -285,7 +285,10 @@ export async function listCustomerOrders(customerId: string, requestedPage: numb
       status: orders.status,
       total: orders.total,
       createdAt: orders.createdAt,
-      items: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0)::int from ${orderItems} where ${orderItems.orderId} = ${orders.id})`,
+      // Drizzle escribe las columnas sin la tabla dentro de un select de una
+      // sola tabla: "id" terminaba siendo el de order_items y daba siempre 0.
+      // Se nombra la tabla de afuera de forma explícita.
+      items: sql<number>`(select coalesce(sum(oi.quantity), 0)::int from ${orderItems} oi where oi.order_id = ${orders}.id)`,
     })
     .from(orders)
     .where(where)
