@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { pageWithin } from "@/lib/paginas";
 import { findSimilarFoods, normalizeFoodName } from "./nombres";
 import { productIngredients, productTraces } from "@/modules/catalogo/tables";
+import { dietVersions } from "@/modules/dietas/tables";
+import { petFoods } from "@/modules/mascotas/tables";
 import { foodAliases, foods } from "./tables";
 
 export type Food = { id: string; name: string };
@@ -196,6 +198,27 @@ async function mergeProductReferences(tx: Tx, fromId: string, intoId: string) {
   `);
 }
 
+// RN-036: en mascotas (sin repetir el mismo alimento en la misma lista) y en
+// las versiones de dieta (se cambia el id; el nombre queda como se escribió).
+async function mergePetAndDietReferences(tx: Tx, fromId: string, intoId: string) {
+  await tx.execute(sql`
+    delete from ${petFoods} pf
+    where pf.food_id = ${fromId}
+      and exists (select 1 from ${petFoods} o where o.pet_id = pf.pet_id and o.kind = pf.kind and o.food_id = ${intoId})
+  `);
+  await tx.update(petFoods).set({ foodId: intoId }).where(eq(petFoods.foodId, fromId));
+  await tx.execute(sql`
+    update ${dietVersions} dv
+    set content = jsonb_set(dv.content, '{foods}', (
+      select jsonb_agg(
+        case when e.f->>'foodId' = ${fromId} then e.f || jsonb_build_object('foodId', ${intoId}::text) else e.f end
+        order by e.ord)
+      from jsonb_array_elements(dv.content->'foods') with ordinality as e(f, ord)
+    ))
+    where dv.content->'foods' @> jsonb_build_array(jsonb_build_object('foodId', ${fromId}::text))
+  `);
+}
+
 // RN-032: unir un duplicado a otro alimento. Sus sinónimos pasan al que
 // queda, su nombre queda como sinónimo y sus referencias se mueven.
 export async function mergeFoods(fromId: string, intoId: string): Promise<{ ok: true } | { ok: false; error: "not_found" | "same" }> {
@@ -208,9 +231,16 @@ export async function mergeFoods(fromId: string, intoId: string): Promise<{ ok: 
     // Acá se mueven las referencias del que desaparece al que queda: cada
     // parte que use alimentos (productos, dietas, mascotas) suma la suya.
     await mergeProductReferences(tx, fromId, intoId);
+    await mergePetAndDietReferences(tx, fromId, intoId);
     await tx.update(foodAliases).set({ foodId: intoId }).where(eq(foodAliases.foodId, fromId));
     await tx.delete(foods).where(eq(foods.id, fromId));
     await tx.insert(foodAliases).values({ foodId: intoId, alias: from.name, normalized: from.normalized });
     return { ok: true as const };
   });
+}
+
+// Los alimentos con esos ids (los que existan).
+export async function getFoodsByIds(ids: readonly string[]): Promise<Food[]> {
+  if (ids.length === 0) return [];
+  return db.select({ id: foods.id, name: foods.name }).from(foods).where(inArray(foods.id, [...new Set(ids)]));
 }

@@ -13,8 +13,12 @@ export const FoodConsumptionPatternSchema = z.union([
   }),
 ]);
 
-// Un alimento con su patrón de consumo.
+// Un alimento con su patrón de consumo. RN-036: `foodId` es el alimento de la
+// lista única; `name` guarda cómo se llamaba al escribir la versión (la
+// versión es un registro). Es optativo en lo guardado: las versiones previas
+// a la lista se convirtieron, pero alguna podría no tenerlo.
 export const FoodItemSchema = z.object({
+  foodId: z.uuid().optional(),
   name: z.string().min(1, "El alimento no puede estar vacío").max(80, "El alimento puede tener hasta 80 caracteres"),
   quantity: z.number().positive("La cantidad debe ser positiva"),
   unit: z.enum(["g", "kg", "ml", "l", "taza", "cucharada"]),
@@ -39,6 +43,12 @@ export const DietContentSchema = z.object({
   duration: DietDurationSchema,
   notes: z.string().max(1000, "Las notas pueden tener hasta 1000 caracteres").optional(), // Aclaraciones, no afecta lógica
 });
+
+// RN-036: lo que se guarda desde el editor: todos los alimentos de la lista.
+export const EditorDietContentSchema = DietContentSchema.refine(
+  (c) => c.foods.every((f) => f.foodId !== undefined),
+  { message: "Elegí cada alimento de la lista.", path: ["foods"] },
+);
 
 // RN-021: cada nutricionista tiene sus propias dietas; no se comparten.
 // El nombre vive en la dieta, no en la versión: renombrar no crea versión.

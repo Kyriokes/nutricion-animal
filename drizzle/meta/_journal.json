@@ -169,6 +169,20 @@
       "when": 1791740096780,
       "tag": "0023_composicion_productos",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791740832978,
+      "tag": "0024_alimentos_de_mascotas",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791740853161,
+      "tag": "0025_convertir_alimentos_existentes",
+      "breakpoints": true
     }
   ]
 }

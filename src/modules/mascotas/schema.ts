@@ -1,8 +1,15 @@
 import { z } from "zod";
 
-const foodList = z.array(z.string().trim().min(1).max(60)).max(30).default([]);
+// Condiciones de salud: texto libre.
+const textList = z.array(z.string().trim().min(1).max(60)).max(30).default([]);
 
-const normalize = (food: string) => food.trim().toLowerCase();
+// RN-036: alergias y alimentos no permitidos o de necesidad son alimentos de
+// la lista única (RN-032), por su id. Sin repetidos.
+const foodIdList = z
+  .array(z.uuid())
+  .max(30)
+  .default([])
+  .transform((ids) => [...new Set(ids)]);
 
 // RN-010: el cliente inscribe a sus mascotas.
 export const PetSchema = z
@@ -19,18 +26,16 @@ export const PetSchema = z
       .refine((d) => d <= new Date(), "La fecha de nacimiento no puede ser futura")
       .optional(),
     weightKg: z.number().positive("El peso debe ser mayor a 0").optional(),
-    healthConditions: foodList,
-    allergies: foodList,
-    forbiddenFoods: foodList,
+    healthConditions: textList,
+    allergies: foodIdList,
+    forbiddenFoods: foodIdList,
     // Alimentos que la mascota necesita incluir en su alimentación.
-    requiredFoods: foodList,
+    requiredFoods: foodIdList,
   })
   .refine(
     (pet) => {
-      const required = new Set(pet.requiredFoods.map(normalize));
-      return ![...pet.allergies, ...pet.forbiddenFoods].some((food) =>
-        required.has(normalize(food)),
-      );
+      const required = new Set(pet.requiredFoods);
+      return ![...pet.allergies, ...pet.forbiddenFoods].some((food) => required.has(food));
     },
     {
       message: "Un alimento no puede ser a la vez necesario y prohibido o alergénico",

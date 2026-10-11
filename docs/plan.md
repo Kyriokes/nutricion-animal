@@ -88,6 +88,10 @@ Quedan (menores):
 - No se controla la antigüedad de los avisos (reenviar uno solo provoca otra consulta idempotente).
 - No cargar las variables de Mercado Pago en el entorno Preview de Vercel (las vistas previas tienen otra dirección).
 
+## Pendiente de la tanda de alimentos
+- Después de publicar las partes 1 a 3: migración que borra las columnas de texto `allergies`, `forbidden_foods` y `required_foods` de `pets` (DT-066).
+- Revisar en `/admin/alimentos` los alimentos convertidos (por ejemplo "pescado" en minúscula, o "Carne" y "Carne vacuna").
+
 ## Para cuando haya clientes reales
 - Un segundo proyecto de Supabase solo para desarrollo, para no mezclar datos de prueba con reales.
 - Credenciales productivas de Mercado Pago y webhook en "Modo productivo".

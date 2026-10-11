@@ -19,9 +19,7 @@ function toFormValues(p: StoredPet): PetFormValues {
     birthDate: p.birthDate ? p.birthDate.toISOString().slice(0, 10) : "",
     weightKg: p.weightKg != null ? String(p.weightKg).replace(".", ",") : "",
     healthConditions: p.healthConditions.join(", "),
-    allergies: p.allergies.join(", "),
-    forbiddenFoods: p.forbiddenFoods.join(", "),
-    requiredFoods: p.requiredFoods.join(", "),
+    foods: { allergies: p.allergies, forbiddenFoods: p.forbiddenFoods, requiredFoods: p.requiredFoods },
   };
 }
 

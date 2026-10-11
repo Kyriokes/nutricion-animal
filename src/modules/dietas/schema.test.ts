@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DietContentSchema, DietSchema, FoodItemSchema } from "./schema";
+import { DietContentSchema, DietSchema, EditorDietContentSchema, FoodItemSchema } from "./schema";
 
 const food = {
   name: "Pollo",
@@ -60,5 +60,24 @@ describe("dietas/schema", () => {
       createdAt: new Date(),
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("dietas/schema: alimentos de la lista (RN-036)", () => {
+  const POLLO = "11111111-1111-4111-8111-111111111111";
+
+  it("cada alimento puede llevar el id de la lista", () => {
+    const r = DietContentSchema.safeParse({
+      description: "x",
+      foods: [{ ...food, foodId: POLLO }],
+      duration: { type: "indefinite" },
+    });
+    expect(r.success && r.data.foods[0].foodId).toBe(POLLO);
+  });
+
+  it("al guardar desde el editor, todos los alimentos tienen que ser de la lista", () => {
+    const content = { description: "x", duration: { type: "indefinite" } };
+    expect(EditorDietContentSchema.safeParse({ ...content, foods: [{ ...food, foodId: POLLO }] }).success).toBe(true);
+    expect(EditorDietContentSchema.safeParse({ ...content, foods: [food] }).success).toBe(false);
   });
 });

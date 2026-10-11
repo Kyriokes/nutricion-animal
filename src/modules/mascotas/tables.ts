@@ -1,13 +1,16 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   date,
   doublePrecision,
   index,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { foods } from "@/modules/alimentos/tables";
 import { users } from "@/modules/usuarios/tables";
 
 const list = (name: string) =>
@@ -36,4 +39,26 @@ export const pets = pgTable(
       .defaultNow(),
   },
   (t) => [index("pets_owner_idx").on(t.ownerId)],
+).enableRLS();
+
+// RN-036: alergias, alimentos no permitidos y de necesidad de cada mascota,
+// como alimentos de la lista única (RN-032). Reemplaza a las columnas de texto
+// allergies / forbidden_foods / required_foods de pets, que quedan sin uso
+// hasta borrarlas (DT-066).
+export const petFoods = pgTable(
+  "pet_foods",
+  {
+    petId: uuid("pet_id")
+      .notNull()
+      .references(() => pets.id, { onDelete: "cascade" }),
+    foodId: uuid("food_id")
+      .notNull()
+      .references(() => foods.id),
+    kind: text("kind").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.petId, t.foodId, t.kind] }),
+    check("pet_foods_kind_valid", sql`${t.kind} in ('allergy', 'forbidden', 'required')`),
+    index("pet_foods_food_idx").on(t.foodId),
+  ],
 ).enableRLS();

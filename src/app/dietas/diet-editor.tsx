@@ -2,7 +2,9 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { FoodSearch } from "@/components/food-picker";
 import { Button } from "@/components/ui/button";
+import type { Food } from "@/modules/alimentos/repositorio";
 import type { DietContent } from "@/modules/dietas/schema";
 import {
   createDietAction,
@@ -15,7 +17,8 @@ const inputClass =
   "h-8 rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 type FoodRow = {
-  name: string;
+  // RN-036: alimento de la lista única; null hasta elegirlo.
+  food: Food | null;
   quantity: string;
   unit: (typeof UNITS)[number];
   patternType: "weekly" | "daily_cycle";
@@ -23,7 +26,7 @@ type FoodRow = {
 };
 
 const emptyFood = (): FoodRow => ({
-  name: "",
+  food: null,
   quantity: "",
   unit: "g",
   patternType: "weekly",
@@ -33,7 +36,7 @@ const emptyFood = (): FoodRow => ({
 function toRows(content?: DietContent): FoodRow[] {
   if (!content) return [emptyFood()];
   return content.foods.map((f) => ({
-    name: f.name,
+    food: f.foodId ? { id: f.foodId, name: f.name } : null,
     quantity: String(f.quantity).replace(".", ","),
     unit: f.unit,
     patternType: f.pattern.type,
@@ -54,7 +57,9 @@ function buildContent(s: {
   return {
     description: s.description.trim(),
     foods: s.foods.map((f) => ({
-      name: f.name.trim(),
+      // El nombre lo pone el servidor desde la lista.
+      foodId: f.food?.id,
+      name: f.food?.name ?? "",
       quantity: Number(f.quantity.replace(",", ".")),
       unit: f.unit,
       pattern:
@@ -110,6 +115,10 @@ export function DietEditor(
   };
 
   function submit() {
+    if (foods.some((f) => !f.food)) {
+      setResult({ ok: false, message: "Elegí cada alimento de la lista." });
+      return;
+    }
     const content = buildContent({ description, foods, durationType, days, notes });
     start(async () => {
       const r =
@@ -156,7 +165,24 @@ export function DietEditor(
         <legend className="mb-1 text-sm font-medium">Alimentos</legend>
         {foods.map((f, i) => (
           <div key={i} className="grid grid-cols-2 gap-2 rounded-lg border p-2 sm:grid-cols-[2fr_1fr_1fr_1.5fr_1fr_auto]">
-            <input aria-label="Alimento" placeholder="Pollo" required className={inputClass} value={f.name} onChange={(e) => updateFood(i, { name: e.target.value })} />
+            {f.food ? (
+              <span className="flex items-center gap-2 text-sm">
+                {f.food.name}
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => updateFood(i, { food: null })}
+                >
+                  cambiar
+                </button>
+              </span>
+            ) : (
+              <FoodSearch
+                label="Alimento"
+                exclude={foods.flatMap((x) => (x.food ? [x.food.id] : []))}
+                onPick={(food) => updateFood(i, { food })}
+              />
+            )}
             <input aria-label="Cantidad" placeholder="100" inputMode="decimal" required className={inputClass} value={f.quantity} onChange={(e) => updateFood(i, { quantity: e.target.value })} />
             <select aria-label="Unidad" className={inputClass} value={f.unit} onChange={(e) => updateFood(i, { unit: e.target.value as FoodRow["unit"] })}>
               {UNITS.map((u) => (

@@ -1,11 +1,36 @@
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import type { Food } from "@/modules/alimentos/repositorio";
+import { foods } from "@/modules/alimentos/tables";
 import type { Pet } from "./schema";
-import { pets } from "./tables";
+import { petFoods, pets } from "./tables";
 
-export type StoredPet = Pet & { id: string };
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-function toPet(row: typeof pets.$inferSelect): StoredPet {
+type FoodListKey = "allergies" | "forbiddenFoods" | "requiredFoods";
+
+// Una mascota guardada, con los alimentos de sus listas con nombre (RN-036).
+export type StoredPet = Omit<Pet, FoodListKey> & { id: string } & Record<FoodListKey, Food[]>;
+
+const KINDS = { allergy: "allergies", forbidden: "forbiddenFoods", required: "requiredFoods" } as const;
+type Kind = keyof typeof KINDS;
+
+// Alimentos de las listas de varias mascotas, agrupados por mascota.
+async function loadFoodLists(petIds: readonly string[]) {
+  const byPet = new Map<string, Record<FoodListKey, Food[]>>();
+  for (const id of petIds) byPet.set(id, { allergies: [], forbiddenFoods: [], requiredFoods: [] });
+  if (petIds.length === 0) return byPet;
+  const rows = await db
+    .select({ petId: petFoods.petId, kind: petFoods.kind, id: foods.id, name: foods.name })
+    .from(petFoods)
+    .innerJoin(foods, eq(foods.id, petFoods.foodId))
+    .where(inArray(petFoods.petId, [...petIds]))
+    .orderBy(asc(foods.name));
+  for (const r of rows) byPet.get(r.petId)?.[KINDS[r.kind as Kind]].push({ id: r.id, name: r.name });
+  return byPet;
+}
+
+function toPet(row: typeof pets.$inferSelect, lists: Record<FoodListKey, Food[]>): StoredPet {
   return {
     id: row.id,
     ownerId: row.ownerId,
@@ -15,9 +40,7 @@ function toPet(row: typeof pets.$inferSelect): StoredPet {
     ...(row.birthDate ? { birthDate: row.birthDate } : {}),
     ...(row.weightKg != null ? { weightKg: row.weightKg } : {}),
     healthConditions: row.healthConditions,
-    allergies: row.allergies,
-    forbiddenFoods: row.forbiddenFoods,
-    requiredFoods: row.requiredFoods,
+    ...lists,
   };
 }
 
@@ -29,10 +52,16 @@ function columns(pet: Pet) {
     birthDate: pet.birthDate ?? null,
     weightKg: pet.weightKg ?? null,
     healthConditions: pet.healthConditions,
-    allergies: pet.allergies,
-    forbiddenFoods: pet.forbiddenFoods,
-    requiredFoods: pet.requiredFoods,
   };
+}
+
+// RN-036: reemplaza las listas de alimentos de la mascota.
+async function saveFoodLists(tx: Tx, petId: string, pet: Pet) {
+  await tx.delete(petFoods).where(eq(petFoods.petId, petId));
+  const rows = (Object.entries(KINDS) as [Kind, FoodListKey][]).flatMap(([kind, key]) =>
+    pet[key].map((foodId) => ({ petId, foodId, kind })),
+  );
+  if (rows.length) await tx.insert(petFoods).values(rows);
 }
 
 // VU-03: mascotas de un cliente.
@@ -42,26 +71,36 @@ export async function listPetsByOwner(ownerId: string): Promise<StoredPet[]> {
     .from(pets)
     .where(eq(pets.ownerId, ownerId))
     .orderBy(asc(pets.name));
-  return rows.map(toPet);
+  const lists = await loadFoodLists(rows.map((r) => r.id));
+  return rows.map((r) => toPet(r, lists.get(r.id)!));
 }
 
 // VU-04: una mascota. Quien llama verifica permisos con canManagePet.
 export async function getPet(id: string): Promise<StoredPet | null> {
   const [row] = await db.select().from(pets).where(eq(pets.id, id));
-  return row ? toPet(row) : null;
+  if (!row) return null;
+  return toPet(row, (await loadFoodLists([row.id])).get(row.id)!);
 }
 
 // RN-010: alta (ya validada con parsePetForm).
+// Si algún alimento ya no existe en la lista, la base lo rechaza y no se
+// guarda nada (todo va en una transacción).
 export async function createPet(pet: Pet): Promise<string> {
-  const [row] = await db
-    .insert(pets)
-    .values({ ownerId: pet.ownerId, ...columns(pet) })
-    .returning({ id: pets.id });
-  return row.id;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(pets)
+      .values({ ownerId: pet.ownerId, ...columns(pet) })
+      .returning({ id: pets.id });
+    await saveFoodLists(tx, row.id, pet);
+    return row.id;
+  });
 }
 
 export async function updatePet(id: string, pet: Pet) {
-  await db.update(pets).set(columns(pet)).where(eq(pets.id, id));
+  await db.transaction(async (tx) => {
+    await tx.update(pets).set(columns(pet)).where(eq(pets.id, id));
+    await saveFoodLists(tx, id, pet);
+  });
 }
 
 export async function deletePet(id: string) {

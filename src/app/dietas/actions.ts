@@ -14,7 +14,8 @@ import {
   searchPetsForAssignment,
   unassignDietInDb,
 } from "@/modules/dietas/repositorio";
-import { DietContentSchema } from "@/modules/dietas/schema";
+import { getFoodsByIds } from "@/modules/alimentos/repositorio";
+import { EditorDietContentSchema, type DietContent } from "@/modules/dietas/schema";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 
@@ -42,16 +43,27 @@ const NOT_SIGNED_IN: DietActionResult = { ok: false, message: "Tenés que ingres
 const SAVE_FAILED: DietActionResult = { ok: false, message: "No se pudo guardar. Probá de nuevo." };
 const INVALID_DIET: DietActionResult = { ok: false, message: "Revisá los datos de la dieta." };
 const Id = z.uuid();
+const UNKNOWN_FOOD: DietActionResult = { ok: false, message: "Algún alimento ya no está en la lista. Elegilo de nuevo." };
+
+// RN-036: el nombre de cada alimento sale de la lista, no de lo que manda el
+// navegador. null si alguno ya no existe.
+async function withListNames(content: DietContent): Promise<DietContent | null> {
+  const found = new Map((await getFoodsByIds(content.foods.map((f) => f.foodId!))).map((f) => [f.id, f.name]));
+  if (content.foods.some((f) => !found.has(f.foodId!))) return null;
+  return { ...content, foods: content.foods.map((f) => ({ ...f, name: found.get(f.foodId!)! })) };
+}
 
 // RN-021: crear una dieta con su versión 1.
 export async function createDietAction(input: unknown): Promise<DietActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;
-  const parsed = z.object({ name: z.string(), content: DietContentSchema }).safeParse(input);
+  const parsed = z.object({ name: z.string(), content: EditorDietContentSchema }).safeParse(input);
   if (!parsed.success) return INVALID_DIET;
   let r;
   try {
-    r = await createDietInDb(actor, parsed.data.name, parsed.data.content);
+    const content = await withListNames(parsed.data.content);
+    if (!content) return UNKNOWN_FOOD;
+    r = await createDietInDb(actor, parsed.data.name, content);
   } catch {
     return SAVE_FAILED;
   }
@@ -83,7 +95,7 @@ export async function saveDietContentAction(input: unknown): Promise<DietActionR
   const parsed = z
     .object({
       dietId: Id,
-      content: DietContentSchema,
+      content: EditorDietContentSchema,
       movePetIds: z.union([z.literal("all"), z.array(Id)]),
       expectedLatestVersionId: Id,
       expectedMode: z.enum(["in_place", "new_version"]),
@@ -92,7 +104,9 @@ export async function saveDietContentAction(input: unknown): Promise<DietActionR
   if (!parsed.success) return INVALID_DIET;
   let r;
   try {
-    r = await saveDietContentInDb({ actor, ...parsed.data });
+    const content = await withListNames(parsed.data.content);
+    if (!content) return UNKNOWN_FOOD;
+    r = await saveDietContentInDb({ actor, ...parsed.data, content });
   } catch {
     return SAVE_FAILED;
   }

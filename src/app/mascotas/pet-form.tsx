@@ -1,28 +1,35 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FoodListPicker } from "@/components/food-picker";
 import { Button } from "@/components/ui/button";
+import type { Food } from "@/modules/alimentos/repositorio";
 import { deletePetAction, savePetAction, type PetActionResult } from "./actions";
 
 const inputClass =
   "h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export type PetFormValues = Record<
-  | "name" | "species" | "breed" | "birthDate" | "weightKg"
-  | "healthConditions" | "allergies" | "forbiddenFoods" | "requiredFoods",
+  "name" | "species" | "breed" | "birthDate" | "weightKg" | "healthConditions",
   string
->;
+> & { foods: PetFoodLists };
+
+// RN-036: listas de alimentos elegidos de la lista única.
+type FoodListKey = "allergies" | "forbiddenFoods" | "requiredFoods";
+export type PetFoodLists = Record<FoodListKey, Food[]>;
+
+const NO_FOODS: PetFoodLists = { allergies: [], forbiddenFoods: [], requiredFoods: [] };
 
 const EMPTY: PetFormValues = {
-  name: "", species: "", breed: "", birthDate: "", weightKg: "",
-  healthConditions: "", allergies: "", forbiddenFoods: "", requiredFoods: "",
+  name: "", species: "", breed: "", birthDate: "", weightKg: "", healthConditions: "", foods: NO_FOODS,
 };
 
-const LISTS: { name: keyof PetFormValues; label: string; placeholder: string }[] = [
-  { name: "healthConditions", label: "Condiciones de salud", placeholder: "displasia de cadera" },
-  { name: "allergies", label: "Alergias", placeholder: "pollo" },
-  { name: "forbiddenFoods", label: "Alimentos no permitidos", placeholder: "chocolate, uvas" },
-  { name: "requiredFoods", label: "Alimentos de necesidad", placeholder: "pescado" },
+const TEXT_FIELDS = ["name", "species", "breed", "birthDate", "weightKg", "healthConditions"] as const;
+
+const FOOD_LISTS: { name: FoodListKey; label: string }[] = [
+  { name: "allergies", label: "Alergias (opcional)" },
+  { name: "forbiddenFoods", label: "Alimentos no permitidos (opcional)" },
+  { name: "requiredFoods", label: "Alimentos de necesidad (opcional)" },
 ];
 
 // RN-010: alta o edición de una mascota. Solo presenta: la validación está en
@@ -38,6 +45,7 @@ export function PetForm({
   species: string[];
   onDone?: () => void;
 }) {
+  const [foods, setFoods] = useState<PetFoodLists>(initial.foods);
   const [result, setResult] = useState<PetActionResult | null>(null);
   const [pending, start] = useTransition();
 
@@ -47,14 +55,20 @@ export function PetForm({
       onSubmit={(e) => {
         e.preventDefault();
         const formEl = e.currentTarget;
-        const data = Object.fromEntries(
-          Object.keys(EMPTY).map((k) => [k, String(new FormData(formEl).get(k) ?? "")]),
-        );
+        const form = new FormData(formEl);
+        const data = {
+          ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, String(form.get(k) ?? "")])),
+          // Ids de la lista de alimentos, separados por coma.
+          ...Object.fromEntries(FOOD_LISTS.map((l) => [l.name, foods[l.name].map((f) => f.id).join(",")])),
+        };
         start(async () => {
           const r = await savePetAction(petId, data);
           setResult(r);
           if (r.ok) {
-            if (!petId) formEl.reset();
+            if (!petId) {
+              formEl.reset();
+              setFoods(NO_FOODS);
+            }
             onDone?.();
           }
         });
@@ -94,11 +108,26 @@ export function PetForm({
         Peso en kg (opcional)
         <input name="weightKg" inputMode="decimal" placeholder="12,5" className={inputClass} defaultValue={initial.weightKg} />
       </label>
-      {LISTS.map((f) => (
-        <label key={f.name} className="flex flex-col gap-1 text-sm sm:col-span-2">
-          {f.label} (separados por coma, opcional)
-          <input name={f.name} placeholder={f.placeholder} className={inputClass} defaultValue={initial[f.name]} />
-        </label>
+      <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+        Condiciones de salud (separadas por coma, opcional)
+        <input
+          name="healthConditions"
+          placeholder="displasia de cadera"
+          className={inputClass}
+          defaultValue={initial.healthConditions}
+        />
+      </label>
+      {FOOD_LISTS.map((l) => (
+        <div key={l.name} className="sm:col-span-2">
+          <FoodListPicker
+            label={l.label}
+            value={foods[l.name]}
+            onChange={(list) => {
+              setFoods((f) => ({ ...f, [l.name]: list }));
+              setResult(null);
+            }}
+          />
+        </div>
       ))}
       <div className="flex items-center gap-2 sm:col-span-2">
         <Button type="submit" disabled={pending}>

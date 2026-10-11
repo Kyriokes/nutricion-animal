@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { canManagePet, parsePetForm, splitList } from "./formulario";
 
 const OWNER = "550e8400-e29b-41d4-a716-446655440000";
+// RN-036: el formulario manda los ids de la lista de alimentos, separados por coma.
+const POLLO = "11111111-1111-4111-8111-111111111111";
+const CHOCOLATE = "22222222-2222-4222-8222-222222222222";
+const UVAS = "33333333-3333-4333-8333-333333333333";
+const PESCADO = "44444444-4444-4444-8444-444444444444";
 const base = { name: "Rocco", species: "perro" };
 
 describe("mascotas/formulario (RN-010)", () => {
@@ -18,9 +23,9 @@ describe("mascotas/formulario (RN-010)", () => {
         birthDate: "2020-03-01",
         weightKg: "28,5",
         healthConditions: "displasia",
-        allergies: "pollo",
-        forbiddenFoods: "chocolate, uvas",
-        requiredFoods: "pescado",
+        allergies: POLLO,
+        forbiddenFoods: `${CHOCOLATE},${UVAS}`,
+        requiredFoods: PESCADO,
       },
       OWNER,
     );
@@ -34,9 +39,9 @@ describe("mascotas/formulario (RN-010)", () => {
         birthDate: new Date("2020-03-01T00:00:00Z"),
         weightKg: 28.5,
         healthConditions: ["displasia"],
-        allergies: ["pollo"],
-        forbiddenFoods: ["chocolate", "uvas"],
-        requiredFoods: ["pescado"],
+        allergies: [POLLO],
+        forbiddenFoods: [CHOCOLATE, UVAS],
+        requiredFoods: [PESCADO],
       },
     });
   });
@@ -68,10 +73,17 @@ describe("mascotas/formulario (RN-010)", () => {
       message: "La fecha de nacimiento no puede ser futura",
     });
     expect(
-      parsePetForm({ ...base, allergies: "pollo", requiredFoods: "Pollo" }, OWNER),
+      parsePetForm({ ...base, allergies: POLLO, requiredFoods: POLLO }, OWNER),
     ).toEqual({
       ok: false,
       message: "Un alimento no puede ser a la vez necesario y prohibido o alergénico",
+    });
+  });
+
+  it("rechaza alimentos que no son de la lista", () => {
+    expect(parsePetForm({ ...base, allergies: "pollo" }, OWNER)).toEqual({
+      ok: false,
+      message: "Elegí los alimentos de la lista.",
     });
   });
 

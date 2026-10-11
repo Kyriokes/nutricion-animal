@@ -16,7 +16,13 @@ export function splitList(text: string): string[] {
     });
 }
 
-const LISTS = ["healthConditions", "allergies", "forbiddenFoods", "requiredFoods"] as const;
+// RN-036: las listas de alimentos llegan como ids separados por coma.
+const FOOD_LISTS = ["allergies", "forbiddenFoods", "requiredFoods"] as const;
+const splitIds = (text: string) =>
+  text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 // RN-010: convierte el formulario (todo texto) en una mascota válida.
 // La fecha llega como AAAA-MM-DD y el peso acepta coma decimal.
@@ -35,13 +41,16 @@ export function parsePetForm(
     ...(text("breed") ? { breed: text("breed") } : {}),
     ...(date ? { birthDate: new Date(`${date}T00:00:00Z`) } : {}),
     ...(weight ? { weightKg: Number(weight) } : {}),
-    ...Object.fromEntries(LISTS.map((k) => [k, splitList(form[k] ?? "")])),
+    healthConditions: splitList(form.healthConditions ?? ""),
+    ...Object.fromEntries(FOOD_LISTS.map((k) => [k, splitIds(form[k] ?? "")])),
   };
   const parsed = PetSchema.safeParse(candidate);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const message =
-      issue?.path[0] === "weightKg"
+      FOOD_LISTS.includes(issue?.path[0] as (typeof FOOD_LISTS)[number]) && issue?.code !== "custom"
+        ? "Elegí los alimentos de la lista."
+        : issue?.path[0] === "weightKg"
         ? "El peso debe ser un número mayor a 0"
         : issue?.path[0] === "birthDate" && issue.code !== "custom"
           ? "La fecha de nacimiento no es válida"
