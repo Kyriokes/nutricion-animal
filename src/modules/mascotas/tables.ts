@@ -31,9 +31,6 @@ export const pets = pgTable(
     birthDate: date("birth_date", { mode: "date" }),
     weightKg: doublePrecision("weight_kg"),
     healthConditions: list("health_conditions"),
-    allergies: list("allergies"),
-    forbiddenFoods: list("forbidden_foods"),
-    requiredFoods: list("required_foods"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -42,9 +39,8 @@ export const pets = pgTable(
 ).enableRLS();
 
 // RN-036: alergias, alimentos no permitidos y de necesidad de cada mascota,
-// como alimentos de la lista única (RN-032). Reemplaza a las columnas de texto
-// allergies / forbidden_foods / required_foods de pets, que quedan sin uso
-// hasta borrarlas (DT-066).
+// como alimentos de la lista única (RN-032). Reemplazó a las columnas de texto
+// de pets, borradas en la migración 0026 (DT-066).
 export const petFoods = pgTable(
   "pet_foods",
   {
