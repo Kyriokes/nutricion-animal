@@ -150,8 +150,10 @@ export function interpretPayment(
   }
   if (payment.status === "approved") {
     if (order.status === "pending_payment") return { action: "paid", paymentRef: payment.id };
-    // El mismo pago repetido (aviso y vuelta, o avisos duplicados): nada.
-    if (PAID_STATUSES.includes(order.status) && order.paymentRef === payment.id) return { action: "ignore" };
+    // El mismo pago que ya registró el pedido (aviso y vuelta, avisos
+    // repetidos, o el aviso que llega después de cancelar un pedido pagado,
+    // cuyo reembolso ya se abrió al cancelar, RN-069): nada.
+    if (order.paymentRef === payment.id) return { action: "ignore" };
     // Cobrado sin que corresponda: pedido cancelado o rechazado, o un
     // segundo pago del mismo pedido (dos pestañas). Hay que devolverlo (RN-069).
     return { action: "refund_needed", paymentRef: payment.id };

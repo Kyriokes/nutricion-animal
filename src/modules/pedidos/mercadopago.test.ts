@@ -121,6 +121,13 @@ describe("pedidos/mercadopago: qué hacer con un pago", () => {
     expect(interpretPayment({ ...payment, transaction_amount: 1 }, order)).toEqual({ action: "mismatch" });
   });
 
+  it("el mismo pago de un pedido que se canceló después de pagado: nada (el reembolso ya se abrió al cancelar)", () => {
+    // Caso real: pagado, cancelado por el cliente, y después llega el aviso de ese mismo pago.
+    expect(interpretPayment(payment, { ...order, status: "cancelled", paymentRef: "1234567" })).toEqual({
+      action: "ignore",
+    });
+  });
+
   it("aprobado sobre un pedido cancelado o rechazado: reembolso pendiente", () => {
     for (const status of ["cancelled", "rejected"] as const) {
       expect(interpretPayment(payment, { ...order, status })).toEqual({ action: "refund_needed", paymentRef: "1234567" });
