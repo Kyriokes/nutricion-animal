@@ -27,11 +27,11 @@
 - **Pagos con Mercado Pago (RN-067)**, Checkout Pro en modo de prueba: cobro con vencimiento igual a la reserva, vuelta al pedido, aviso automático con firma verificada y reembolso pendiente si se paga un pedido cancelado (DT-062).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 294 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 300 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
-- Probar en el sitio publicado una compra con la cuenta de prueba de comprador de Mercado Pago (aprobada y rechazada) y que el aviso automático marque el pedido.
+- Probado en el sitio publicado (2026-10-11) con la cuenta de comprador de prueba: pago aprobado (el aviso automático marca el pedido), rechazo con reintento (modo binario, DT-063), cancelación de un pedido pagado con un solo reembolso pendiente, vencimiento de la reserva y selector de cantidad. Errores encontrados y corregidos en la prueba: reembolso duplicado, "0 unidades", pago ofrecido con el cobro vencido.
 - Esperan definición: preguntas 11 a 18 (lista de deseos, reseñas, búsquedas guardadas, aviso de cambio de dieta) y VN-04.
 
 ## Versión avanzada (decidido dejar para después)
