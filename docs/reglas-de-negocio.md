@@ -33,7 +33,7 @@ Convenciones:
 - **RN-010** Puede inscribir sus mascotas.
 - **RN-011** Puede comprar alimentos.
 - **RN-012** Puede buscar nutricionistas dentro del sistema para contactarse con ellos.
-- **RN-013** Puede buscar alimentos filtrando por mascota.
+- **RN-013** Puede buscar alimentos filtrando por mascota (detalle en RN-037).
 - **RN-014** Puede buscar alimentos filtrando por dieta.
 - **RN-015** Puede ver las dietas que un nutricionista le asignó a sus mascotas.
 
@@ -92,6 +92,16 @@ Nota: mientras el rol Auditor no exista, solo el Administrador acepta nutricioni
 - **RN-073** Por defecto el sitio sigue el modo claro u oscuro del sistema del usuario. Un botón permite elegir claro, oscuro o sistema, y la elección se recuerda en su navegador.
 - **RN-075** En cada categoría, el Administrador puede restaurar el color a su valor base y, si el color no contrasta lo suficiente (RN-072), pedir que el sistema lo aclare u oscurezca lo mínimo necesario para cumplir el mínimo, conservando su tono.
 - **RN-074** Existe una paleta base en el código. Se usa si la base de datos no responde o tarda, cuando una paleta guardada no tiene alguna categoría, y para "restaurar valores por defecto".
+
+### 2.7b Alimentos, composición de productos y filtro por mascota
+- **RN-032** Hay una lista única de alimentos (pollo, arroz, zanahoria…), con sinónimos ("pechuga de pollo" cuenta como pollo). La usan los productos, las dietas y las mascotas. Los nutricionistas, el Administrador y los clientes (al cargar las alergias y restricciones de sus mascotas) eligen de la lista y pueden agregar alimentos nuevos; el sistema avisa si el nuevo se parece a uno existente. El Administrador puede renombrar, cargar sinónimos y unir duplicados.
+- **RN-033** Cada producto declara su composición: los alimentos que contiene, ordenados de mayor a menor peso, como en la etiqueta. El porcentaje es optativo y se pide para el ingrediente principal.
+- **RN-034** Cada producto puede declarar además qué alimentos "puede contener" (trazas por contaminación cruzada), aparte de su composición, como exige el rotulado de alérgenos (CAA, art. 235 séptimo).
+- **RN-035** La información nutricional del producto es cada 100 g, como en el análisis garantizado de los alimentos para mascotas: proteína y grasa mínimas, fibra y humedad máximas, cenizas, y calorías (kcal/kg).
+- **RN-036** Las alergias, los alimentos no permitidos y los alimentos de necesidad de una mascota, y los alimentos de una dieta, se eligen de la lista de alimentos (RN-032).
+- **RN-037** Filtro por mascota (RN-013): en el catálogo, el Cliente elige una de sus mascotas (por su nombre, con la dieta que tiene asignada) y ve los productos de su especie, primero los que contienen alimentos de su dieta. Un producto que contiene, o puede contener, un alimento al que la mascota es alérgica o que tiene no permitido se sigue mostrando, pero tapado por una capa semitransparente con la advertencia, y no se puede agregar al carrito desde ahí.
+- **RN-038** La recomendación por mascota es una ayuda: el sitio aclara que hay que verificar la etiqueta y consultar al nutricionista.
+- **RN-039** Carrito con varias mascotas (solución provisoria): con sesión iniciada, el carrito indica para cada producto para qué mascotas encaja (es de su especie y contiene alimentos de su dieta o de sus alimentos de necesidad; si encaja con varias, las nombra a todas) y advierte si contiene o puede contener un alimento al que una mascota de esa especie es alérgica o que no tiene permitido (por ejemplo, "Contiene leche: Rene es alérgica"). Las advertencias del carrito avisan, no bloquean; si hay alguna, para confirmar la compra hay que marcar "Revisé las advertencias de alergias". **[A DEFINIR]** con quien define la nutrición: la versión completa, en la que cada producto del carrito se asigna a una mascota y eso queda guardado en el pedido (historial por mascota, cantidades según la dieta, carrito asistido).
 
 ### 2.8 Contacto
 - **RN-080** Hay un formulario de contacto con nombre, email, motivo y mensaje. Los mensajes se guardan y el Administrador los lee desde su panel. **[A DEFINIR]** Cómo se responde: en la primera versión hay un lugar reservado sin lógica.
@@ -300,3 +310,4 @@ Nota: con ingreso por Google no hace falta una vista de recuperar contraseña.
 - v0.4: ingreso con Google (RN-003), pedidos y estados (RN-060 a RN-063), vistas nuevas (buscar nutricionistas, perfil del nutricionista, asignar dieta, mi perfil profesional), término único "dieta", DT-004 sobre tarjetas, preguntas abiertas reordenadas.
 - v0.5: se resuelve parte de 4.5 (dieta en detalle de mascota, resultado del pedido, páginas de error, gestión de usuarios y roles, estadísticas dentro de Reportes). Nuevo flujo de registro con elección de rol y aceptación de nutricionistas por un administrador (RN-024).
 - v0.6: estados del pedido, reserva de stock, reclamos, pago y envío simulado (RN-062, RN-064 a RN-068); contacto (RN-080 a RN-083, RN-046); dashboard del Administrador (RN-090, RN-091); detalles de reclamos y reembolso al cancelar un pedido pagado (RN-066, RN-069).
+- v0.7: alimentos como lista única con sinónimos, composición de productos, "puede contener", información nutricional con calorías, filtro por mascota con advertencia de alérgenos y carrito con varias mascotas (RN-032 a RN-039).

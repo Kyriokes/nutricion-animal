@@ -44,6 +44,8 @@ export const PERMISSIONS = [
   "claim.open", // RN-066
   "claim.manage", // RN-066: revisar y resolver reclamos
   "contact.manage", // RN-080: leer los mensajes de contacto
+  "food.add", // RN-032: agregar alimentos a la lista
+  "food.manage", // RN-032: renombrar, sinónimos y unir duplicados
   "user.manage_roles", // VA-10
   "settings.manage", // VA-08, RN-070
   "catalog.manage", // VA-02
@@ -62,6 +64,7 @@ const CUSTOMER_PERMISSIONS: readonly Permission[] = [
   "diet.view_assigned",
   "order.view_own",
   "claim.open",
+  "food.add",
 ];
 
 // Cada rol lleva su lista explícita de permisos, sin herencia entre roles.

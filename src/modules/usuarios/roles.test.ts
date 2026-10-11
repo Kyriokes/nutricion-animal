@@ -73,6 +73,17 @@ describe("usuarios/roles", () => {
     }
   });
 
+  it("RN-032: clientes, nutricionistas y admin agregan alimentos; solo el admin los ordena", () => {
+    for (const role of ["customer", "nutritionist", "admin"] as const) {
+      expect(hasPermission([role], "food.add")).toBe(true);
+    }
+    expect(hasPermission(["supplier"], "food.add")).toBe(false);
+    expect(hasPermission(["admin"], "food.manage")).toBe(true);
+    for (const role of ["auditor", "customer", "nutritionist", "supplier"] as const) {
+      expect(hasPermission([role], "food.manage")).toBe(false);
+    }
+  });
+
   it("RN-046: una cuenta sin roles está suspendida", () => {
     expect(isSuspended([])).toBe(true);
     expect(isSuspended(["customer"])).toBe(false);
