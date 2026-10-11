@@ -67,7 +67,8 @@ describe("pedidos/mercadopago: cobro de un pedido (RN-067)", () => {
   it("vence con la reserva y solo admite medios de pago instantáneos", () => {
     const p = buildPreference(order, "https://nutricion-animal.vercel.app");
     expect(p.expires).toBe(true);
-    expect(p.expiration_date_to).toBe("2026-10-11T12:30:00.000Z");
+    // 5 minutos antes que la reserva: un pago aprobado al límite llega con el stock todavía reservado.
+    expect(p.expiration_date_to).toBe("2026-10-11T12:25:00.000Z");
     expect(p.payment_methods.excluded_payment_types).toEqual([{ id: "ticket" }, { id: "atm" }]);
   });
 
@@ -93,15 +94,20 @@ describe("pedidos/mercadopago: qué hacer con un pago", () => {
     transaction_amount: 28001.3,
     currency_id: "ARS",
   });
-  const order = { id: "9f1c2a3b-4d5e-4f60-8a7b-1c2d3e4f5a6b", status: "pending_payment" as const, total: 28001.3 };
+  const order = {
+    id: "9f1c2a3b-4d5e-4f60-8a7b-1c2d3e4f5a6b",
+    status: "pending_payment" as const,
+    total: 28001.3,
+    paymentRef: null,
+  };
 
   it("aprobado y con el monto del pedido: pagado", () => {
     expect(interpretPayment(payment, order)).toEqual({ action: "paid", paymentRef: "1234567" });
   });
 
-  it("rechazado: rechazado (el stock vuelve)", () => {
-    expect(interpretPayment({ ...payment, status: "rejected" }, order)).toEqual({ action: "rejected" });
-    expect(interpretPayment({ ...payment, status: "cancelled" }, order)).toEqual({ action: "rejected" });
+  it("rechazado: el pedido sigue esperando el pago (el cliente puede reintentar hasta que venza la reserva)", () => {
+    expect(interpretPayment({ ...payment, status: "rejected" }, order)).toEqual({ action: "payment_failed" });
+    expect(interpretPayment({ ...payment, status: "cancelled" }, order)).toEqual({ action: "payment_failed" });
   });
 
   it("todavía en proceso: no cambia nada", () => {
@@ -115,15 +121,34 @@ describe("pedidos/mercadopago: qué hacer con un pago", () => {
     expect(interpretPayment({ ...payment, transaction_amount: 1 }, order)).toEqual({ action: "mismatch" });
   });
 
-  it("aprobado pero el pedido ya se canceló (venció la reserva): reembolso pendiente", () => {
-    expect(interpretPayment(payment, { ...order, status: "cancelled" })).toEqual({
+  it("aprobado sobre un pedido cancelado o rechazado: reembolso pendiente", () => {
+    for (const status of ["cancelled", "rejected"] as const) {
+      expect(interpretPayment(payment, { ...order, status })).toEqual({ action: "refund_needed", paymentRef: "1234567" });
+    }
+  });
+
+  it("aprobado sobre un pedido ya pagado: el mismo pago no cambia nada; otro pago es un cobro doble", () => {
+    const paid = { ...order, status: "paid" as const, paymentRef: "1234567" };
+    expect(interpretPayment(payment, paid)).toEqual({ action: "ignore" });
+    expect(interpretPayment(payment, { ...paid, paymentRef: "999" })).toEqual({
       action: "refund_needed",
       paymentRef: "1234567",
     });
   });
 
-  it("aprobado sobre un pedido ya pagado (aviso repetido): no cambia nada", () => {
-    expect(interpretPayment(payment, { ...order, status: "paid" })).toEqual({ action: "ignore" });
+  it("devuelto, contracargo o en disputa sobre el pago del pedido: revisar antes de enviar", () => {
+    const paid = { ...order, status: "preparing" as const, paymentRef: "1234567" };
+    for (const status of ["refunded", "charged_back", "in_mediation"]) {
+      expect(interpretPayment({ ...payment, status }, paid)).toEqual({
+        action: "payment_reversed",
+        paymentRef: "1234567",
+        status,
+      });
+    }
+    // De otro pago (por ejemplo, el cobro doble ya devuelto): no afecta al pedido.
+    expect(interpretPayment({ ...payment, status: "refunded" }, { ...paid, paymentRef: "999" })).toEqual({
+      action: "ignore",
+    });
   });
 });
 

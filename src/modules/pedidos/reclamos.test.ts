@@ -8,6 +8,7 @@ import {
   claimStatusesFor,
   ClaimInputSchema,
   lateRefundDescription,
+  reversedPaymentDescription,
   MAX_CLAIMS_PER_ORDER,
   needsRefundClaim,
   REFUND_CLAIM_DESCRIPTION,
@@ -122,5 +123,15 @@ describe("pedidos/reclamos: pago aprobado de un pedido ya cancelado (RN-069)", (
     expect(lateRefundDescription("1234567")).toBe(
       "Reembolso pendiente: se recibió el pago 1234567 de un pedido ya cancelado. Generado automáticamente.",
     );
+  });
+});
+
+describe("pedidos/reclamos: pago devuelto o en disputa (RN-067)", () => {
+  it("pide revisar antes de enviar, con la referencia y el estado del pago", () => {
+    expect(reversedPaymentDescription("1234567", "charged_back")).toBe(
+      "Revisar antes de enviar: Mercado Pago informa que el pago 1234567 tuvo un contracargo. Generado automáticamente.",
+    );
+    expect(reversedPaymentDescription("1", "refunded")).toContain("fue devuelto");
+    expect(reversedPaymentDescription("1", "in_mediation")).toContain("está en disputa");
   });
 });

@@ -8,7 +8,7 @@ import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modu
 import { canOpenClaim, MAX_CLAIMS_PER_ORDER } from "@/modules/pedidos/reclamos";
 import { paymentMode } from "@/modules/pedidos/mercadopago";
 import { getPayment } from "@/modules/pedidos/mercadopago-api";
-import { getCustomerOrder, listOrderClaims, processPayment } from "@/modules/pedidos/repositorio";
+import { getCustomerOrder, isOwnOrder, listOrderClaims, processPayment } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCurrentActor } from "@/modules/usuarios/sesion";
 import { ClaimList } from "@/components/claim-list";
@@ -40,24 +40,28 @@ async function Content({
   const actor = await getCurrentActor();
   const id = z.uuid().safeParse((await params).id);
   const canView = actor && hasPermission(actor.roles, "order.view_own") && id.success;
-  let order = canView ? await getCustomerOrder(actor.id, id.data) : null;
-  if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
+  if (!canView) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
 
   // RN-067: el cliente vuelve de Mercado Pago con el id del pago en la URL.
   // No se le cree a la URL: se consulta el pago y se aplica (si el aviso
-  // automático ya lo hizo, no cambia nada). Si falla, lo resuelve el aviso.
+  // automático ya lo hizo, no cambia nada). Va antes de leer el pedido, que
+  // vence reservas: un pago aprobado al límite cuenta aunque el cliente vuelva
+  // un poco tarde. Si falla, lo resuelve el aviso automático.
   const paymentId = z.string().regex(/^\d+$/).safeParse((await searchParams).payment_id);
-  if (canView && paymentId.success && order.status === "pending_payment" && paymentMode() === "mercadopago") {
+  let paymentFailed = false;
+  if (paymentId.success && paymentMode() === "mercadopago" && (await isOwnOrder(actor.id, id.data))) {
     try {
       const payment = await getPayment(paymentId.data);
-      if (payment.external_reference === order.id) {
-        await processPayment(payment);
-        order = (await getCustomerOrder(actor.id, id.data)) ?? order;
+      if (payment.external_reference === id.data) {
+        paymentFailed = (await processPayment(payment)) === "payment_failed";
       }
-    } catch {
-      // Se reintenta con el aviso de Mercado Pago o al volver a entrar.
+    } catch (error) {
+      console.error("No se pudo consultar el pago al volver de Mercado Pago", error);
     }
   }
+
+  const order = await getCustomerOrder(actor.id, id.data);
+  if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   const result = resultMessage(order.status);
   const claims = await listOrderClaims(order.id);
   // El tope cuenta solo los que abrió el cliente (no el reembolso automático).
@@ -75,6 +79,11 @@ async function Content({
       <p role="status" className={`rounded-lg px-3 py-2 ${TONE_CLASSES[result.tone]}`}>
         {result.text}
       </p>
+      {paymentFailed && order.status === "pending_payment" && (
+        <p role="alert" className="text-sm text-destructive">
+          El pago no se aprobó. Podés intentar de nuevo con otro medio mientras dure la reserva.
+        </p>
+      )}
       {order.status === "pending_payment" && (
         <Link href={`/pedidos/${order.id}/pagar`} className={buttonVariants({ className: "w-fit" })}>
           Ir a pagar

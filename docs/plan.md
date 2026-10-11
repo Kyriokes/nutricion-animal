@@ -27,7 +27,7 @@
 - **Pagos con Mercado Pago (RN-067)**, Checkout Pro en modo de prueba: cobro con vencimiento igual a la reserva, vuelta al pedido, aviso automático con firma verificada y reembolso pendiente si se paga un pedido cancelado (DT-062).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 292 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 294 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
@@ -80,6 +80,13 @@ Arreglados: freno al abuso del contacto (tope por cuenta con el email de la cuen
 Quedan (aceptados):
 - Abrir un mensaje lo marca leído durante la carga de la página (los enlaces no adelantan la página con prefetch). No hay "marcar como no leído".
 - El filtro de ventas es un formulario GET clásico: recarga la página entera (funciona sin JavaScript).
+
+## Pendientes de la revisión de pagos (2026-10-11)
+Arreglados: un rechazo ya no deja cobrado un reintento aprobado (crítico); cobro doble y pagos devueltos o en disputa abren reclamos; el cobro vence antes que la reserva; al volver se aplica el pago antes de vencer reservas; aviso de pago inexistente responde 200; índice único de referencia de pago; `.env.example` alineado con DT-061.
+Quedan (menores):
+- `import "server-only"` en `mercadopago-api.ts` y `supabase/admin.ts` (requiere instalar el paquete `server-only`).
+- No se controla la antigüedad de los avisos (reenviar uno solo provoca otra consulta idempotente).
+- No cargar las variables de Mercado Pago en el entorno Preview de Vercel (las vistas previas tienen otra dirección).
 
 ## Para cuando haya clientes reales
 - Un segundo proyecto de Supabase solo para desarrollo, para no mezclar datos de prueba con reales.

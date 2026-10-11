@@ -22,6 +22,7 @@ import {
   type ClaimStatus,
   lateRefundDescription,
   needsRefundClaim,
+  reversedPaymentDescription,
   REFUND_CLAIM_DESCRIPTION,
   type OpenClaimError,
   type Resolution,
@@ -519,6 +520,16 @@ export async function changeClaim(
   });
 }
 
+// Abre un reclamo del sistema con este texto, salvo que ya exista (el texto
+// lleva la referencia del pago: un aviso repetido no lo duplica).
+async function openSystemClaimOnce(tx: Tx, orderId: string, description: string) {
+  const [existing] = await tx
+    .select({ id: claims.id })
+    .from(claims)
+    .where(and(eq(claims.orderId, orderId), eq(claims.description, description)));
+  if (!existing) await tx.insert(claims).values({ orderId, description, origin: "system" });
+}
+
 // RN-067: aplica al pedido el resultado de un pago consultado a Mercado Pago
 // (desde el aviso automático o desde la vuelta del cliente). Bloquea el
 // pedido para que el aviso y la vuelta, si llegan a la vez, no se pisen; si
@@ -528,33 +539,40 @@ export async function processPayment(payment: Payment): Promise<PaymentAction["a
   if (!/^[0-9a-f-]{36}$/i.test(orderId)) return "not_found";
   return db.transaction(async (tx) => {
     const [order] = await tx
-      .select({ status: orders.status, total: orders.total })
+      .select({ status: orders.status, total: orders.total, paymentRef: orders.paymentRef })
       .from(orders)
       .where(eq(orders.id, orderId))
       .for("update");
     if (!order) return "not_found" as const;
-    const result = interpretPayment(payment, { id: orderId, status: order.status as OrderStatus, total: order.total });
+    const result = interpretPayment(payment, {
+      id: orderId,
+      status: order.status as OrderStatus,
+      total: order.total,
+      paymentRef: order.paymentRef,
+    });
     switch (result.action) {
       case "paid":
         await applyTransition(tx, orderId, "paid", "gateway", null, { paymentRef: result.paymentRef });
         break;
-      case "rejected":
-        await lockProductsOf(tx, [orderId]);
-        await applyTransition(tx, orderId, "rejected", "gateway", null);
+      case "refund_needed":
+        await openSystemClaimOnce(tx, orderId, lateRefundDescription(result.paymentRef));
         break;
-      case "refund_needed": {
-        const description = lateRefundDescription(result.paymentRef);
-        const [existing] = await tx
-          .select({ id: claims.id })
-          .from(claims)
-          .where(and(eq(claims.orderId, orderId), eq(claims.description, description)));
-        if (!existing) await tx.insert(claims).values({ orderId, description, origin: "system" });
+      case "payment_reversed":
+        await openSystemClaimOnce(tx, orderId, reversedPaymentDescription(result.paymentRef, result.status));
         break;
-      }
       case "mismatch":
         console.warn(`Pago ${payment.id} no coincide con el pedido ${orderId}: se ignora.`);
         break;
     }
     return result.action;
   });
+}
+
+// RN-060: si el pedido es de este cliente (sin otros efectos).
+export async function isOwnOrder(customerId: string, orderId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)));
+  return !!row;
 }

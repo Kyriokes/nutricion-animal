@@ -21,8 +21,19 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
     signal: AbortSignal.timeout(TIMEOUT_MS),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Mercado Pago respondió ${res.status} en ${path}`);
+  if (!res.ok) throw new MercadoPagoError(res.status, path);
   return res.json();
+}
+
+// Error de la API con su código HTTP: 404 es "no existe" (no tiene sentido
+// reintentar); 5xx o un corte, una falla pasajera.
+export class MercadoPagoError extends Error {
+  constructor(
+    readonly status: number,
+    path: string,
+  ) {
+    super(`Mercado Pago respondió ${status} en ${path}`);
+  }
 }
 
 const PreferenceResponse = z.object({ id: z.string(), init_point: z.url() });

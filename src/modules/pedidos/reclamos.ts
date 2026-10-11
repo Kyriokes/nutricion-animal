@@ -103,3 +103,17 @@ export function needsRefundClaim(from: OrderStatus, to: OrderStatus): boolean {
 export function lateRefundDescription(paymentRef: string): string {
   return `Reembolso pendiente: se recibió el pago ${paymentRef} de un pedido ya cancelado. Generado automáticamente.`;
 }
+
+const REVERSAL_TEXT: Record<string, string> = {
+  refunded: "fue devuelto",
+  charged_back: "tuvo un contracargo",
+  in_mediation: "está en disputa",
+};
+
+// RN-067: Mercado Pago informa que el pago de un pedido ya pagado volvió o
+// está en disputa. Se abre un reclamo para que el admin lo revise antes de
+// enviar; la referencia y el estado evitan duplicarlo si el aviso se repite.
+export function reversedPaymentDescription(paymentRef: string, status: string): string {
+  const what = REVERSAL_TEXT[status] ?? `quedó en estado "${status}"`;
+  return `Revisar antes de enviar: Mercado Pago informa que el pago ${paymentRef} ${what}. Generado automáticamente.`;
+}

@@ -67,12 +67,16 @@ type PreferenceOrder = {
   reservedUntil: Date;
 };
 
-// Arma el cobro (preferencia) de un pedido. Vence con la reserva de stock
-// (RN-064) y excluye los medios de pago no instantáneos (efectivo en
-// Rapipago/Pago Fácil, cajeros): un pago que se acredita días después
-// llegaría con la reserva vencida y el stock liberado. En el sitio publicado
-// (https), vuelve solo al pedido y Mercado Pago avisa al webhook; en local no
-// hay avisos (Mercado Pago no llega a localhost).
+// Arma el cobro (preferencia) de un pedido.
+// - Vence 5 minutos antes que la reserva de stock (RN-064): un pago aprobado
+//   al límite llega con el stock todavía reservado.
+// - Excluye los medios no instantáneos (efectivo en Rapipago/Pago Fácil,
+//   cajeros): un pago que se acredita días después llegaría con la reserva
+//   vencida y el stock liberado.
+// - En el sitio publicado (https), vuelve solo al pedido y Mercado Pago avisa
+//   al webhook; en local no hay avisos (Mercado Pago no llega a localhost).
+const PREFERENCE_MARGIN_MS = 5 * 60_000;
+
 export function buildPreference(order: PreferenceOrder, siteUrl: string) {
   const back = `${siteUrl}/pedidos/${order.id}`;
   const isPublic = siteUrl.startsWith("https://");
@@ -96,7 +100,7 @@ export function buildPreference(order: PreferenceOrder, siteUrl: string) {
     external_reference: order.id,
     back_urls: { success: back, failure: back, pending: back },
     expires: true,
-    expiration_date_to: order.reservedUntil.toISOString(),
+    expiration_date_to: new Date(order.reservedUntil.getTime() - PREFERENCE_MARGIN_MS).toISOString(),
     payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
     ...(isPublic
       ? { auto_return: "approved" as const, notification_url: `${siteUrl}/api/mercadopago/webhook` }
@@ -120,16 +124,21 @@ export type Payment = z.infer<typeof PaymentSchema>;
 
 export type PaymentAction =
   | { action: "paid"; paymentRef: string }
-  | { action: "rejected" }
+  | { action: "payment_failed" }
   | { action: "refund_needed"; paymentRef: string }
+  | { action: "payment_reversed"; paymentRef: string; status: string }
   | { action: "mismatch" }
   | { action: "ignore" };
 
 const cents = (n: number) => Math.round(n * 100);
 
+// Estados de Mercado Pago en los que el dinero vuelve o está en disputa.
+const REVERSED = ["refunded", "charged_back", "in_mediation"];
+const PAID_STATUSES: readonly OrderStatus[] = ["paid", "preparing", "shipping", "received"];
+
 export function interpretPayment(
   payment: Payment,
-  order: { id: string; status: OrderStatus; total: number },
+  order: { id: string; status: OrderStatus; total: number; paymentRef: string | null },
 ): PaymentAction {
   // Un pago que no corresponde exactamente a este pedido no lo cambia.
   if (
@@ -141,13 +150,20 @@ export function interpretPayment(
   }
   if (payment.status === "approved") {
     if (order.status === "pending_payment") return { action: "paid", paymentRef: payment.id };
-    // Se pagó un pedido que ya se había cancelado (por ejemplo, venció la
-    // reserva): hay que devolver el dinero (RN-069).
-    if (order.status === "cancelled") return { action: "refund_needed", paymentRef: payment.id };
-    return { action: "ignore" };
+    // El mismo pago repetido (aviso y vuelta, o avisos duplicados): nada.
+    if (PAID_STATUSES.includes(order.status) && order.paymentRef === payment.id) return { action: "ignore" };
+    // Cobrado sin que corresponda: pedido cancelado o rechazado, o un
+    // segundo pago del mismo pedido (dos pestañas). Hay que devolverlo (RN-069).
+    return { action: "refund_needed", paymentRef: payment.id };
   }
-  if ((payment.status === "rejected" || payment.status === "cancelled") && order.status === "pending_payment") {
-    return { action: "rejected" };
+  // Rechazado: el pedido sigue esperando el pago. En Checkout Pro el cliente
+  // puede reintentar con otro medio; si no paga, lo cancela el vencimiento
+  // de la reserva (RN-064).
+  if (payment.status === "rejected" || payment.status === "cancelled") return { action: "payment_failed" };
+  // Devuelto, contracargo o en disputa sobre el pago del pedido: revisar antes
+  // de enviar.
+  if (REVERSED.includes(payment.status) && order.paymentRef === payment.id && PAID_STATUSES.includes(order.status)) {
+    return { action: "payment_reversed", paymentRef: payment.id, status: payment.status };
   }
   return { action: "ignore" };
 }

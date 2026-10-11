@@ -66,6 +66,9 @@ export const orders = pgTable(
     index("orders_customer_idx").on(t.customerId, t.createdAt),
     // Para encontrar rápido las reservas vencidas (RN-064).
     index("orders_status_reserved_idx").on(t.status, t.reservedUntil),
+    // Un pago de Mercado Pago corresponde a un solo pedido (defensa extra:
+    // external_reference ya los ata) y se busca rápido.
+    uniqueIndex("orders_payment_ref_unique").on(t.paymentRef).where(sql`${t.paymentRef} is not null`),
   ],
 ).enableRLS();
 
