@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { siteUrl } from "@/lib/sitio";
-import { buildPreference, paymentMode } from "@/modules/pedidos/mercadopago";
+import { buildPreference, canStartPayment, paymentMode } from "@/modules/pedidos/mercadopago";
 import { createPreference } from "@/modules/pedidos/mercadopago-api";
 import {
   cancelOrderByCustomer,
@@ -64,8 +64,10 @@ export async function startMercadoPagoPaymentAction(
   try {
     const detail = await getCustomerOrder(id, order.data);
     if (!detail) return { ok: false, message: ERRORS.not_found };
-    if (detail.status !== "pending_payment" || detail.reservedUntil <= new Date()) {
-      return { ok: false, message: ERRORS.expired };
+    if (detail.status !== "pending_payment") return { ok: false, message: ERRORS.invalid_transition };
+    // RN-064: pasado el plazo para pagar, el cobro nacería vencido.
+    if (!canStartPayment(detail.reservedUntil, new Date())) {
+      return { ok: false, message: "Se terminó el tiempo para pagar este pedido. Podés volver a comprar desde el catálogo." };
     }
     const url = await createPreference(buildPreference(detail, await siteUrl()));
     return { ok: true, url };

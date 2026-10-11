@@ -2,8 +2,10 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   buildPreference,
+  canStartPayment,
   interpretPayment,
   parseSignatureHeader,
+  paymentDeadline,
   paymentMode,
   PaymentSchema,
   verifyWebhookSignature,
@@ -172,5 +174,19 @@ describe("pedidos/mercadopago: modo de pago (RN-067, DT-055)", () => {
     expect(paymentMode({ NODE_ENV: "development" })).toBe("simulated");
     expect(paymentMode({ NODE_ENV: "production", PAYMENTS_SIMULATED: "true" })).toBe("simulated");
     expect(paymentMode({ NODE_ENV: "production" })).toBe("unavailable");
+  });
+});
+
+describe("pedidos/mercadopago: hasta cuándo se puede pagar (RN-064)", () => {
+  const reservedUntil = new Date("2026-10-11T07:02:00Z");
+
+  it("el cobro vence 5 minutos antes que la reserva", () => {
+    expect(paymentDeadline(reservedUntil).toISOString()).toBe("2026-10-11T06:57:00.000Z");
+  });
+
+  it("solo se ofrece pagar antes de ese momento", () => {
+    expect(canStartPayment(reservedUntil, new Date("2026-10-11T06:56:59Z"))).toBe(true);
+    expect(canStartPayment(reservedUntil, new Date("2026-10-11T06:57:00Z"))).toBe(false);
+    expect(canStartPayment(reservedUntil, new Date("2026-10-11T07:01:00Z"))).toBe(false);
   });
 });

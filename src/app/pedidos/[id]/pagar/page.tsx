@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
 import { formatPrice } from "@/modules/catalogo/presentacion";
-import { paymentMode } from "@/modules/pedidos/mercadopago";
+import { canStartPayment, paymentDeadline, paymentMode } from "@/modules/pedidos/mercadopago";
 import { orderNumber } from "@/modules/pedidos/presentacion";
 import { hasPermission } from "@/modules/usuarios/roles";
 import { getCustomerOrder } from "@/modules/pedidos/repositorio";
@@ -35,12 +35,19 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm">
-        Pedido {orderNumber(order.id)} · Total <strong>{formatPrice(order.total)}</strong>. Reservamos los
-        productos hasta las {time.format(order.reservedUntil)}.
+        Pedido {orderNumber(order.id)} · Total <strong>{formatPrice(order.total)}</strong>.{" "}
+        {mode === "mercadopago"
+          ? `Podés pagar hasta las ${time.format(paymentDeadline(order.reservedUntil))}.`
+          : `Reservamos los productos hasta las ${time.format(order.reservedUntil)}.`}
       </p>
       <OrderSummary order={order} />
       <section className="flex flex-col gap-3 rounded-lg border border-dashed p-4">
-        {mode === "mercadopago" ? (
+        {mode === "mercadopago" && !canStartPayment(order.reservedUntil, new Date()) ? (
+          <p role="status" className="text-sm">
+            Se terminó el tiempo para pagar este pedido. Se va a cancelar solo y los productos vuelven al stock; si
+            querés, volvé a comprar desde el catálogo.
+          </p>
+        ) : mode === "mercadopago" ? (
           <>
             <p className="text-sm">Vas a pagar en Mercado Pago y después volvés acá.</p>
             <MercadoPagoButton orderId={order.id} />

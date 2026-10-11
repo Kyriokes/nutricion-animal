@@ -81,6 +81,18 @@ type PreferenceOrder = {
 //   al webhook; en local no hay avisos (Mercado Pago no llega a localhost).
 const PREFERENCE_MARGIN_MS = 5 * 60_000;
 
+// RN-064: hasta cuándo se puede pagar un pedido. El cobro vence 5 minutos
+// antes que la reserva, así un pago aprobado al límite llega con el stock
+// todavía reservado. Pasado ese momento no se ofrece pagar: Mercado Pago
+// mostraría el cobro como vencido.
+export function paymentDeadline(reservedUntil: Date): Date {
+  return new Date(reservedUntil.getTime() - PREFERENCE_MARGIN_MS);
+}
+
+export function canStartPayment(reservedUntil: Date, now: Date): boolean {
+  return now < paymentDeadline(reservedUntil);
+}
+
 export function buildPreference(order: PreferenceOrder, siteUrl: string) {
   const back = `${siteUrl}/pedidos/${order.id}`;
   const isPublic = siteUrl.startsWith("https://");
@@ -105,7 +117,7 @@ export function buildPreference(order: PreferenceOrder, siteUrl: string) {
     binary_mode: true,
     back_urls: { success: back, failure: back, pending: back },
     expires: true,
-    expiration_date_to: new Date(order.reservedUntil.getTime() - PREFERENCE_MARGIN_MS).toISOString(),
+    expiration_date_to: paymentDeadline(order.reservedUntil).toISOString(),
     payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
     ...(isPublic
       ? { auto_return: "approved" as const, notification_url: `${siteUrl}/api/mercadopago/webhook` }

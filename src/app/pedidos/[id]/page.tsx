@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "@/modules/pedidos/estados";
 import { canCustomerCancel, orderNumber, resultMessage, type Tone } from "@/modules/pedidos/presentacion";
 import { canOpenClaim, MAX_CLAIMS_PER_ORDER } from "@/modules/pedidos/reclamos";
-import { paymentMode } from "@/modules/pedidos/mercadopago";
+import { canStartPayment, paymentMode } from "@/modules/pedidos/mercadopago";
 import { getPayment } from "@/modules/pedidos/mercadopago-api";
 import { getCustomerOrder, isOwnOrder, listOrderClaims, processPayment } from "@/modules/pedidos/repositorio";
 import { hasPermission } from "@/modules/usuarios/roles";
@@ -63,6 +63,10 @@ async function Content({
   const order = await getCustomerOrder(actor.id, id.data);
   if (!order) return <p className="text-muted-foreground">No encontramos ese pedido.</p>;
   const result = resultMessage(order.status);
+  // RN-064: con Mercado Pago, se ofrece pagar solo hasta que vence el cobro.
+  const canPay =
+    order.status === "pending_payment" &&
+    (paymentMode() !== "mercadopago" || canStartPayment(order.reservedUntil, new Date()));
   const claims = await listOrderClaims(order.id);
   // El tope cuenta solo los que abrió el cliente (no el reembolso automático).
   const ownClaims = claims.filter((c) => c.origin === "customer").length;
@@ -84,7 +88,7 @@ async function Content({
           El pago no se aprobó. Podés intentar de nuevo con otro medio mientras dure la reserva.
         </p>
       )}
-      {order.status === "pending_payment" && (
+      {canPay && (
         <Link href={`/pedidos/${order.id}/pagar`} className={buttonVariants({ className: "w-fit" })}>
           Ir a pagar
         </Link>
