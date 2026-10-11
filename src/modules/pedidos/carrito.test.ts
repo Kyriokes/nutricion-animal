@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_QUANTITY, addToCart, parseStoredCart, priceCart, setQuantity } from "./carrito";
+import { MAX_QUANTITY, addToCart, maxAddable, parseStoredCart, priceCart, setQuantity } from "./carrito";
 
 const A = "550e8400-e29b-41d4-a716-446655440000";
 const B = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
@@ -66,5 +66,19 @@ describe("pedidos/carrito (VP-07)", () => {
       quantity: 0,
       issue: "out_of_stock",
     });
+  });
+});
+
+describe("pedidos/carrito: cuántas unidades más se pueden agregar (VP-05)", () => {
+  it("hasta el stock, descontando lo que ya está en el carrito", () => {
+    expect(maxAddable(10, 0)).toBe(10);
+    expect(maxAddable(10, 3)).toBe(7);
+    expect(maxAddable(3, 3)).toBe(0);
+    expect(maxAddable(3, 5)).toBe(0);
+  });
+
+  it("con el tope por producto del carrito", () => {
+    expect(maxAddable(500, 0)).toBe(MAX_QUANTITY);
+    expect(maxAddable(500, 90)).toBe(MAX_QUANTITY - 90);
   });
 });

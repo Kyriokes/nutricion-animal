@@ -39,7 +39,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
         <p className={product.stock === 0 ? "text-destructive" : "text-muted-foreground"}>
           {stockLabel(product.stock)}
         </p>
-        <AddToCartButton productId={product.id} inStock={product.stock > 0} />
+        <AddToCartButton productId={product.id} stock={product.stock} />
         <p>{product.description}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">Apto para</dt>

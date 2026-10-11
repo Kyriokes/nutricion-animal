@@ -68,3 +68,9 @@ export function priceCart(
   const totalCents = lines.reduce((sum, l) => sum + Math.round(l.subtotal * 100), 0);
   return { lines, total: totalCents / 100 };
 }
+
+// VP-05: cuántas unidades más de un producto se pueden agregar, según su
+// stock, lo que ya está en el carrito y el tope por producto.
+export function maxAddable(stock: number, inCart: number): number {
+  return Math.max(0, Math.min(stock, MAX_QUANTITY) - inCart);
+}
