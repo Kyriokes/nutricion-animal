@@ -112,7 +112,7 @@ export function FoodSearch({
                 <button
                   type="button"
                   disabled={pending}
-                  className="w-full px-2 py-1 text-left text-primary hover:bg-muted"
+                  className="w-full px-2 py-1 text-left font-medium hover:bg-muted"
                   onClick={() => add(false)}
                 >
                   {pending ? "Agregando…" : `Agregar «${q}» a la lista`}

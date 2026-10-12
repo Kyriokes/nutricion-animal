@@ -26,8 +26,10 @@ export function toCssVariables(p: Palette): Record<string, Hex> {
     "--primary-foreground": onColorOf(p, "primary"),
     "--sidebar-primary": p.primary,
     "--sidebar-primary-foreground": onColorOf(p, "primary"),
-    "--ring": p.primary,
-    "--sidebar-ring": p.primary,
+    // El anillo de foco usa el color del texto: un primario claro (ámbar)
+    // sobre fondo blanco no se distinguiría.
+    "--ring": p.foreground,
+    "--sidebar-ring": p.foreground,
     "--sidebar-accent": p.accent,
     "--sidebar-accent-foreground": onColorOf(p, "accent"),
     "--muted": mix(p.background, p.foreground, 0.92),

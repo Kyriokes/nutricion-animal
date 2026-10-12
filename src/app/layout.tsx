@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { AccountGate } from "@/components/account-gate";
 import { AccountNotice } from "@/components/account-notice";
@@ -21,6 +21,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Títulos, precios y nombre de la tienda (DT-072).
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Nutrición animal",
   description: "Comida natural para mascotas, con dietas de nutricionistas.",
@@ -33,7 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning React avisaría que la clase no coincide.
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

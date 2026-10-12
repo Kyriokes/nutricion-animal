@@ -29,7 +29,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
     return (
       <div className="flex flex-col items-start gap-3">
         <p className="text-muted-foreground">Todavía no hiciste pedidos.</p>
-        <Link href="/catalogo" className="text-primary underline underline-offset-4">
+        <Link href="/catalogo" className="font-medium underline underline-offset-4">
           Ver el catálogo
         </Link>
       </div>

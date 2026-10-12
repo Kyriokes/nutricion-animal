@@ -16,7 +16,8 @@ describe("apariencia/variables", () => {
     expect(v["--background"]).toBe("#ffffff");
     expect(v["--card"]).toBe("#ffffff");
     expect(v["--sidebar-foreground"]).toBe(p.foreground);
-    expect(v["--ring"]).toBe(p.primary);
+    // El foco se marca con el color del texto: se ve con cualquier primario.
+    expect(v["--ring"]).toBe(p.foreground);
     expect(v["--primary-foreground"]).toBe(onColorOf(p, "primary"));
     expect(v["--success"]).toBe("#008236");
     expect(v["--warning-foreground"]).toBe(onColorOf(p, "warning"));
@@ -42,7 +43,7 @@ describe("apariencia/variables", () => {
     // html:root y html.dark ganan a :root y .dark sin depender del orden de carga.
     const css = paletteCss(DEFAULT_PALETTES);
     expect(css.startsWith("html:root{")).toBe(true);
-    expect(css).toContain("html.dark{--accent:#262626;");
+    expect(css).toContain(`html.dark{--accent:${DEFAULT_PALETTES.dark.accent};`);
   });
 
   it("no deja inyectar CSS con un valor inválido", () => {

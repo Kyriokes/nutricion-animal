@@ -46,24 +46,25 @@ export const PaletteSchema = z.object(
   >,
 );
 
-// RN-074: paleta base, equivalente a los neutros de shadcn más estados.
+// RN-074: paleta base "Zapallo" (DT-072): el primario ámbar es el color de
+// la tienda (franja del encabezado y botones), con texto oscuro encima.
 export const DEFAULT_PALETTES: Record<ThemeMode, Palette> = {
   light: {
     background: "#ffffff",
-    foreground: "#0a0a0a",
-    primary: "#171717",
-    secondary: "#f5f5f5",
-    accent: "#f5f5f5",
+    foreground: "#1f1b16",
+    primary: "#f5a524",
+    secondary: "#f4f2ee",
+    accent: "#fdefd0",
     destructive: "#c10007",
     success: "#008236",
     warning: "#a65f00",
   },
   dark: {
-    background: "#0a0a0a",
-    foreground: "#fafafa",
-    primary: "#e5e5e5",
-    secondary: "#262626",
-    accent: "#262626",
+    background: "#161412",
+    foreground: "#f7f3ec",
+    primary: "#f5a524",
+    secondary: "#2a2623",
+    accent: "#3b2f17",
     destructive: "#ff6467",
     success: "#05df72",
     warning: "#ffb900",

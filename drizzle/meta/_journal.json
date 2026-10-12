@@ -190,6 +190,13 @@
       "when": 1791745770549,
       "tag": "0026_borrar_listas_de_texto_de_mascotas",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791838906578,
+      "tag": "0027_paleta_base_zapallo",
+      "breakpoints": true
     }
   ]
 }

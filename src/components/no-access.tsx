@@ -9,7 +9,7 @@ export function NoAccess() {
       <p className="text-muted-foreground">
         Tu cuenta no tiene los permisos necesarios para ver esta página.
       </p>
-      <Link href="/" className="text-primary underline underline-offset-4">
+      <Link href="/" className="font-medium underline underline-offset-4">
         Volver al inicio
       </Link>
     </div>

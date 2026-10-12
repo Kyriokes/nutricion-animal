@@ -11,7 +11,7 @@ export default function NotFound() {
       <p className="text-muted-foreground">
         Puede que el enlace esté mal escrito o que la página ya no exista.
       </p>
-      <Link href="/" className="text-primary underline underline-offset-4">
+      <Link href="/" className="font-medium underline underline-offset-4">
         Volver al inicio
       </Link>
     </main>

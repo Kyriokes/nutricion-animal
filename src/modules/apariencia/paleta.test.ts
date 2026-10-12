@@ -52,7 +52,8 @@ describe("apariencia/paleta", () => {
 
   it("el texto sobre cada color es el más legible entre texto y fondo", () => {
     const p = DEFAULT_PALETTES.light;
-    expect(onColorOf(p, "primary")).toBe(p.background);
+    expect(onColorOf(p, "destructive")).toBe(p.background);
+    expect(onColorOf(p, "primary")).toBe(p.foreground);
     expect(onColorOf(p, "secondary")).toBe(p.foreground);
     expect(
       contrastRatio(onColorOf(p, "primary"), p.primary),

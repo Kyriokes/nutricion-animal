@@ -43,7 +43,7 @@ export function CheckoutPanel({
     return (
       <p className="text-sm">
         Para comprar necesitás una dirección dentro de Capital.{" "}
-        <Link href="/perfil" className="text-primary underline underline-offset-4">
+        <Link href="/perfil" className="font-medium underline underline-offset-4">
           Cargala en tu perfil
         </Link>
         .
