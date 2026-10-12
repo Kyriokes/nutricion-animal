@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  missingProfessionalProfile,
   planProfessionalProfileUpdate,
   professionalProfileFromApplication,
   toPublicProfile,
@@ -71,5 +72,17 @@ describe("usuarios/perfil-profesional (RN-029)", () => {
   it("RN-012: los clientes pueden buscar nutricionistas", () => {
     expect(hasPermission(["customer"], "nutritionist.search")).toBe(true);
     expect(hasPermission([], "nutritionist.search")).toBe(false);
+  });
+});
+
+describe("usuarios/perfil-profesional: nutricionista sin perfil (RN-012, RN-029)", () => {
+  it("un nutricionista sin perfil profesional no figura en la lista y hay que avisarlo", () => {
+    expect(missingProfessionalProfile(["customer", "nutritionist"], false)).toBe(true);
+    expect(missingProfessionalProfile(["customer", "nutritionist"], true)).toBe(false);
+  });
+
+  it("a quien no es nutricionista no le falta nada", () => {
+    expect(missingProfessionalProfile(["customer"], false)).toBe(false);
+    expect(missingProfessionalProfile([], false)).toBe(false);
   });
 });

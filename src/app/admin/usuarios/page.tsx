@@ -36,6 +36,11 @@ async function Content() {
               <p className="text-sm text-muted-foreground">
                 {u.email} · desde el {dateFormat.format(u.createdAt)}
               </p>
+              {u.missingProfessionalProfile && (
+                <p className="w-fit rounded bg-warning px-1.5 py-0.5 text-xs text-warning-foreground">
+                  Nutricionista sin perfil profesional: no aparece en la lista hasta que lo complete en su perfil.
+                </p>
+              )}
             </div>
           </div>
           <UserRowForm userId={u.id} roles={u.roles} adminNote={u.adminNote} />

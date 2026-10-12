@@ -12,6 +12,7 @@ import {
 } from "./postulaciones";
 import { planUserUpdate } from "./gestion";
 import {
+  missingProfessionalProfile,
   professionalProfileFromApplication,
   toPublicProfile,
   type ProfessionalProfile,
@@ -81,11 +82,12 @@ const knownRoles = (roles: string[]) =>
 // VA-10: usuarios para la gestión del admin, los más nuevos primero.
 export async function listUsers(limit = 200) {
   const rows = await db
-    .select()
+    .select({ user: users, profileUserId: nutritionistProfiles.userId })
     .from(users)
+    .leftJoin(nutritionistProfiles, eq(nutritionistProfiles.userId, users.id))
     .orderBy(desc(users.createdAt))
     .limit(limit);
-  return rows.map((r) => ({
+  return rows.map(({ user: r, profileUserId }) => ({
     id: r.id,
     name: r.name,
     email: r.email,
@@ -93,6 +95,8 @@ export async function listUsers(limit = 200) {
     roles: knownRoles(r.roles),
     adminNote: r.adminNote,
     createdAt: r.createdAt,
+    // RN-029: un nutricionista sin perfil profesional no figura en la lista.
+    missingProfessionalProfile: missingProfessionalProfile(knownRoles(r.roles), profileUserId !== null),
   }));
 }
 

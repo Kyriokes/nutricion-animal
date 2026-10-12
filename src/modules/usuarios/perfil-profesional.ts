@@ -57,3 +57,11 @@ export function toPublicProfile(
     phone: row.phone,
   };
 }
+
+// RN-012, RN-029: la lista de nutricionistas muestra perfiles profesionales.
+// El perfil se crea al aprobar una postulación; si el Administrador da el rol
+// directamente (RN-001), no hay perfil hasta que el nutricionista lo complete
+// en Mi perfil, y mientras tanto no figura en la lista. Hay que avisarlo.
+export function missingProfessionalProfile(roles: readonly string[], hasProfile: boolean): boolean {
+  return roles.includes("nutritionist") && !hasProfile;
+}

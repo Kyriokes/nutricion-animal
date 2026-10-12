@@ -56,6 +56,8 @@ async function Profile() {
   const applications = await listOwnApplications(user.id);
   const options = applicationOptions(user.roles, applications);
   const unseen = unseenDecisions(applications);
+  // RN-029: sin perfil profesional, el nutricionista no figura en la lista.
+  const professionalProfile = user.roles.includes("nutritionist") ? await getProfessionalProfile(user.id) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -109,7 +111,12 @@ async function Profile() {
           <p className="text-sm text-muted-foreground">
             Los clientes ven tu nombre, tu foto, tu dirección y tu teléfono.
           </p>
-          <ProfessionalProfileForm profile={await getProfessionalProfile(user.id)} />
+          {!professionalProfile && (
+            <p role="status" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+              Todavía no aparecés en la lista de nutricionistas: completá y guardá tu perfil profesional.
+            </p>
+          )}
+          <ProfessionalProfileForm profile={professionalProfile} />
         </section>
       )}
 
