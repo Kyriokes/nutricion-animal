@@ -41,7 +41,7 @@
 - Editar una dirección (hoy se borra y se carga de nuevo).
 
 ## Esperando a Sergio
-- **Dieta versión 2**: propuesta en `docs/propuesta-dieta-v2.md`, basada en cinco formulaciones reales (carpeta `pdfs/`, no versionada). Hay 20 preguntas para quien define la nutrición; no se implementa hasta responderlas.
+- **Dieta versión 2**: propuesta en `docs/propuesta-dieta-v2.md`, basada en cinco formulaciones reales (carpeta `pdfs/`, no versionada). Decidido el 2026-10-12: una dieta es para un paciente y se reutiliza clonando (desde la dieta y desde "Nueva dieta"); ficha del paciente toda opcional por ahora; sin logo ni firma; la tienda vende viandas armadas y alimentos de pet shop; la veterinaria que deriva no se guarda; el sitio facilita el seguimiento de la dieta (**[A DEFINIR]** cómo). Quedan las preguntas de los bloques A a H para la nutricionista. Se puede empezar por "una dieta para un paciente + clonar desde Nueva dieta" (cambia RN-022, RN-023 y RN-027); el contenido nuevo de la dieta necesita al menos el bloque B.
 - VN-04: alcance de la búsqueda de clientes para asignar dietas (Ley 25.326). Lo consulta antes de definirlo; mientras tanto la pantalla muestra un aviso de funcionamiento provisorio.
 
 ## Pendientes de la revisión final de perfil, mascotas y dietas (2026-10-08)
