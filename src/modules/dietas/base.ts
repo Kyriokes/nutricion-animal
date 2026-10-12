@@ -13,6 +13,7 @@ export type DietError =
   | "last_version"
   | "pet_not_assigned"
   | "already_assigned"
+  | "other_patient"
   | "already_ended";
 
 // RN-021: cada nutricionista maneja solo sus propias dietas. Además hace falta

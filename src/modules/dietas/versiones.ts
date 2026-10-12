@@ -35,6 +35,10 @@ export function createDiet(input: {
   };
 }
 
+// RN-027: nombre de base de una copia, dentro del largo permitido.
+const COPY_SUFFIX = " (copia)";
+export const cloneName = (name: string) => `${name.slice(0, 80 - COPY_SUFFIX.length).trimEnd()}${COPY_SUFFIX}`;
+
 // RN-027: clona una dieta propia en otra independiente, con la versión 1
 // igual al contenido de la versión elegida.
 export function cloneDiet(input: {
@@ -55,7 +59,7 @@ export function cloneDiet(input: {
     dietId: input.dietId,
     versionId: input.versionId,
     actor: input.actor,
-    name: input.name ?? `${input.source.name} (copia)`,
+    name: input.name ?? cloneName(input.source.name),
     content: structuredClone(input.sourceVersion.content),
     now: input.now,
   });

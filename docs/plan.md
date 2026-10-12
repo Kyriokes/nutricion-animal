@@ -14,7 +14,7 @@
 - **Perfil profesional y búsqueda** (RN-012, RN-029, VN-05, VU-08, VU-09): el nutricionista lo edita en Mi perfil; los clientes lo ven en `/nutricionistas`, sin matrícula.
 - **Usuarios y roles (VA-10)** en `/admin/usuarios`: roles por casilla, bloqueo sin roles y nota del admin (DT-041). Las cuentas bloqueadas ven un aviso de contactar a soporte (RN-046).
 - **Mis mascotas (VU-03, VU-04)** en `/mascotas`: alta, edición, borrado; el detalle muestra la "Dieta actual" con la versión asignada (RN-010, RN-015). Tabla `pets`.
-- **Mis dietas (VN-01, VN-03, VN-04)** en `/dietas`: crear, renombrar, editar (en el lugar o versión nueva eligiendo qué mascotas pasan), clonar, borrar versiones nunca asignadas, asignar buscando cliente o mascota, terminar asignaciones e historial (RN-021 a RN-027, DT-047). Tablas `diets`, `diet_versions`, `diet_assignments`.
+- **Mis dietas (VN-01, VN-03, VN-04)** en `/dietas`: crear (en blanco o a partir de una dieta propia), renombrar, editar (en el lugar o versión nueva eligiendo si el paciente pasa), clonar, borrar versiones nunca asignadas, asignar a su único paciente buscando cliente o mascota, terminar asignaciones e historial; lista con paciente y buscador (RN-021 a RN-027, DT-047, DT-071). Tablas `diets`, `diet_versions`, `diet_assignments`.
 - **Catálogo (VP-04, VP-05, VP-06, RN-013, RN-014, RN-030, RN-031)** en `/catalogo`: búsqueda por texto, filtros por especie y tipo de dieta, atajos por las mascotas del usuario, detalle con tabla nutricional. Tabla `products` preparada para proveedores y revisión (`supplier_id`, `status`). 12 productos de prueba con `npm run db:seed` (DT-052).
 - **Gestión del catálogo (VA-02)** en `/admin/catalogo`: crear, editar, imagen (bucket `products`) y borrar.
 - **Carrito (VP-07) y checkout (VP-08)** en `/carrito`: sin sesión, guardado en el navegador; precio y stock siempre del servidor. Con sesión se elige una dirección de Capital y se confirma la compra (DT-053, DT-055).
@@ -28,7 +28,7 @@
 - **Pagos con Mercado Pago (RN-067)**, Checkout Pro en modo de prueba: cobro con vencimiento igual a la reserva, vuelta al pedido, aviso automático con firma verificada y reembolso pendiente si se paga un pedido cancelado (DT-062).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 336 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 340 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.
@@ -41,7 +41,7 @@
 - Editar una dirección (hoy se borra y se carga de nuevo).
 
 ## Esperando a Sergio
-- **Dieta versión 2**: propuesta en `docs/propuesta-dieta-v2.md`, basada en cinco formulaciones reales (carpeta `pdfs/`, no versionada). Decidido el 2026-10-12: una dieta es para un paciente y se reutiliza clonando (desde la dieta y desde "Nueva dieta"); ficha del paciente toda opcional por ahora; sin logo ni firma; la tienda vende viandas armadas y alimentos de pet shop; la veterinaria que deriva no se guarda; el sitio facilita el seguimiento de la dieta (**[A DEFINIR]** cómo). Quedan las preguntas de los bloques A a H para la nutricionista. Se puede empezar por "una dieta para un paciente + clonar desde Nueva dieta" (cambia RN-022, RN-023 y RN-027); el contenido nuevo de la dieta necesita al menos el bloque B.
+- **Dieta versión 2**: propuesta en `docs/propuesta-dieta-v2.md`, basada en cinco formulaciones reales (carpeta `pdfs/`, no versionada). Decidido el 2026-10-12: una dieta es para un paciente y se reutiliza clonando (desde la dieta y desde "Nueva dieta"); ficha del paciente toda opcional por ahora; sin logo ni firma; la tienda vende viandas armadas y alimentos de pet shop; la veterinaria que deriva no se guarda; el sitio facilita el seguimiento de la dieta (**[A DEFINIR]** cómo). Quedan las preguntas de los bloques A a H para la nutricionista. Hecho: una dieta para un paciente y clonar desde "Nueva dieta" (DT-071), falta probarlo en pantalla. El contenido nuevo de la dieta necesita al menos el bloque B.
 - VN-04: alcance de la búsqueda de clientes para asignar dietas (Ley 25.326). Lo consulta antes de definirlo; mientras tanto la pantalla muestra un aviso de funcionamiento provisorio.
 
 ## Pendientes de la revisión final de perfil, mascotas y dietas (2026-10-08)

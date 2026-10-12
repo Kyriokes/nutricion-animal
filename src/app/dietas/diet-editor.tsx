@@ -8,6 +8,8 @@ import type { Food } from "@/modules/alimentos/repositorio";
 import type { DietContent } from "@/modules/dietas/schema";
 import {
   createDietAction,
+  getCloneSourceAction,
+  searchOwnDietsAction,
   saveDietContentAction,
   type DietActionResult,
 } from "./actions";
@@ -79,6 +81,67 @@ export type EditPlan =
   | { mode: "in_place" }
   | { mode: "new_version"; activePets: { id: string; label: string }[] };
 
+type OwnDiet = Awaited<ReturnType<typeof searchOwnDietsAction>>[number];
+
+// RN-027: buscar una dieta propia para cargarla en el formulario.
+function CloneSourcePicker({ onPick }: { onPick: (source: { name: string; content: DietContent }) => void }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<OwnDiet[] | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const search = () => start(async () => setResults(await searchOwnDietsAction(query)));
+  const pick = (d: OwnDiet) =>
+    start(async () => {
+      const source = await getCloneSourceAction(d.id);
+      if (!source) return setMessage("No se pudo cargar esa dieta.");
+      onPick(source);
+      setResults(null);
+      setMessage(`Cargamos "${d.name}". Revisá y ajustá antes de crear la dieta.`);
+    });
+
+  return (
+    <section className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
+      <p className="font-medium">Partir de una dieta mía (opcional)</p>
+      <div className="flex flex-wrap gap-2">
+        <input
+          aria-label="Buscar por nombre de la dieta o del paciente"
+          placeholder="Nombre de la dieta o del paciente"
+          maxLength={80}
+          className={`${inputClass} min-w-56 flex-1`}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            // No envía el formulario de la dieta.
+            e.preventDefault();
+            search();
+          }}
+        />
+        <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={search}>
+          Buscar
+        </Button>
+      </div>
+      {results && results.length === 0 && <p className="text-muted-foreground">Sin resultados.</p>}
+      {results && results.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {results.map((d) => (
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2">
+              <span>
+                {d.name} · <span className="text-muted-foreground">{d.patientName ?? "sin paciente"}</span>
+              </span>
+              <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => pick(d)}>
+                Usar
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {message && <p role="status">{message}</p>}
+    </section>
+  );
+}
+
 // VN-03: crear una dieta, o editar la última versión de una existente
 // (RN-025, RN-026). Solo presenta y junta datos.
 export function DietEditor(
@@ -104,10 +167,21 @@ export function DietEditor(
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const activePets = props.mode === "edit" && props.plan.mode === "new_version" ? props.plan.activePets : [];
-  // RN-026: por defecto pasan todas las mascotas a la versión nueva.
+  // RN-026: por defecto el paciente pasa a la versión nueva.
   const [move, setMove] = useState<string[]>(activePets.map((p) => p.id));
   const [result, setResult] = useState<DietActionResult | null>(null);
   const [pending, start] = useTransition();
+
+  // RN-027: reemplaza lo cargado por la dieta elegida.
+  const loadSource = (source: { name: string; content: DietContent }) => {
+    setResult(null);
+    setName(source.name);
+    setDescription(source.content.description);
+    setFoods(toRows(source.content));
+    setDurationType(source.content.duration.type);
+    if (source.content.duration.type === "days") setDays(String(source.content.duration.days));
+    setNotes(source.content.notes ?? "");
+  };
 
   const updateFood = (i: number, patch: Partial<FoodRow>) => {
     setResult(null);
@@ -144,6 +218,7 @@ export function DietEditor(
         submit();
       }}
     >
+      {props.mode === "create" && <CloneSourcePicker onPick={loadSource} />}
       {props.mode === "create" && (
         <label className="flex flex-col gap-1 text-sm">
           Nombre de la dieta
@@ -258,7 +333,7 @@ export function DietEditor(
           </p>
           {activePets.length > 0 ? (
             <>
-              <p>Elegí qué mascotas pasan a la versión nueva; las demás siguen con la actual.</p>
+              <p>Marcá si el paciente pasa a la versión nueva; si no, sigue con la actual.</p>
               {activePets.map((p) => (
                 <label key={p.id} className="flex items-center gap-2">
                   <input
@@ -273,7 +348,7 @@ export function DietEditor(
               ))}
             </>
           ) : (
-            <p>Hoy ninguna mascota la tiene activa.</p>
+            <p>Hoy el paciente no la tiene activa.</p>
           )}
         </div>
       )}

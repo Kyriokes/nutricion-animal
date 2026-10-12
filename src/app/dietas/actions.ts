@@ -9,6 +9,8 @@ import {
   createDietInDb,
   deleteDietInDb,
   deleteVersionInDb,
+  getCloneSource,
+  listDietsOfNutritionist,
   renameDietInDb,
   saveDietContentInDb,
   searchPetsForAssignment,
@@ -29,6 +31,7 @@ const MESSAGES: Record<string, string> = {
   last_version: "No se puede borrar la única versión de la dieta.",
   pet_not_assigned: "Alguna mascota elegida ya no tiene esta dieta.",
   already_assigned: "Esa mascota ya tiene esta dieta.",
+  other_patient: "Esta dieta es de otro paciente. Clonala para usarla con otra mascota.",
   already_ended: "Esa asignación ya había terminado.",
   invalid_name: "El nombre es obligatorio (hasta 80 caracteres).",
   diet_frozen: "La dieta ya se asignó alguna vez: no se puede borrar (se conserva el historial).",
@@ -117,7 +120,9 @@ export async function saveDietContentAction(input: unknown): Promise<DietActionR
     message:
       r.mode === "in_place"
         ? "Cambios guardados."
-        : `Se creó una versión nueva; ${r.movedPetIds.length} mascota(s) pasaron a ella.`,
+        : r.movedPetIds.length > 0
+          ? "Se creó una versión nueva y el paciente pasó a ella."
+          : "Se creó una versión nueva; el paciente sigue con la anterior.",
   };
 }
 
@@ -135,6 +140,34 @@ export async function cloneDietAction(dietId: unknown): Promise<DietActionResult
   }
   if (!r.ok) return fail(r.error);
   redirect(`/dietas/${r.dietId}`);
+}
+
+// RN-027: buscar entre las dietas propias, por nombre de la dieta o del
+// paciente, para empezar una nueva a partir de una.
+export async function searchOwnDietsAction(query: unknown) {
+  const actor = await getCurrentActor();
+  if (!actor || !hasPermission(actor.roles, "diet.manage")) return [];
+  const q = z.string().trim().max(80).safeParse(query);
+  if (!q.success) return [];
+  try {
+    const rows = await listDietsOfNutritionist(actor.id, { q: q.data, limit: 20 });
+    return rows.map(({ id, name, patientName }) => ({ id, name, patientName }));
+  } catch {
+    return [];
+  }
+}
+
+// RN-027: nombre y contenido de una dieta propia para cargar en "Nueva
+// dieta". No guarda nada: la dieta se crea al enviar el formulario.
+export async function getCloneSourceAction(dietId: unknown) {
+  const actor = await getCurrentActor();
+  const id = Id.safeParse(dietId);
+  if (!actor || !id.success) return null;
+  try {
+    return await getCloneSource(actor, id.data);
+  } catch {
+    return null;
+  }
 }
 
 // RN-021: borrar una dieta que nunca se asignó.
@@ -171,7 +204,7 @@ export async function deleteVersionAction(dietId: unknown, versionId: unknown): 
   return { ok: true };
 }
 
-// RN-023: asignar la última versión a una mascota.
+// RN-023: asignar la última versión al paciente de la dieta.
 export async function assignDietAction(dietId: unknown, petId: unknown): Promise<DietActionResult> {
   const actor = await getCurrentActor();
   if (!actor) return NOT_SIGNED_IN;

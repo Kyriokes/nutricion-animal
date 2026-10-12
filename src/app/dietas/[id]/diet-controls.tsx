@@ -104,6 +104,11 @@ export function UnassignButton({ dietId, assignmentId }: { dietId: string; assig
   return <ActionButton label="Terminar" variant="ghost" run={() => unassignDietAction(dietId, assignmentId)} />;
 }
 
+// RN-023: volver a asignar la dieta a su paciente.
+export function ReassignButton({ dietId, petId, petName }: { dietId: string; petId: string; petName: string }) {
+  return <ActionButton label={`Volver a asignar a ${petName}`} variant="default" run={() => assignDietAction(dietId, petId)} />;
+}
+
 type PetResult = Awaited<ReturnType<typeof searchPetsAction>>[number];
 
 // VN-04: buscar un cliente o mascota y asignarle la última versión (RN-023).

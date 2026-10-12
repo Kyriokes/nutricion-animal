@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cloneName,
   cloneDiet,
   createDiet,
   deleteDiet,
@@ -341,5 +342,14 @@ describe("dietas/versiones: alerta y nueva versión", () => {
       ok: false,
       error: "not_allowed",
     });
+  });
+});
+
+describe("dietas/versiones: nombre de la copia", () => {
+  it("RN-027: agrega (copia) sin pasarse de 80 caracteres", () => {
+    expect(cloneName("Renal")).toBe("Renal (copia)");
+    const long = cloneName("a".repeat(80));
+    expect(long).toHaveLength(80);
+    expect(long.endsWith(" (copia)")).toBe(true);
   });
 });

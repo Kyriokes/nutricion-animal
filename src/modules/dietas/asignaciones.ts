@@ -22,8 +22,19 @@ export function activeAssignments(
   return assignments.filter((a) => !a.endedAt && ids.has(a.dietVersionId));
 }
 
-// RN-023: asigna la versión indicada (por defecto la última) a una mascota.
-// Una misma dieta se puede asignar a varias mascotas.
+// RN-023: una dieta es para un solo paciente: la mascota de sus asignaciones,
+// vigentes o terminadas. null si todavía no se asignó.
+export function patientOf(
+  diet: Diet,
+  versions: readonly DietVersion[],
+  assignments: readonly DietAssignment[],
+): string | null {
+  const ids = new Set(versionsOf(diet, versions).map((v) => v.id));
+  return assignments.find((a) => ids.has(a.dietVersionId))?.petId ?? null;
+}
+
+// RN-023: asigna la versión indicada (por defecto la última) al paciente de
+// la dieta. Para otra mascota hay que clonarla (RN-027).
 export function assignDiet(input: {
   id: string;
   diet: Diet;
@@ -42,6 +53,11 @@ export function assignDiet(input: {
     ? own.find((v) => v.id === input.versionId)
     : latestVersion(own);
   if (!version) return { ok: false, error: "version_not_found" };
+
+  const patient = patientOf(input.diet, input.versions, input.assignments);
+  if (patient && patient !== input.petId) {
+    return { ok: false, error: "other_patient" };
+  }
 
   const alreadyAssigned = activeAssignments(
     input.diet,

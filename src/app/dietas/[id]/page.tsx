@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { z } from "zod";
 import { DietContentView } from "@/components/diet-content-view";
-import { isVersionFrozen } from "@/modules/dietas/asignaciones";
+import { isVersionFrozen, patientOf } from "@/modules/dietas/asignaciones";
 import { authorize, latestVersion } from "@/modules/dietas/base";
 import { getDietDetail } from "@/modules/dietas/repositorio";
 import { planEdit } from "@/modules/dietas/versiones";
@@ -14,6 +14,7 @@ import {
   CloneButton,
   DeleteDietButton,
   DeleteVersionButton,
+  ReassignButton,
   RenameForm,
   UnassignButton,
 } from "./diet-controls";
@@ -47,6 +48,8 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
         };
   const numberOf = new Map(versions.map((v) => [v.id, v.number]));
   const active = assignments.filter((a) => !a.endedAt);
+  // RN-023: la mascota para la que se hizo la dieta.
+  const patientId = patientOf(diet, versions, assignments);
   const ended = assignments.filter((a) => a.endedAt);
 
   return (
@@ -77,29 +80,43 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Mascotas con esta dieta</h2>
-        {active.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ninguna por ahora.</p>
+        <h2 className="text-lg font-medium">Paciente</h2>
+        {patientId ? (
+          <>
+            {active.length === 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
+                <span>{petLabel(patientId)} · hoy no la tiene activa</span>
+                <ReassignButton dietId={diet.id} petId={patientId} petName={pets.get(patientId)?.name ?? "su paciente"} />
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-1 text-sm">
+                {active.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2">
+                    <span>
+                      {petLabel(a.petId)} · versión {numberOf.get(a.dietVersionId)} · desde el{" "}
+                      {dateFormat.format(a.assignedAt)}
+                    </span>
+                    <UnassignButton dietId={diet.id} assignmentId={a.id} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Una dieta es para un solo paciente. Para usarla con otra mascota, clonala y asigná la copia.
+            </p>
+          </>
         ) : (
-          <ul className="flex flex-col gap-1 text-sm">
-            {active.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2">
-                <span>
-                  {petLabel(a.petId)} · versión {numberOf.get(a.dietVersionId)} · desde el{" "}
-                  {dateFormat.format(a.assignedAt)}
-                </span>
-                <UnassignButton dietId={diet.id} assignmentId={a.id} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="text-sm text-muted-foreground">Todavía no tiene paciente.</p>
+            <h3 className="font-medium">Asignar a una mascota</h3>
+            {/* VN-04 [A DEFINIR]: alcance de la búsqueda pendiente de definición. */}
+            <p role="note" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
+              Funcionamiento provisorio: todavía no está definido qué clientes puede
+              buscar cada nutricionista. Usalo solo con clientes que te consultaron.
+            </p>
+            <AssignPet dietId={diet.id} />
+          </>
         )}
-        <h3 className="font-medium">Asignar a una mascota</h3>
-        {/* VN-04 [A DEFINIR]: alcance de la búsqueda pendiente de definición. */}
-        <p role="note" className="rounded bg-warning px-2 py-1 text-sm text-warning-foreground">
-          Funcionamiento provisorio: todavía no está definido qué clientes puede
-          buscar cada nutricionista. Usalo solo con clientes que te consultaron.
-        </p>
-        <AssignPet dietId={diet.id} />
       </section>
 
       <section className="flex flex-col gap-2">

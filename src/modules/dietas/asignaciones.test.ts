@@ -3,6 +3,7 @@ import {
   activeAssignments,
   assignDiet,
   isVersionFrozen,
+  patientOf,
   unassignDiet,
 } from "./asignaciones";
 import {
@@ -55,16 +56,24 @@ describe("dietas/asignaciones: asignar", () => {
     });
   });
 
-  it("RN-021: la misma dieta se asigna a varias mascotas", () => {
-    const first = assignment("a1", "pet-1", "v2");
-    const result = assignDiet({
-      ...base,
-      id: "a2",
-      assignments: [first],
-      petId: "pet-2",
-      actor: owner,
+  it("RN-023: una dieta con paciente no se asigna a otra mascota", () => {
+    const input = { ...base, id: "a2", petId: "pet-2", actor: owner };
+    expect(assignDiet({ ...input, assignments: [assignment("a1", "pet-1", "v2")] })).toEqual({
+      ok: false,
+      error: "other_patient",
     });
-    expect(result.ok).toBe(true);
+    // Tampoco si la asignación ya terminó: la dieta sigue siendo de pet-1.
+    expect(assignDiet({ ...input, assignments: [assignment("a1", "pet-1", "v1", NOW)] })).toEqual({
+      ok: false,
+      error: "other_patient",
+    });
+  });
+
+  it("RN-023: el paciente de una dieta es la mascota de sus asignaciones", () => {
+    expect(patientOf(diet, base.versions, [])).toBeNull();
+    expect(patientOf(diet, base.versions, [assignment("a1", "pet-1", "v1", NOW)])).toBe("pet-1");
+    // Las asignaciones de otras dietas no cuentan.
+    expect(patientOf(diet, base.versions, [assignment("a1", "pet-1", "otra")])).toBeNull();
   });
 
   it("no asigna dos veces la misma dieta a una mascota, pero sí tras terminarla", () => {

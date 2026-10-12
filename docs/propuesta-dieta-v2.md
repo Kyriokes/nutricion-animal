@@ -156,7 +156,7 @@ Cada pregunta tiene un código para poder responder "A3: sí". Si una no aplica,
 
 Lo que ya está hecho y se aprovecha: la lista única de alimentos, las versiones de una dieta, clonar, y las alergias y restricciones de cada mascota.
 
-Con lo decidido se puede empezar por el punto 2. El punto 1 necesita al menos el bloque B.
+El punto 2 ya está hecho (DT-071, 2026-10-12). El punto 1 necesita al menos el bloque B.
 
 ## Qué queda fuera de esta propuesta
 

@@ -4,7 +4,7 @@ import { pets } from "@/modules/mascotas/tables";
 import { RoleSchema, type Actor, type Role } from "@/modules/usuarios/roles";
 import { users } from "@/modules/usuarios/tables";
 import { assignDiet, unassignDiet } from "./asignaciones";
-import { latestVersion, type DietError } from "./base";
+import { authorize, latestVersion, type DietError } from "./base";
 import { isIssuerActive } from "./emisor";
 import {
   DietContentSchema,
@@ -16,6 +16,7 @@ import {
 import { dietAssignments, diets, dietVersions } from "./tables";
 import {
   cloneDiet,
+  cloneName,
   createDiet,
   deleteDiet,
   deleteVersion,
@@ -212,22 +213,41 @@ export async function unassignDietInDb(actor: Actor, dietId: string, assignmentI
 
 // ---- Lecturas ----
 
-// VN-01: dietas del nutricionista, con su última versión y cuántas mascotas
-// la tienen hoy. Se cuenta en la base (DT-002).
-export async function listDietsOfNutritionist(nutritionistId: string) {
-  return db
+const likePattern = (query: string) => `%${query.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+
+// VN-01: dietas del nutricionista, con su última versión y su paciente
+// (RN-023). `q` busca por nombre de la dieta o del paciente. Se agrupa en la
+// base (DT-002).
+export async function listDietsOfNutritionist(nutritionistId: string, opts: { q?: string; limit?: number } = {}) {
+  const patientName = sql<string | null>`min(${pets.name})`;
+  const q = opts.q?.trim() ? likePattern(opts.q) : null;
+  const query = db
     .select({
       id: diets.id,
       name: diets.name,
       latestVersion: sql<number>`max(${dietVersions.number})`.mapWith(Number),
-      activePets: sql<number>`count(distinct ${dietAssignments.petId}) filter (where ${dietAssignments.endedAt} is null)`.mapWith(Number),
+      patientName,
+      // false si no tiene paciente o si su asignación terminó.
+      active: sql<boolean>`coalesce(bool_or(${dietAssignments.id} is not null and ${dietAssignments.endedAt} is null), false)`,
     })
     .from(diets)
     .leftJoin(dietVersions, eq(dietVersions.dietId, diets.id))
     .leftJoin(dietAssignments, eq(dietAssignments.dietVersionId, dietVersions.id))
+    .leftJoin(pets, eq(pets.id, dietAssignments.petId))
     .where(eq(diets.nutritionistId, nutritionistId))
     .groupBy(diets.id)
+    .having(q ? or(ilike(diets.name, q), sql`${patientName} ilike ${q}`) : undefined)
     .orderBy(asc(diets.name));
+  return opts.limit ? query.limit(opts.limit) : query;
+}
+
+// RN-027: nombre y contenido de la última versión de una dieta propia, para
+// empezar una nueva a partir de ella. No incluye al paciente.
+export async function getCloneSource(actor: Actor, dietId: string): Promise<{ name: string; content: DietContent } | null> {
+  const agg = await db.transaction((tx) => loadAggregate(tx, dietId, false));
+  const latest = agg && latestVersion(agg.versions);
+  if (!agg || !latest || authorize(actor, agg.diet, "diet.manage")) return null;
+  return { name: cloneName(agg.diet.name), content: latest.content };
 }
 
 // VN-03: detalle de una dieta, con los datos de las mascotas asignadas.
@@ -307,7 +327,7 @@ export type ActiveDiet = {
 // VN-04: buscar clientes por nombre o email para elegir una de sus mascotas.
 // Por ahora cualquier nutricionista ve a todos (pregunta 5.1 pendiente).
 export async function searchPetsForAssignment(query: string) {
-  const q = `%${query.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  const q = likePattern(query);
   return db
     .select({ petId: pets.id, petName: pets.name, species: pets.species, ownerName: users.name, ownerEmail: users.email })
     .from(pets)
