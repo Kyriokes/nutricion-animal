@@ -24,11 +24,12 @@
 - **Contacto (VP-03, RN-080 a RN-083)**: formulario en `/contacto` (enlace en el pie) y en la pantalla de cuenta suspendida; email y WhatsApp de prueba; bandeja del admin en `/admin/mensajes` (DT-059). Responder desde el panel: [A DEFINIR].
 - **Dashboard (VA-01, RN-090, RN-091)** en `/admin`: tarjetas de pendientes, ventas de hoy, lo más vendido; búsquedas frecuentes reservado (pregunta 17). **Ventas** en `/admin/ventas` con filtro por día (por defecto hoy), mes o todo. Catálogo del admin paginado y ordenado por stock (DT-060).
 - **Alimentos, composición y recomendación por mascota (RN-032 a RN-039)**: lista única de alimentos con sinónimos (`/admin/alimentos`), composición y "puede contener" de cada producto, mascotas y dietas que eligen de la lista, catálogo por mascota con advertencia de alérgenos y carrito que dice para quién encaja cada producto (DT-064 a DT-069).
+- **Diseño de tienda (DT-072)**: encabezado en dos filas con buscador, tienda separada de la cuenta, tarjetas de producto iguales con dibujos cuando no hay foto, filtros del catálogo en columna, portada nueva y paleta base "Zapallo". Revisado en local con capturas (escritorio, celular, claro y oscuro) sin sesión; falta verlo con sesión iniciada (menú "Hola, nombre", atajos, filtro por mascota).
 - **Publicado en Vercel**: https://nutricion-animal.vercel.app (región São Paulo, transaction pooler, DT-061). Local y publicado comparten la base y el ingreso de Supabase: un pedido de prueba en local aparece en el publicado. Las migraciones se aplican antes de pushear el código que las usa.
 - **Pagos con Mercado Pago (RN-067)**, Checkout Pro en modo de prueba: cobro con vencimiento igual a la reserva, vuelta al pedido, aviso automático con firma verificada y reembolso pendiente si se paga un pedido cancelado (DT-062).
 - **Landing (VP-01)** con productos destacados cacheados; **páginas editables** FAQ, quiénes somos y términos (VP-02, VP-10, VP-11, VA-09) en `/admin/contenido`; **404 y acceso sin permisos** (VP-12, VP-13); **menú desplegable** del usuario según permisos (DT-051).
 - Módulos con lógica y tests: `usuarios`, `mascotas`, `dietas`, `catalogo` (formulario, textos), `pedidos` (carrito, envío, estados, checkout), `contenido`, `apariencia`.
-- `npm test`: 340 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
+- `npm test`: 345 tests. Los flujos con base de datos y el almacenamiento se verificaron con pruebas de humo temporales (datos borrados al terminar).
 
 ## Próximo paso
 - Que Sergio pruebe en pantalla la compra completa: cargar una dirección en Capital en el perfil, comprar desde el carrito, simular el pago aprobado y el rechazado, cancelar y ver Mis pedidos.

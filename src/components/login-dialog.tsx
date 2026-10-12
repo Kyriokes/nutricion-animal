@@ -14,7 +14,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // VP-09: ingresar con Google (RN-003). No hay registro aparte: el primer
 // ingreso crea la cuenta como Cliente (RN-024).
-export function LoginDialog() {
+export function LoginDialog({ triggerVariant = "default" }: { triggerVariant?: "default" | "onBrand" }) {
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -38,7 +38,7 @@ export function LoginDialog() {
 
   return (
     <Dialog>
-      <DialogTrigger render={<Button />}>Ingresar</DialogTrigger>
+      <DialogTrigger render={<Button variant={triggerVariant} />}>Ingresar</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Ingresar</DialogTitle>

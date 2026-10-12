@@ -26,7 +26,7 @@ const useMounted = () =>
     () => false,
   );
 
-// RN-073: cicla claro → oscuro → sistema.
+// RN-073: cicla claro → oscuro → sistema. Va en la franja del encabezado.
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const mounted = useMounted();
@@ -36,14 +36,14 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="outline"
-      size="icon"
+      variant="ghostOnBrand"
+      size="icon-lg"
       onClick={() => setTheme(NEXT[current])}
       aria-label={
         mounted ? `${LABELS[current]}. Cambiar a ${LABELS[NEXT[current]].toLowerCase()}` : "Cambiar modo de color"
       }
     >
-      {mounted && <Icon />}
+      {mounted && <Icon className="size-5" />}
     </Button>
   );
 }

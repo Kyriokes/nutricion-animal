@@ -4,9 +4,9 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { Pager } from "@/components/pager";
 import { PetProductCard, ProductCard } from "@/components/product-card";
-import { Button } from "@/components/ui/button";
 import { pageWithin } from "@/lib/paginas";
 import { rankForPet } from "@/modules/catalogo/mascota";
+import { speciesLabel } from "@/modules/catalogo/presentacion";
 import { normalizeTag } from "@/modules/catalogo/schema";
 import {
   getProductFoods,
@@ -29,9 +29,6 @@ const FiltersSchema = z.object({
   pagina: z.coerce.number().int().min(1).max(1000).optional().catch(undefined),
 });
 
-const selectClass =
-  "h-8 rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-
 function hrefWith(params: Record<string, string | undefined>) {
   const qs = new URLSearchParams(
     Object.entries(params).filter((e): e is [string, string] => Boolean(e[1])),
@@ -39,33 +36,46 @@ function hrefWith(params: Record<string, string | undefined>) {
   return qs ? `/catalogo?${qs}` : "/catalogo";
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 // "Dieta: Mantenimiento", "2 dietas" o "sin dieta asignada".
 const dietLabel = (names: readonly string[]) =>
   names.length === 0 ? "sin dieta asignada" : names.length === 1 ? `Dieta: ${names[0]}` : `${names.length} dietas`;
 
-// RN-013, RN-037: un atajo por mascota, con su nombre y su dieta. Tocar el
-// que está elegido lo quita.
-function MyPetsShortcuts({ pets, current }: { pets: PetWithProfile[]; current?: string }) {
-  if (pets.length === 0) return null;
+type FilterOption = { label: string; detail?: string; href: string; active: boolean };
+
+// Un grupo de filtros: lista en la columna de la izquierda; en pantallas
+// chicas, etiquetas en fila. Tocar el que está elegido lo quita.
+function FilterGroup({ title, options }: { title: string; options: FilterOption[] }) {
+  if (options.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Para tus mascotas:</span>
-      {pets.map(({ pet, dietNames }) => (
-        <Link
-          key={pet.id}
-          href={current === pet.id ? "/catalogo" : hrefWith({ mascota: pet.id })}
-          aria-current={current === pet.id ? "true" : undefined}
-          className={`rounded-full border px-2.5 py-0.5 ${current === pet.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-        >
-          {pet.name} · {dietLabel(dietNames)}
-        </Link>
-      ))}
-    </div>
+    <section className="flex flex-col gap-2">
+      <h2 className="text-sm font-bold">{title}</h2>
+      <ul className="flex flex-wrap gap-1.5 lg:flex-col lg:gap-0.5">
+        {options.map((o) => (
+          <li key={o.href}>
+            <Link
+              href={o.href}
+              aria-current={o.active ? "true" : undefined}
+              className={`inline-flex flex-col rounded-full border px-3 py-1 text-sm lg:flex lg:rounded-md lg:px-2 lg:py-1.5 ${
+                o.active
+                  ? "border-primary bg-primary font-medium text-primary-foreground"
+                  : "hover:bg-muted lg:border-transparent"
+              }`}
+            >
+              {o.label}
+              {o.detail && <span className="text-xs opacity-80">{o.detail}</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
-// VP-04: catálogo con búsqueda (VP-06), filtros por especie y dieta, y por
-// mascota (RN-037). Con sesión se leen las mascotas del usuario (DT-036).
+// VP-04: catálogo con filtros por especie y tipo de dieta, y por mascota
+// (RN-013, RN-037). La búsqueda por texto (VP-06) está en el encabezado.
+// Con sesión se leen las mascotas del usuario (DT-036).
 async function Catalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams;
   const one = (k: string) => (typeof raw[k] === "string" ? raw[k] : undefined);
@@ -81,69 +91,74 @@ async function Catalog({ searchParams }: { searchParams: Promise<Record<string, 
   const [myPets, facets] = await Promise.all([user ? listPetProfiles(user.id) : [], listCatalogFacets()]);
   // Solo una mascota propia; cualquier otro id se ignora.
   const selected = myPets.find((p) => p.pet.id === f.mascota);
+  // Con una mascota elegida, la especie es la de ella.
+  const current = { q: f.q, especie: selected ? undefined : f.especie, dieta: f.dieta, mascota: selected?.pet.id };
+  const filtered = Boolean(current.especie || current.dieta || current.mascota);
 
   return (
-    <div className="flex flex-col gap-6">
-      <form action="/catalogo" className="flex flex-wrap items-end gap-2" role="search">
-        {selected && <input type="hidden" name="mascota" value={selected.pet.id} />}
-        <label className="flex min-w-56 flex-1 flex-col gap-1 text-sm">
-          Buscar
-          <input
-            name="q"
-            defaultValue={f.q}
-            maxLength={80}
-            placeholder="Pollo, croquetas, marca…"
-            className={selectClass}
-          />
-        </label>
-        {!selected && (
-          <label className="flex flex-col gap-1 text-sm">
-            Especie
-            <select name="especie" defaultValue={f.especie ?? ""} className={selectClass}>
-              <option value="">Todas</option>
-              {facets.species.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="flex flex-col gap-1 text-sm">
-          Tipo de dieta
-          <select name="dieta" defaultValue={f.dieta ?? ""} className={selectClass}>
-            <option value="">Todos</option>
-            {facets.dietTypes.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button type="submit">Buscar</Button>
-        {(f.q || f.especie || f.dieta || selected) && (
-          <Link href="/catalogo" className="text-sm underline underline-offset-4">
-            Limpiar
+    <>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold">{f.q ? `Resultados para "${f.q}"` : "Catálogo"}</h1>
+        {f.q && (
+          <Link href={hrefWith({ ...current, q: undefined })} className="self-start text-sm underline underline-offset-4">
+            Quitar la búsqueda
           </Link>
         )}
-      </form>
-
-      <MyPetsShortcuts pets={myPets} current={selected?.pet.id} />
-
-      {selected ? (
-        <PetResults
-          selected={selected}
-          q={f.q}
-          dieta={f.dieta}
-          page={f.pagina ?? 1}
-          knownSpecies={facets.species}
-        />
-      ) : (
-        <AllResults filters={{ q: f.q, species: f.especie, dietType: f.dieta, page: f.pagina }} />
-      )}
-    </div>
+      </div>
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        <aside aria-label="Filtros" className="flex flex-col gap-5 lg:w-56 lg:shrink-0">
+          <FilterGroup
+            title="Para tus mascotas"
+            options={myPets.map(({ pet, dietNames }) => ({
+              label: pet.name,
+              detail: dietLabel(dietNames),
+              href: hrefWith({ q: f.q, dieta: f.dieta, mascota: selected?.pet.id === pet.id ? undefined : pet.id }),
+              active: selected?.pet.id === pet.id,
+            }))}
+          />
+          {!selected && (
+            <FilterGroup
+              title="Especie"
+              options={facets.species.map((s) => ({
+                label: speciesLabel(s),
+                href: hrefWith({ ...current, especie: f.especie === s ? undefined : s }),
+                active: f.especie === s,
+              }))}
+            />
+          )}
+          <FilterGroup
+            title="Tipo de dieta"
+            options={facets.dietTypes.map((d) => ({
+              label: capitalize(d),
+              href: hrefWith({ ...current, dieta: f.dieta === d ? undefined : d }),
+              active: f.dieta === d,
+            }))}
+          />
+          {filtered && (
+            <Link href={hrefWith({ q: f.q })} className="self-start text-sm underline underline-offset-4">
+              Limpiar filtros
+            </Link>
+          )}
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {selected ? (
+            <PetResults
+              selected={selected}
+              q={f.q}
+              dieta={f.dieta}
+              page={f.pagina ?? 1}
+              knownSpecies={facets.species}
+            />
+          ) : (
+            <AllResults filters={{ q: f.q, species: f.especie, dietType: f.dieta, page: f.pagina }} />
+          )}
+        </div>
+      </div>
+    </>
   );
 }
+
+const gridClass = "grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4";
 
 async function AllResults({ filters }: { filters: CatalogFilters }) {
   const result = await listCatalog(filters);
@@ -157,7 +172,7 @@ async function AllResults({ filters }: { filters: CatalogFilters }) {
           <p className="text-sm text-muted-foreground">
             {result.total} producto{result.total === 1 ? "" : "s"}
           </p>
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className={gridClass}>
             {result.items.map((p) => (
               <li key={p.id} className="flex">
                 <ProductCard product={p} />
@@ -199,7 +214,7 @@ async function PetResults({
 
   return (
     <>
-      <section className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+      <section className="flex flex-col gap-1 rounded-xl border bg-secondary p-3 text-sm text-secondary-foreground">
         <p>
           Productos para <strong>{pet.name}</strong> ({pet.species}) · {dietLabel(dietNames)}
           {dietNames.length > 1 && `: ${dietNames.join(", ")}`} ·{" "}
@@ -207,9 +222,7 @@ async function PetResults({
             ver su ficha
           </Link>
         </p>
-        <p className="text-muted-foreground">
-          Es una ayuda para elegir: verificá siempre la etiqueta y consultá a su nutricionista.
-        </p>
+        <p>Es una ayuda para elegir: verificá siempre la etiqueta y consultá a su nutricionista.</p>
       </section>
       {items.length === 0 && !knownSpecies.includes(normalizeTag(pet.species)) ? (
         <p role="note" className="text-sm">
@@ -222,7 +235,7 @@ async function PetResults({
       ) : items.length === 0 ? (
         <p className="text-muted-foreground">No encontramos productos para {pet.name} con esos filtros.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className={gridClass}>
           {items.map(({ product, evaluation }) => (
             <li key={product.id} className="flex">
               <PetProductCard product={product} pet={{ id: pet.id, name: pet.name }} evaluation={evaluation} />
@@ -238,7 +251,6 @@ async function PetResults({
 export default function CatalogPage({ searchParams }: PageProps<"/catalogo">) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-2xl font-semibold">Catálogo</h1>
       <Suspense fallback={<p className="text-muted-foreground">Cargando productos…</p>}>
         <Catalog searchParams={searchParams} />
       </Suspense>

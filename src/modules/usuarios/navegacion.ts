@@ -3,6 +3,8 @@ import { hasPermission, type Permission, type Role } from "./roles";
 export type NavItem = { href: string; label: string };
 export type NavGroup = { label: string; items: NavItem[] };
 
+// Lo de la tienda (catálogo, especies, nutricionistas, ayuda) va en la barra
+// del encabezado, igual para todos; acá solo lo de cada usuario.
 // Cada entrada se muestra solo si el usuario tiene el permiso. La pantalla
 // igual lo verifica en el servidor: esto solo decide qué se ofrece.
 const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[] = [
@@ -15,11 +17,8 @@ const MENU: { label: string; items: (NavItem & { permission?: Permission })[] }[
     ],
   },
   {
-    label: "Nutrición",
-    items: [
-      { href: "/nutricionistas", label: "Nutricionistas", permission: "nutritionist.search" },
-      { href: "/dietas", label: "Mis dietas", permission: "diet.manage" },
-    ],
+    label: "Nutricionista",
+    items: [{ href: "/dietas", label: "Mis dietas", permission: "diet.manage" }],
   },
   {
     label: "Administración",
@@ -48,4 +47,14 @@ export function navigationFor(roles: readonly Role[]): NavGroup[] {
       .filter((i) => !i.permission || hasPermission(roles, i.permission))
       .map(({ href, label }) => ({ href, label })),
   })).filter((g) => g.items.length > 0);
+}
+
+const SHORTCUTS: (NavItem & { permission: Permission })[] = [
+  { href: "/pedidos", label: "Mis pedidos", permission: "order.view_own" },
+  { href: "/mascotas", label: "Mis mascotas", permission: "pet.register" },
+];
+
+// Atajos que se muestran junto al nombre del usuario, fuera del desplegable.
+export function accountShortcuts(roles: readonly Role[]): NavItem[] {
+  return SHORTCUTS.filter((i) => hasPermission(roles, i.permission)).map(({ href, label }) => ({ href, label }));
 }

@@ -31,16 +31,16 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" className="h-9 gap-2 px-1.5" aria-label={`Menú de ${name}`} />}
+        render={<Button variant="ghostOnBrand" className="gap-2 px-1.5" aria-label={`Menú de ${name}`} />}
       >
         {photoUrl ? (
-          <Image src={photoUrl} alt="" width={28} height={28} className="rounded-full" />
+          <Image src={photoUrl} alt="" width={24} height={24} className="rounded-full" />
         ) : (
-          <span className="flex size-7 items-center justify-center rounded-full bg-muted text-sm font-medium" aria-hidden>
+          <span className="flex size-6 items-center justify-center rounded-full bg-primary-foreground text-xs font-medium text-primary" aria-hidden>
             {name.charAt(0).toUpperCase()}
           </span>
         )}
-        <span className="hidden max-w-40 truncate text-sm sm:inline">{name}</span>
+        <span className="max-w-32 truncate">Hola, {name.trim().split(/\s+/)[0]}</span>
         <ChevronDown aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto min-w-56">

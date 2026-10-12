@@ -123,6 +123,23 @@ export async function getCatalogProductsByIds(ids: readonly string[]): Promise<S
   return rows.map(toProduct);
 }
 
+// Las especies con más productos, para los enlaces de la tienda (encabezado
+// y portada). Cacheado: se renueva cuando cambia el catálogo.
+export async function getStoreSpecies(limit = 4): Promise<string[]> {
+  "use cache";
+  cacheTag(CATALOG_TAG);
+  cacheLife("hours");
+  const value = sql<string>`unnest(${products.petTypes})`;
+  const rows = await db
+    .select({ value })
+    .from(products)
+    .where(eq(products.status, "approved"))
+    .groupBy(value)
+    .orderBy(desc(sql`count(*)`), asc(value))
+    .limit(limit);
+  return rows.map((r) => r.value);
+}
+
 // Especies y tipos de dieta presentes en el catálogo, para los filtros.
 export async function listCatalogFacets() {
   const facet = async (column: typeof products.petTypes) => {

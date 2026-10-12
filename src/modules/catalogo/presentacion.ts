@@ -21,6 +21,20 @@ export function describeSize(p: Pick<Product, "weight" | "volume">): string {
   return parts.join(" · ");
 }
 
+const UNACCENTED: Record<string, string> = { á: "a", é: "e", í: "i", ó: "o", ú: "u" };
+
+// "perro" -> "Perros", "pez" -> "Peces", "hurón" -> "Hurones": para los
+// enlaces por especie de la tienda.
+export function speciesLabel(species: string): string {
+  const s = species.trim().toLowerCase();
+  const plural = /[aeiouáéíóú]$/.test(s)
+    ? `${s}s`
+    : s.endsWith("z")
+      ? `${s.slice(0, -1)}ces`
+      : `${s.replace(/[áéíóú](?=[^aeiouáéíóú]*$)/, (c) => UNACCENTED[c])}es`;
+  return plural.charAt(0).toUpperCase() + plural.slice(1);
+}
+
 const LOW_STOCK = 5;
 
 export function stockLabel(stock: number): string {

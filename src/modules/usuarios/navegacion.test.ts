@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { navigationFor } from "./navegacion";
+import { accountShortcuts, navigationFor } from "./navegacion";
 
 const hrefs = (roles: Parameters<typeof navigationFor>[0]) =>
   navigationFor(roles).flatMap((g) => g.items.map((i) => i.href));
 
 describe("usuarios/navegacion", () => {
-  it("un cliente ve su cuenta, sus pedidos y la búsqueda de nutricionistas", () => {
-    expect(hrefs(["customer"])).toEqual(["/perfil", "/mascotas", "/pedidos", "/nutricionistas"]);
+  it("un cliente ve su cuenta y sus pedidos; lo de la tienda no va en su menú", () => {
+    expect(hrefs(["customer"])).toEqual(["/perfil", "/mascotas", "/pedidos"]);
+  });
+
+  it("atajos de la cuenta junto al nombre, según permisos", () => {
+    expect(accountShortcuts(["customer"]).map((i) => i.href)).toEqual(["/pedidos", "/mascotas"]);
+    expect(accountShortcuts([])).toEqual([]);
   });
 
   it("un nutricionista suma sus dietas", () => {
@@ -22,7 +27,7 @@ describe("usuarios/navegacion", () => {
 
   it("el admin ve todo, agrupado", () => {
     const groups = navigationFor(["admin"]);
-    expect(groups.map((g) => g.label)).toEqual(["Mi cuenta", "Nutrición", "Administración"]);
+    expect(groups.map((g) => g.label)).toEqual(["Mi cuenta", "Nutricionista", "Administración"]);
     expect(hrefs(["admin"])).toEqual(
       expect.arrayContaining(["/admin/usuarios", "/admin/configuracion/apariencia", "/dietas"]),
     );
