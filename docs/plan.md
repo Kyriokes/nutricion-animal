@@ -41,6 +41,7 @@
 - Editar una dirección (hoy se borra y se carga de nuevo).
 
 ## Esperando a Sergio
+- **Dieta versión 2**: propuesta en `docs/propuesta-dieta-v2.md`, basada en cinco formulaciones reales (carpeta `pdfs/`, no versionada). Hay 20 preguntas para quien define la nutrición; no se implementa hasta responderlas.
 - VN-04: alcance de la búsqueda de clientes para asignar dietas (Ley 25.326). Lo consulta antes de definirlo; mientras tanto la pantalla muestra un aviso de funcionamiento provisorio.
 
 ## Pendientes de la revisión final de perfil, mascotas y dietas (2026-10-08)
